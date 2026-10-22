@@ -56,7 +56,3 @@ Assets/
 - Anclar `PuntoFinal` a la posición de un marcador **ArUco** detectado con la cámara (OpenCV).
 - Reemplazar los sprites placeholder por los del personaje de StoryScape.
 - Conectar `On Arrived ()` con la IA conversacional.
-
-## Equipo
-
-Proyecto académico – Taller de Proyecto, Universidad Peruana de Ciencias Aplicadas (UPC).
