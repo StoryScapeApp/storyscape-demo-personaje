@@ -54,3 +54,7 @@ sysinfo.txt
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Configuración local de ElevenLabs (no subir)
+/[Aa]ssets/[Ss]treaming[Aa]ssets/elevenlabs.local.json
+/[Aa]ssets/[Ss]treaming[Aa]ssets/elevenlabs.local.json.meta

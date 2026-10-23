@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82d63a5df2ede4643a89134d86ac09b7, type: 3}
+  m_Name: BancoTerminos
+  m_EditorClassIdentifier: Assembly-CSharp::TermBank
+  terms:
+  - term: domesticar
+    meaning: "Crear lazos con alguien, hacer que se vuelva especial para ti y t\xFA
+      para \xE9l."
+    page: 0
+    highlightPosition: {x: -2, y: 2.2}
+    highlightSize: {x: 2.6, y: 0.55}
+  - term: baobab
+    meaning: "\xC1rbol muy grande que, si crece sin control, puede destruir el peque\xF1o
+      planeta del Principito."
+    page: 0
+    highlightPosition: {x: -2, y: 2.2}
+    highlightSize: {x: 2.6, y: 0.55}
+  - term: asteroide
+    meaning: "Cuerpo peque\xF1o de roca que viaja por el espacio; el Principito vive
+      en uno."
+    page: 0
+    highlightPosition: {x: -2, y: 2.2}
+    highlightSize: {x: 2.6, y: 0.55}
+  - term: "ef\xEDmero"
+    meaning: Que dura poco tiempo, que no es para siempre.
+    page: 0
+    highlightPosition: {x: -2, y: 2.2}
+    highlightSize: {x: 2.6, y: 0.55}
+  - term: lo esencial es invisible a los ojos
+    meaning: "Lo m\xE1s importante, como el cari\xF1o o la amistad, no se ve con
+      los ojos: se siente."
+    page: 0
+    highlightPosition: {x: -2, y: 2.2}
+    highlightSize: {x: 2.6, y: 0.55}
