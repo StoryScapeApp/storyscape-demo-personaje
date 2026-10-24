@@ -35,13 +35,15 @@ Demo en Unity del proyecto **StoryScape** (realidad aumentada espacial con proye
 
 ## Configuración del agente en ElevenLabs
 
+> 📄 El **system prompt** y el **first message** completos del personaje están en [`PROMPTS_ELEVENLABS.md`](PROMPTS_ELEVENLABS.md).
+
 En **Agents → tu agente**:
 
 | Ajuste | Valor |
 |---|---|
 | Idioma | Español |
 | LLM | GPT-4o (u otro) |
-| System prompt | Usa las variables `{{termino}}` y `{{significado}}` (Unity las envía al conectar) |
+| System prompt | Ver [`PROMPTS_ELEVENLABS.md`](PROMPTS_ELEVENLABS.md) (usa `{{termino}}` y `{{significado}}`, que Unity envía al conectar) |
 | First message | `¡Hola! Qué bueno verte leyendo conmigo. En esta página está resaltado "{{termino}}". ¿Me ayudas a descubrir qué significa?` |
 | Voice → TTS output format | **PCM 16000 Hz** |
 | Advanced → User input audio format | **PCM 16000 Hz** |
