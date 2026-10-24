@@ -858,7 +858,7 @@ MonoBehaviour:
   configFileName: elevenlabs.local.json
   simulate: 0
   sampleRate: 16000
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: 
   micGain: 8
   muteMicWhileAgentSpeaks: 1
   showMicLevel: 1
