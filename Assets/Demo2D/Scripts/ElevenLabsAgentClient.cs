@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -11,7 +12,8 @@ using UnityEngine.Events;
 
 /// <summary>
 /// Conversación por voz en tiempo real con un agente de ElevenLabs (WebSocket).
-/// - Envía el micrófono en PCM 16 kHz y reproduce la voz del agente (PCM 16 kHz).
+/// - Graba el micrófono a su frecuencia nativa, lo amplifica (Mic Gain), lo convierte a PCM 16 kHz y lo envía.
+/// - Reproduce la voz del agente (PCM 16 kHz).
 /// - Pasa {{termino}} y {{significado}} como variables dinámicas del agente.
 /// - El Agent ID se lee de StreamingAssets/elevenlabs.local.json (no se sube a GitHub).
 /// - Modo simulado: muestra un diálogo de prueba sin conectarse (no gasta minutos).
@@ -29,11 +31,16 @@ public class ElevenLabsAgentClient : MonoBehaviour
     public int sampleRate = 16000;
 
     [Header("Micrófono")]
-    [Tooltip("Vacío = micrófono predeterminado de Windows")]
+    [Tooltip("Nombre exacto del micrófono (ver consola al dar Play). Vacío = predeterminado de Windows")]
     public string microphoneDevice = "";
+    [Tooltip("Amplifica el micrófono. Ajústalo durante el Play: al hablar con voz normal la barra verde " +
+             "debería llegar más o menos a la mitad, sin quedarse llena todo el tiempo.")]
+    [Range(1f, 30f)] public float micGain = 1f;
     [Tooltip("Envía silencio mientras habla el personaje, para que no se escuche a sí mismo por los parlantes. " +
              "Desactívalo si usas audífonos y quieres probar las interrupciones.")]
     public bool muteMicWhileAgentSpeaks = true;
+    [Tooltip("Muestra un medidor del micrófono en pantalla durante la conversación")]
+    public bool showMicLevel = true;
 
     [Header("Subtítulos")]
     public bool showSubtitles = true;
@@ -51,6 +58,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
     public bool SimulatedTalking { get; private set; }
     /// <summary>Volumen actual de la voz del agente (RMS, aprox. 0 a 0.3).</summary>
     public float OutputLevel => outputLevel;
+    /// <summary>Volumen actual del micrófono ya amplificado (RMS).</summary>
+    public float MicLevel => micLevel;
 
     const string Endpoint = "wss://api.elevenlabs.io/v1/convai/conversation?agent_id=";
     const int ChunkSamples = 1600; // 100 ms a 16 kHz
@@ -60,16 +69,24 @@ public class ElevenLabsAgentClient : MonoBehaviour
     readonly SemaphoreSlim sendLock = new SemaphoreSlim(1, 1);
     readonly Queue<float> playQueue = new Queue<float>();
     readonly object playLock = new object();
-    readonly List<float> micPending = new List<float>();
+    readonly List<float> micRaw = new List<float>();     // a la frecuencia del micrófono
+    readonly List<float> micPending = new List<float>(); // ya convertido a sampleRate
     volatile float outputLevel;
+    float micLevel;
+    bool micMuted;
 
     AudioSource source;
     AudioClip micClip;
     string micDevice;
+    int micRate;
     int micReadPos;
+    double resamplePos;
     bool running;
     string subtitleAgent = "", subtitleUser = "";
-    GUIStyle agentStyle, userStyle;
+    GUIStyle agentStyle, userStyle, meterStyle;
+    Texture2D whiteTex;
+
+    static readonly Regex AudioTags = new Regex(@"\[[^\]]*\]\s*", RegexOptions.Compiled);
 
     // ───────────── Mensajes del servidor (solo los campos que usamos) ─────────────
     [Serializable] class ServerMsg
@@ -96,6 +113,12 @@ public class ElevenLabsAgentClient : MonoBehaviour
         source.spatialBlend = 0f;
         source.clip = AudioClip.Create("VozAgente", sampleRate * 2, 1, sampleRate, true, OnAudioRead);
         source.Play();
+    }
+
+    void Start()
+    {
+        var devs = Microphone.devices;
+        Debug.Log("[ElevenLabs] Micrófonos disponibles: " + (devs.Length == 0 ? "(ninguno)" : string.Join(" | ", devs)));
     }
 
     // ───────────── API pública ─────────────
@@ -130,6 +153,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
         subtitleAgent = subtitleUser = "";
         cts = new CancellationTokenSource();
         ws = new ClientWebSocket();
+        EnsurePlaying();
         try
         {
             await ws.ConnectAsync(new Uri(Endpoint + agentId), cts.Token);
@@ -209,15 +233,26 @@ public class ElevenLabsAgentClient : MonoBehaviour
 
             case "audio":
                 if (m.audio_event != null && !string.IsNullOrEmpty(m.audio_event.audio_base_64))
+                {
                     EnqueuePcm(Convert.FromBase64String(m.audio_event.audio_base_64));
+                    EnsurePlaying();
+                }
                 break;
 
             case "agent_response":
-                if (m.agent_response_event != null) subtitleAgent = m.agent_response_event.agent_response;
+                if (m.agent_response_event != null)
+                {
+                    subtitleAgent = StripTags(m.agent_response_event.agent_response);
+                    Debug.Log("[ElevenLabs] Personaje: " + subtitleAgent);
+                }
                 break;
 
             case "user_transcript":
-                if (m.user_transcription_event != null) subtitleUser = m.user_transcription_event.user_transcript;
+                if (m.user_transcription_event != null)
+                {
+                    subtitleUser = m.user_transcription_event.user_transcript;
+                    Debug.Log("[ElevenLabs] Niño: " + subtitleUser);
+                }
                 break;
 
             case "interruption":
@@ -256,19 +291,34 @@ public class ElevenLabsAgentClient : MonoBehaviour
             return;
         }
         micDevice = string.IsNullOrEmpty(microphoneDevice) ? null : microphoneDevice;
-        micClip = Microphone.Start(micDevice, true, 1, sampleRate);
+
+        // Graba a la frecuencia que soporta el micrófono; luego se convierte a sampleRate.
+        Microphone.GetDeviceCaps(micDevice, out int minFreq, out int maxFreq);
+        if (minFreq == 0 && maxFreq == 0) micRate = sampleRate;             // acepta cualquier frecuencia
+        else if (sampleRate >= minFreq && sampleRate <= maxFreq) micRate = sampleRate;
+        else micRate = maxFreq;
+
+        micClip = Microphone.Start(micDevice, true, 1, micRate);
         micReadPos = 0;
+        resamplePos = 0;
+        micRaw.Clear();
         micPending.Clear();
+        Debug.Log($"[ElevenLabs] Grabando con \"{(micDevice ?? "micrófono predeterminado")}\" a {micRate} Hz → envío a {sampleRate} Hz (ganancia x{micGain:0.#})");
     }
 
     void StopMic()
     {
         if (micClip != null) Microphone.End(micDevice);
         micClip = null;
+        micLevel = 0f;
     }
 
     void Update()
     {
+        // La voz del personaje se reproduce en un AudioSource "infinito". Si Unity lo detiene
+        // (p. ej. al perder el foco), se reanuda; si no, el audio quedaría acumulado y el micrófono en pausa.
+        if (running || AgentSpeaking) EnsurePlaying();
+
         if (micClip == null || ws == null || ws.State != WebSocketState.Open) return;
 
         int pos = Microphone.GetPosition(micDevice);
@@ -295,15 +345,28 @@ public class ElevenLabsAgentClient : MonoBehaviour
         }
         micReadPos = pos;
 
-        bool silence = muteMicWhileAgentSpeaks && AgentSpeaking;
-        for (int i = 0; i < data.Length; i++) micPending.Add(silence ? 0f : data[i]);
+        // Ganancia + nivel del micrófono (para el medidor en pantalla)
+        float sum = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            float v = Mathf.Clamp(data[i] * micGain, -1f, 1f);
+            data[i] = v;
+            sum += v * v;
+        }
+        micLevel = Mathf.Lerp(micLevel, Mathf.Sqrt(sum / Mathf.Max(1, data.Length)), 0.5f);
+
+        // Solo se silencia si la voz del personaje realmente se está reproduciendo.
+        micMuted = muteMicWhileAgentSpeaks && AgentSpeaking && source.isPlaying;
+        micRaw.AddRange(data);
+        Resample();
 
         while (micPending.Count >= ChunkSamples)
         {
             var bytes = new byte[ChunkSamples * 2];
             for (int i = 0; i < ChunkSamples; i++)
             {
-                short s = (short)Mathf.Clamp(micPending[i] * 32767f, short.MinValue, short.MaxValue);
+                float v = micMuted ? 0f : micPending[i];
+                short s = (short)Mathf.Clamp(v * 32767f, short.MinValue, short.MaxValue);
                 bytes[i * 2] = (byte)(s & 0xff);
                 bytes[i * 2 + 1] = (byte)((s >> 8) & 0xff);
             }
@@ -312,7 +375,41 @@ public class ElevenLabsAgentClient : MonoBehaviour
         }
     }
 
+    /// Convierte micRaw (micRate) a micPending (sampleRate) promediando cada ventana (evita distorsión).
+    void Resample()
+    {
+        if (micRate == sampleRate)
+        {
+            micPending.AddRange(micRaw);
+            micRaw.Clear();
+            return;
+        }
+
+        double step = (double)micRate / sampleRate; // p. ej. 48000 / 16000 = 3
+        while (resamplePos + step <= micRaw.Count)
+        {
+            int start = (int)resamplePos;
+            int end = Mathf.Max(start + 1, (int)(resamplePos + step));
+            float acc = 0f;
+            for (int i = start; i < end; i++) acc += micRaw[i];
+            micPending.Add(acc / (end - start));
+            resamplePos += step;
+        }
+
+        int consumed = (int)resamplePos;
+        if (consumed > 0)
+        {
+            micRaw.RemoveRange(0, consumed);
+            resamplePos -= consumed;
+        }
+    }
+
     // ───────────── Reproducción ─────────────
+    void EnsurePlaying()
+    {
+        if (source != null && source.enabled && !source.isPlaying) source.Play();
+    }
+
     void EnqueuePcm(byte[] pcm)
     {
         lock (playLock)
@@ -398,6 +495,9 @@ public class ElevenLabsAgentClient : MonoBehaviour
         return !string.IsNullOrEmpty(agentId) && !agentId.StartsWith("PEGA_");
     }
 
+    /// Quita etiquetas de estilo de voz como [slow] o [laughs] de los subtítulos.
+    static string StripTags(string s) => string.IsNullOrEmpty(s) ? s : AudioTags.Replace(s, "").Trim();
+
     static string Json(string s)
     {
         if (s == null) return "\"\"";
@@ -406,14 +506,31 @@ public class ElevenLabsAgentClient : MonoBehaviour
 
     void OnGUI()
     {
-        if (!showSubtitles || (string.IsNullOrEmpty(subtitleAgent) && string.IsNullOrEmpty(subtitleUser))) return;
         if (agentStyle == null)
         {
             agentStyle = new GUIStyle(GUI.skin.label) { fontSize = subtitleFontSize, wordWrap = true, alignment = TextAnchor.LowerCenter };
             agentStyle.normal.textColor = Color.white;
             userStyle = new GUIStyle(agentStyle) { fontStyle = FontStyle.Italic };
             userStyle.normal.textColor = new Color(0.6f, 0.85f, 1f);
+            meterStyle = new GUIStyle(GUI.skin.label) { fontSize = 14 };
+            meterStyle.normal.textColor = new Color(1f, 1f, 1f, 0.8f);
+            whiteTex = Texture2D.whiteTexture;
         }
+
+        // Medidor del micrófono (esquina superior izquierda)
+        if (showMicLevel && running && !simulate && micClip != null)
+        {
+            float lvl = Mathf.Clamp01(micLevel * 8f);
+            string label = micMuted ? "Mic: en pausa (habla el personaje)" : $"Mic: escuchando  (ganancia x{micGain:0.#})";
+            GUI.Label(new Rect(16, 10, 360, 20), label, meterStyle);
+            GUI.color = new Color(1f, 1f, 1f, 0.25f);
+            GUI.DrawTexture(new Rect(16, 32, 160, 8), whiteTex);
+            GUI.color = micMuted ? new Color(1f, 0.6f, 0.2f) : (lvl > 0.95f ? new Color(1f, 0.3f, 0.3f) : new Color(0.3f, 1f, 0.4f));
+            GUI.DrawTexture(new Rect(16, 32, 160 * lvl, 8), whiteTex);
+            GUI.color = Color.white;
+        }
+
+        if (!showSubtitles || (string.IsNullOrEmpty(subtitleAgent) && string.IsNullOrEmpty(subtitleUser))) return;
         float w = Screen.width * 0.8f, x = (Screen.width - w) / 2f;
         if (!string.IsNullOrEmpty(subtitleUser))
             GUI.Label(new Rect(x, Screen.height - 150, w, 40), subtitleUser, userStyle);

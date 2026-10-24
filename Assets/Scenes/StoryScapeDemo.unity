@@ -856,11 +856,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevenLabsAgentClient
   configFileName: elevenlabs.local.json
-  simulate: 1
+  simulate: 0
   sampleRate: 16000
-  microphoneDevice: 
+  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  micGain: 8
   muteMicWhileAgentSpeaks: 1
-  showSubtitles: 1
+  showMicLevel: 1
+  showSubtitles: 0
   subtitleFontSize: 22
   onConversationStarted:
     m_PersistentCalls:
