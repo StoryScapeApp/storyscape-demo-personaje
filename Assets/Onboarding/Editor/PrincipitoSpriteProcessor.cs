@@ -6,11 +6,17 @@ using UnityEngine;
 
 /// <summary>
 /// Procesa las hojas de sprites del Principito (imágenes con fondo azul verdoso y cuadrícula):
-/// 1) quita el fondo y la cuadrícula (relleno desde los bordes por color) y los huecos de fondo
-///    encerrados dentro del dibujo (p. ej. entre el brazo y el letrero),
+/// 1) quita el fondo, la cuadrícula y los huecos de fondo encerrados en el dibujo,
 /// 2) separa cada cuadro (componentes conectados grandes; ignora títulos y etiquetas),
-/// 3) alinea todos los cuadros por los pies en un lienzo común (sin saltos en la animación),
+/// 3) alinea todos los cuadros en un lienzo común: por los pies, o por la línea de suelo de la fila
+///    en hojas con saltos (para conservar la altura del salto),
 /// 4) guarda PNG transparentes en Assets/Onboarding/Sprites/Principito y los asigna al Principito.
+///
+/// Hojas reconocidas por nombre de archivo:
+///   personaje_posicion_1 → Listening (8) + Idle + Nod + React
+///   personaje_posicion_2 → Asking (8)
+///   personaje_posicion_3 → Correcto (alegría, con saltos)
+///   personaje_posicion_4 → Incorrecto (desaprobación)
 /// Menú: StoryScape > Onboarding > Procesar sprites del Principito
 /// </summary>
 public static class PrincipitoSpriteProcessor
@@ -22,16 +28,16 @@ public static class PrincipitoSpriteProcessor
     const int MinHoleArea = 600;        // huecos de fondo encerrados a partir de este tamaño se borran (los ojos miden ~170 px)
     const int Pad = 6;
 
-    static readonly Color32 BgColor = new Color32(48, 82, 96, 255);     // fondo
-    static readonly Color32 GridColor = new Color32(82, 128, 144, 255); // líneas de la cuadrícula
+    static readonly Color32 BgColor = new Color32(48, 82, 96, 255);
 
     class Frame
     {
         public Color32[] px; public int w, h;     // imagen fuente completa
         public List<int> pixels = new List<int>();
         public int minX = int.MaxValue, minY = int.MaxValue, maxX, maxY; // y desde abajo (Unity)
-        public float anchorX; public int anchorY;   // pies
+        public float anchorX; public int anchorY;   // punto que queda en los pies del sprite
         public float cx => (minX + maxX) * 0.5f;
+        public float cy => (minY + maxY) * 0.5f;
     }
 
     [MenuItem("StoryScape/Onboarding/Procesar sprites del Principito")]
@@ -51,40 +57,42 @@ public static class PrincipitoSpriteProcessor
         var clips = new Dictionary<string, List<Frame>>();
         foreach (var file in files)
         {
-            var frames = ExtractFrames(file);
+            string name = Path.GetFileNameWithoutExtension(file).ToLower();
+            bool keepJumps = name.EndsWith("_3");
+            var frames = ExtractFrames(file, keepJumps);
             Debug.Log($"[Principito] {Path.GetFileName(file)}: {frames.Count} cuadros detectados.");
-            if (frames.Count == 11)
+
+            if (name.EndsWith("_1") && frames.Count >= 11)
             {
                 clips["Listening"] = frames.GetRange(0, 8);
                 clips["Idle"] = new List<Frame> { frames[8] };
                 clips["Nod"] = new List<Frame> { frames[9] };
                 clips["React"] = new List<Frame> { frames[10] };
             }
-            else if (frames.Count == 8)
-            {
-                clips["Asking"] = frames;
-            }
+            else if (name.EndsWith("_2")) clips["Asking"] = frames;
+            else if (name.EndsWith("_3")) clips["Correcto"] = frames;
+            else if (name.EndsWith("_4")) clips["Incorrecto"] = frames;
             else
             {
                 clips[Path.GetFileNameWithoutExtension(file)] = frames;
-                Debug.LogWarning($"[Principito] {Path.GetFileName(file)}: se esperaban 8 u 11 cuadros. Revisa los PNG generados.");
+                Debug.LogWarning($"[Principito] {Path.GetFileName(file)}: nombre no reconocido; se guarda con su propio nombre.");
             }
         }
 
         // Lienzo común para todos los cuadros (misma escala y pies en el mismo punto)
-        int halfW = 0, height = 0;
+        int halfW = 0, above = 0, below = 0;
         foreach (var kv in clips)
             foreach (var f in kv.Value)
             {
                 halfW = Mathf.Max(halfW, Mathf.CeilToInt(Mathf.Max(f.anchorX - f.minX, f.maxX - f.anchorX)) + 1);
-                height = Mathf.Max(height, f.maxY - f.anchorY + 1);
+                above = Mathf.Max(above, f.maxY - f.anchorY + 1);
+                below = Mathf.Max(below, f.anchorY - f.minY);
             }
-        int cw = halfW * 2 + Pad * 2, ch = height + Pad * 2;
+        int cw = halfW * 2 + Pad * 2, ch = above + below + Pad * 2;
+        int groundY = Pad + below;
 
-        if (Directory.Exists(OutDir))
-            foreach (var old in Directory.GetFiles(OutDir, "*.png")) AssetDatabase.DeleteAsset(old.Replace('\\', '/'));
         Directory.CreateDirectory(OutDir);
-
+        var written = new HashSet<string>();
         var paths = new List<string>();
         foreach (var kv in clips)
         {
@@ -93,7 +101,7 @@ public static class PrincipitoSpriteProcessor
                 var f = kv.Value[i];
                 var outPx = new Color32[cw * ch];
                 int offX = Pad + halfW - Mathf.RoundToInt(f.anchorX);
-                int offY = Pad - f.anchorY;
+                int offY = groundY - f.anchorY;
                 foreach (int idx in f.pixels)
                 {
                     int x = idx % f.w, y = idx / f.w;
@@ -105,14 +113,21 @@ public static class PrincipitoSpriteProcessor
                 tex.SetPixels32(outPx);
                 tex.Apply();
                 string path = $"{OutDir}/{kv.Key}_{i}.png";
-                File.WriteAllBytes(path, tex.EncodeToPNG());
+                File.WriteAllBytes(path, tex.EncodeToPNG()); // se sobrescribe: el .meta (y sus referencias) se conserva
                 Object.DestroyImmediate(tex);
                 paths.Add(path);
+                written.Add(path);
             }
+        }
+        // Quita solo los PNG que ya no corresponden a ningún cuadro
+        foreach (var old in Directory.GetFiles(OutDir, "*.png"))
+        {
+            var p = old.Replace('\\', '/');
+            if (!written.Contains(p)) AssetDatabase.DeleteAsset(p);
         }
 
         AssetDatabase.Refresh();
-        float pivotY = (float)Pad / ch;
+        float pivotY = (float)groundY / ch;
         foreach (var p in paths)
         {
             var ti = (TextureImporter)AssetImporter.GetAtPath(p);
@@ -147,7 +162,7 @@ public static class PrincipitoSpriteProcessor
     // ───────────── Extracción ─────────────
     static bool IsBackground(Color32 c)
     {
-        // Familia azul verdosa del fondo y la cuadrícula: azul > verde > rojo, poco rojo.
+        // Familia azul verdosa del fondo, la cuadrícula y las sombras: azul > verde > rojo, poco rojo.
         return c.b - c.g >= 4 && c.g - c.r >= 15 && c.b - c.r >= 25 && c.r < 130;
     }
 
@@ -157,13 +172,9 @@ public static class PrincipitoSpriteProcessor
         return dr * dr + dg * dg + db * db;
     }
 
-    /// Muy parecido al color exacto del fondo o de la cuadrícula (no a los ojos azules ni al abrigo).
-    static bool IsExactBackground(Color32 c)
-    {
-        return IsBackground(c) && Dist2(c, BgColor) < 22 * 22; // solo el fondo: los ojos se parecen a la cuadrícula
-    }
+    static bool IsExactBackground(Color32 c) => IsBackground(c) && Dist2(c, BgColor) < 22 * 22;
 
-    static List<Frame> ExtractFrames(string file)
+    static List<Frame> ExtractFrames(string file, bool keepJumps)
     {
         var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
         tex.LoadImage(File.ReadAllBytes(file));
@@ -190,7 +201,6 @@ public static class PrincipitoSpriteProcessor
         var visited = new bool[W * H];
         var region = new List<int>();
         var st = new Stack<int>();
-        int holes = 0;
         for (int s = 0; s < W * H; s++)
         {
             if (bg[s] || visited[s] || !IsExactBackground(px[s])) continue;
@@ -206,13 +216,8 @@ public static class PrincipitoSpriteProcessor
                 if (y > 0) Try(i - W);
                 if (y < H - 1) Try(i + W);
             }
-            if (region.Count >= MinHoleArea)
-            {
-                foreach (int i in region) bg[i] = true;
-                holes++;
-            }
+            if (region.Count >= MinHoleArea) foreach (int i in region) bg[i] = true;
         }
-        if (holes > 0) Debug.Log($"[Principito] {Path.GetFileName(file)}: {holes} huecos de fondo interiores eliminados.");
 
         // Limpieza de bordes (halo de compresión JPEG): 2 pasadas sobre píxeles junto al fondo
         for (int pass = 0; pass < 2; pass++)
@@ -263,10 +268,10 @@ public static class PrincipitoSpriteProcessor
         var big = comps.FindAll(c => c.pixels.Count >= MinFrameArea);
         var small = comps.FindAll(c => c.pixels.Count < MinFrameArea && c.pixels.Count >= 20);
 
-        // Pedazos sueltos (mechones, puntas de capa) dentro del área de un cuadro grande → se unen
+        // Pedazos sueltos (mechones, puntas de capa, trazos de movimiento) cerca de un cuadro grande → se unen
         foreach (var s in small)
             foreach (var b in big)
-                if (s.cx >= b.minX - 15 && s.cx <= b.maxX + 15 && s.minY >= b.minY - 15 && s.maxY <= b.maxY + 15)
+                if (s.cx >= b.minX - 25 && s.cx <= b.maxX + 25 && s.minY >= b.minY - 15 && s.maxY <= b.maxY + 15)
                 {
                     b.pixels.AddRange(s.pixels);
                     b.minX = Mathf.Min(b.minX, s.minX); b.maxX = Mathf.Max(b.maxX, s.maxX);
@@ -274,7 +279,17 @@ public static class PrincipitoSpriteProcessor
                     break;
                 }
 
-        // 3) Ancla en los pies: centro horizontal de las filas más bajas
+        // 3) Orden de lectura: filas de arriba hacia abajo, luego izquierda a derecha
+        float rowTol = H * 0.08f;
+        big.Sort((a, c) =>
+        {
+            if (Mathf.Abs(a.cy - c.cy) > rowTol && !keepJumps) return c.cy.CompareTo(a.cy); // y mayor = más arriba
+            return a.cx.CompareTo(c.cx);
+        });
+
+        // 4) Ancla horizontal en los pies; vertical en los pies o en el suelo común (saltos)
+        int ground = int.MaxValue;
+        foreach (var b in big) ground = Mathf.Min(ground, b.minY);
         foreach (var b in big)
         {
             int band = Mathf.Max(4, (b.maxY - b.minY) / 14);
@@ -285,17 +300,8 @@ public static class PrincipitoSpriteProcessor
                 if (y <= b.minY + band) { sum += i % W; n++; }
             }
             b.anchorX = n > 0 ? sum / n : b.cx;
-            b.anchorY = b.minY;
+            b.anchorY = keepJumps ? ground : b.minY;
         }
-
-        // 4) Orden de lectura: filas de arriba hacia abajo, luego izquierda a derecha
-        float rowTol = H * 0.08f;
-        big.Sort((a, c) =>
-        {
-            float ay = (a.minY + a.maxY) * 0.5f, cy = (c.minY + c.maxY) * 0.5f;
-            if (Mathf.Abs(ay - cy) > rowTol) return cy.CompareTo(ay); // y mayor = más arriba
-            return a.cx.CompareTo(c.cx);
-        });
         return big;
     }
 
@@ -321,15 +327,14 @@ public static class PrincipitoSpriteProcessor
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "Reposo", frames = new[] { idle[0], idle[0], idle[0], nod[0] }, fps = 1.5f, loop = true });
         if (Get("Listening") != null) anim.clips.Add(new SpriteAnimator2D.Clip { name = "Listening", frames = Get("Listening"), fps = 4.5f, loop = true });
         if (Get("Asking") != null) anim.clips.Add(new SpriteAnimator2D.Clip { name = "Asking", frames = Get("Asking"), fps = 3.5f, loop = true });
+        if (Get("Correcto") != null) anim.clips.Add(new SpriteAnimator2D.Clip { name = "Correcto", frames = Get("Correcto"), fps = 4f, loop = true });
+        if (Get("Incorrecto") != null) anim.clips.Add(new SpriteAnimator2D.Clip { name = "Incorrecto", frames = Get("Incorrecto"), fps = 2.5f, loop = true });
         if (nod != null && idle != null)
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "Nod", frames = new[] { idle[0], nod[0] }, fps = 1.2f, loop = true });
         if (react != null && idle != null)
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "React", frames = new[] { react[0], idle[0] }, fps = 1.2f, loop = true });
         anim.defaultClip = (idle != null && nod != null) ? "Reposo" : "Idle";
-        anim.bobSpeed = 1.3f;
-        anim.bobAmplitude = 0.035f;
 
-        anim.transform.localScale = Vector3.one;
         var sr = anim.GetComponent<SpriteRenderer>();
         if (idle != null) sr.sprite = idle[0];
         EditorUtility.SetDirty(anim);

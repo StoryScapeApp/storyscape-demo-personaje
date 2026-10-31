@@ -1158,6 +1158,24 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 7c4cad78d6a1fb4468f3e312d8a9721e, type: 3}
     fps: 3.5
     loop: 1
+  - name: Correcto
+    frames:
+    - {fileID: 21300000, guid: 3202dac79b72edb408a0a7d01af8225c, type: 3}
+    - {fileID: 21300000, guid: 11f62a20b0741e04da1df44681692d9e, type: 3}
+    - {fileID: 21300000, guid: bb3e371c617f9c14d88bf0f2098236c2, type: 3}
+    - {fileID: 21300000, guid: 022283cf9f360fa47be28f77e5ac5f0f, type: 3}
+    - {fileID: 21300000, guid: 6c633122397dd624489af88933ba3ae9, type: 3}
+    - {fileID: 21300000, guid: 2d785464b911aa64e9e908c2bc78cb62, type: 3}
+    fps: 4
+    loop: 1
+  - name: Incorrecto
+    frames:
+    - {fileID: 21300000, guid: 42991467efba6a64c83298ce8e45a4eb, type: 3}
+    - {fileID: 21300000, guid: 8485a104436db284aaff4e69850ddca0, type: 3}
+    - {fileID: 21300000, guid: 3e67f88b937b6cb4da8441bbb91413d5, type: 3}
+    - {fileID: 21300000, guid: 66557d6334145274aa11421e121e744a, type: 3}
+    fps: 2.5
+    loop: 1
   - name: Nod
     frames:
     - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
@@ -2436,53 +2454,55 @@ MonoBehaviour:
   animRule1: Listening
   animRule2: Asking
   animRule3: 
+  animWrong: Incorrecto
+  animRight: Correcto
   intro:
     id: 01_intro
     text: "\xA1Hola! \xA1Bienvenido al libro El Principito! \xBFC\xF3mo te llamas?"
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: 08da2dba26bb7214bb3d7c5bc1995bbc, type: 3}
   nameReply:
     id: 02_nombre
     text: "\xA1Qu\xE9 lindo nombre! Antes de empezar nuestra aventura, te voy a contar
       tres reglas muy f\xE1ciles."
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: 6bf1da2829a27ec4190a8d6e054e620c, type: 3}
   rule1:
     id: 03_regla1
     text: "Uno: lee en voz alta. As\xED yo puedo escucharte y acompa\xF1arte en la
       lectura."
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: 9be28c91ca5bb92459197eb3cd98047e, type: 3}
   rule2:
     id: 04_regla2
     text: "Dos: si tienes una duda, p\xEDdeme ayuda. Solo tienes que decir: Principito,
       tengo una duda, y yo te ayudar\xE9."
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: a796396cc1ae02c4bad4af3d0c64ed14, type: 3}
   rule3:
     id: 05_regla3
     text: "Tres: al terminar cada cap\xEDtulo, jugaremos a las preguntas. Te har\xE9
       dos preguntas sobre lo que le\xEDste. \xA1No te preocupes, no es un examen,
       es un juego!"
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: bf03ca99a9e97454b931479c691e4713, type: 3}
   quizIntro:
     id: 06_juego_intro
     text: "Mira, as\xED se ver\xE1 el juego. Por ejemplo: \xBFc\xF3mo vas a leer
       el cuento? \xBFEn silencio, en voz alta o cantando?"
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: 3b426c153bbbf5046acb56fd5ee4218e, type: 3}
   quizWrong:
     id: 07_juego_casi
     text: "Si eliges una respuesta que no es, no pasa nada. \xA1Puedes intentarlo
       otra vez!"
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: 97bcf8f8c1f849b47920f64826d514ab, type: 3}
   quizRight:
     id: 08_juego_bien
-    text: "Y cuando aciertes, \xA1lo celebramos juntos!"
-    clip: {fileID: 0}
+    text: "Y cuando aciertes, \xA1lo celebramos juntos! \xBFEst\xE1s listo? \xA1Empecemos!"
+    clip: {fileID: 8300000, guid: 80d8b6380da74834c8d9142e1c035aa5, type: 3}
   closing:
-    id: 09_cierre
-    text: "\xBFEst\xE1s listo? \xA1Empecemos!"
+    id: 
+    text: 
     clip: {fileID: 0}
   farewell:
-    id: 10_final
+    id: 09_final
     text: "\xA1Genial! Pasa la p\xE1gina y empieza a leer en voz alta."
-    clip: {fileID: 0}
+    clip: {fileID: 8300000, guid: 2f25ab39ad81c884dad90e6e368a3bf2, type: 3}
   pauseBetweenLines: 0.35
   choiceThinkTime: 1.4
   onStarted:

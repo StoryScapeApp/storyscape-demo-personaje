@@ -152,7 +152,7 @@ public static class OnboardingSceneBuilder
         EditorUtility.SetDirty(seq);
         EditorSceneManager.MarkSceneDirty(seq.gameObject.scene);
         EditorSceneManager.SaveScene(seq.gameObject.scene);
-        Debug.Log($"[Onboarding] Audios asignados: {n} de 10.");
+        Debug.Log($"[Onboarding] Audios asignados: {n}.");
     }
 
     static int AssignAudioClips(OnboardingSequence seq)
@@ -162,6 +162,7 @@ public static class OnboardingSceneBuilder
         foreach (var line in new[] { seq.intro, seq.nameReply, seq.rule1, seq.rule2, seq.rule3,
                                      seq.quizIntro, seq.quizWrong, seq.quizRight, seq.closing, seq.farewell })
         {
+            if (line == null || string.IsNullOrEmpty(line.id)) continue;
             var guids = AssetDatabase.FindAssets(line.id + " t:AudioClip", new[] { AudioDir });
             foreach (var g in guids)
             {

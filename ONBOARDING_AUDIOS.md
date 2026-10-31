@@ -19,12 +19,11 @@ El nombre del archivo debe ser **exactamente el id** (por ejemplo `01_intro.mp3`
 | `05_regla3` | Aparece la regla 3 | Tres: al terminar cada capítulo, jugaremos a las preguntas. Te haré dos preguntas sobre lo que leíste. ¡No te preocupes, no es un examen, es un juego! |
 | `06_juego_intro` | Aparecen la pregunta y las 3 opciones | Mira, así se verá el juego. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando? |
 | `07_juego_casi` | La opción azul se apaga · "¡Casi! Otra vez" | Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez! |
-| `08_juego_bien` | La opción verde crece, estrellas · "¡Muy bien!" | Y cuando aciertes, ¡lo celebramos juntos! |
-| `09_cierre` | La pregunta desaparece (luego espera la respuesta) | ¿Estás listo? ¡Empecemos! |
-| `10_final` | Despedida | ¡Genial! Pasa la página y empieza a leer en voz alta. |
+| `08_juego_bien` | La opción verde crece, estrellas · "¡Muy bien!" · luego la pregunta desaparece y se espera la respuesta del niño | Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos! |
+| `09_final` | Despedida (después de la respuesta del niño) | ¡Genial! Pasa la página y empieza a leer en voz alta. |
 
 ## Consejos
 
 - Usa la **misma voz y configuración** en todas las líneas para que suene como un solo personaje.
 - Si quieres cambiar un texto, cámbialo también en el componente `OnboardingSequence` (campo *Text* de esa línea) para que la documentación y los tiempos de prueba coincidan.
-- Para no usar `10_final`, deja vacío su texto en `OnboardingSequence` y no agregues el audio.
+- Para no usar `09_final`, deja vacío su texto en `OnboardingSequence` y quita el audio.

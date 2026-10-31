@@ -13,7 +13,8 @@ using UnityEngine.Events;
 ///    y correcto (la opción crece, estrellas, "¡Muy bien!").
 /// 4. "¿Estás listo? ¡Empecemos!" → espera la respuesta → onFinished.
 ///
-/// Fuera de las reglas 1 y 2, el Principito se mantiene en reposo (alterna Idle y Nod).
+/// Fuera de las reglas 1 y 2 y de las reacciones del ejemplo (correcto / incorrecto),
+/// el Principito se mantiene en reposo (alterna Idle y Nod).
 /// Los audios son pregenerados con ElevenLabs (TTS). Si una línea no tiene audio,
 /// se espera un tiempo según la longitud del texto (útil para probar sin audios).
 /// </summary>
@@ -59,6 +60,10 @@ public class OnboardingSequence : MonoBehaviour
     public string animRule2 = "Asking";
     [Tooltip("Mientras se presenta la regla 3 (vacío = reposo)")]
     public string animRule3 = "";
+    [Tooltip("Reacción a la respuesta incorrecta del ejemplo (desaprobación)")]
+    public string animWrong = "Incorrecto";
+    [Tooltip("Reacción a la respuesta correcta del ejemplo (alegría)")]
+    public string animRight = "Correcto";
 
     [Header("Guion (audios en Assets/Onboarding/Audio con el mismo id)")]
     public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas?" };
@@ -68,9 +73,10 @@ public class OnboardingSequence : MonoBehaviour
     public Line rule3 = new Line { id = "05_regla3", text = "Tres: al terminar cada capítulo, jugaremos a las preguntas. Te haré dos preguntas sobre lo que leíste. ¡No te preocupes, no es un examen, es un juego!" };
     public Line quizIntro = new Line { id = "06_juego_intro", text = "Mira, así se verá el juego. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando?" };
     public Line quizWrong = new Line { id = "07_juego_casi", text = "Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez!" };
-    public Line quizRight = new Line { id = "08_juego_bien", text = "Y cuando aciertes, ¡lo celebramos juntos!" };
-    public Line closing = new Line { id = "09_cierre", text = "¿Estás listo? ¡Empecemos!" };
-    public Line farewell = new Line { id = "10_final", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
+    public Line quizRight = new Line { id = "08_juego_bien", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos!" };
+    [Tooltip("Opcional: línea de cierre aparte (vacía = no se usa; el cierre está incluido en 08_juego_bien)")]
+    public Line closing = new Line { id = "", text = "" };
+    public Line farewell = new Line { id = "09_final", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
 
     [Header("Tiempos")]
     public float pauseBetweenLines = 0.35f;
@@ -134,7 +140,9 @@ public class OnboardingSequence : MonoBehaviour
         Glow(wrongOption, false);
         Dim(wrongOption);
         SetBubble("¡Casi! Otra vez");
+        Anim(animWrong);
         yield return Say(quizWrong);
+        Anim(animRest);
         Hide(bubble);
 
         //    Segundo intento correcto: brilla, crece, estrellas y celebración.
@@ -145,16 +153,18 @@ public class OnboardingSequence : MonoBehaviour
         for (int i = 0; i < options.Length; i++) if (i != rightOption) Dim(i);
         if (stars && Valid(rightOption)) stars.Burst(options[rightOption].transform.position);
         SetBubble("¡Muy bien!");
+        Anim(animRight);
         yield return Say(quizRight);
+        Anim(animRest);
 
         // 4. Cierre
         Hide(bubble);
         Hide(question);
         foreach (var o in options) Hide(o);
         yield return new WaitForSeconds(0.6f);
-        yield return Say(closing);
-        if (listener) yield return listener.WaitForResponse();
-        if (!string.IsNullOrEmpty(farewell.text) || farewell.clip) yield return Say(farewell);
+        if (HasContent(closing)) yield return Say(closing);
+        if (listener) yield return listener.WaitForResponse();   // respuesta a "¿Estás listo?"
+        if (HasContent(farewell)) yield return Say(farewell);
 
         IsRunning = false;
         onFinished?.Invoke();
@@ -179,6 +189,8 @@ public class OnboardingSequence : MonoBehaviour
         }
         yield return new WaitForSeconds(pauseBetweenLines);
     }
+
+    static bool HasContent(Line l) => l != null && (l.clip != null || !string.IsNullOrEmpty(l.text));
 
     void Anim(string clip) { if (principito && !string.IsNullOrEmpty(clip)) principito.Play(clip); }
 
