@@ -23,8 +23,8 @@ public class SpriteAnimator2D : MonoBehaviour
     public string defaultClip = "Idle";
 
     [Header("Respiración (movimiento sutil)")]
-    public float bobAmplitude = 0.04f;
-    public float bobSpeed = 2f;
+    public float bobAmplitude = 0.035f;
+    public float bobSpeed = 1.3f;
 
     public string CurrentClip => current != null ? current.name : null;
 

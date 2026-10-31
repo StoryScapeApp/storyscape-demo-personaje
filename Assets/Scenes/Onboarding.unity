@@ -538,8 +538,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "<b>3. Al terminar cada cap\xEDtulo, jugaremos a las preguntas.</b> Te
-    har\xE9 dos preguntas sobre lo que le\xEDste. \xA1No te preocupes, no es un examen,
-    es un juego!"
+    har\xE9 dos preguntas sobre lo que le\xEDste."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1124,38 +1123,56 @@ MonoBehaviour:
   clips:
   - name: Idle
     frames:
-    - {fileID: 21300000, guid: b179472b8c5cce14eab2d8616ad99483, type: 3}
+    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
     fps: 1
+    loop: 1
+  - name: Reposo
+    frames:
+    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
+    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
+    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
+    - {fileID: 21300000, guid: 7cfc9b6df6d65104aa7a5634b3c52a18, type: 3}
+    fps: 1.5
     loop: 1
   - name: Listening
     frames:
-    - {fileID: 21300000, guid: 992287a56d5c2d44094bb49ebceff942, type: 3}
-    - {fileID: 21300000, guid: ef54283abf971b34c90cbf45e34a063f, type: 3}
-    - {fileID: 21300000, guid: 992287a56d5c2d44094bb49ebceff942, type: 3}
-    - {fileID: 21300000, guid: ecbaf6082f6e2064a8347441ac083067, type: 3}
-    fps: 4
+    - {fileID: 21300000, guid: 1f0ad9bf3ae9b614fa29beff75cf4db0, type: 3}
+    - {fileID: 21300000, guid: 8654e37d0b0d92d428b338b41dc6832a, type: 3}
+    - {fileID: 21300000, guid: 8f7eaeb4da96b6a4f99abd4f2dea895d, type: 3}
+    - {fileID: 21300000, guid: 8172836988e6a674daff318aa31ecebf, type: 3}
+    - {fileID: 21300000, guid: 3080910d1a87c204581af4c039d4b6d5, type: 3}
+    - {fileID: 21300000, guid: d36fa3bfa2374f94d8288cbbe3e2eb2a, type: 3}
+    - {fileID: 21300000, guid: f86a6c8ef4e4f8e439cfc37854243368, type: 3}
+    - {fileID: 21300000, guid: 6a067c44fee7af944a514ae8eb530a09, type: 3}
+    fps: 4.5
     loop: 1
   - name: Asking
     frames:
-    - {fileID: 21300000, guid: 76d0f07ac8e1ccd48ab810d223983ea2, type: 3}
-    - {fileID: 21300000, guid: b179472b8c5cce14eab2d8616ad99483, type: 3}
-    fps: 3
+    - {fileID: 21300000, guid: 8e51be00920b43d4e83d8515fb32807e, type: 3}
+    - {fileID: 21300000, guid: bfc69b556ec5f804698c3f2a54e8e18c, type: 3}
+    - {fileID: 21300000, guid: 6b390ef5f60aed74d81c415bbcc68ea6, type: 3}
+    - {fileID: 21300000, guid: 2144a72ad176cee49a1d64c839193344, type: 3}
+    - {fileID: 21300000, guid: b07c06416ea2f484498c76eaf49d1c43, type: 3}
+    - {fileID: 21300000, guid: ad74bfb59b87e924ca6200767b58ffa9, type: 3}
+    - {fileID: 21300000, guid: 0e37c3f86c8a4a8488b3993f1a180202, type: 3}
+    - {fileID: 21300000, guid: 7c4cad78d6a1fb4468f3e312d8a9721e, type: 3}
+    fps: 3.5
     loop: 1
   - name: Nod
     frames:
-    - {fileID: 21300000, guid: 992287a56d5c2d44094bb49ebceff942, type: 3}
-    - {fileID: 21300000, guid: b179472b8c5cce14eab2d8616ad99483, type: 3}
-    fps: 4
+    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
+    - {fileID: 21300000, guid: 7cfc9b6df6d65104aa7a5634b3c52a18, type: 3}
+    fps: 1.2
     loop: 1
   - name: React
     frames:
-    - {fileID: 21300000, guid: cb7d57136cad500438eb64df3ab20c29, type: 3}
-    - {fileID: 21300000, guid: b179472b8c5cce14eab2d8616ad99483, type: 3}
-    fps: 5
+    - {fileID: 21300000, guid: fc19099ffa0e7b242b07dadbb3e2e8f2, type: 3}
+    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
+    fps: 1.2
     loop: 1
-  defaultClip: Idle
-  bobAmplitude: 0.04
-  bobSpeed: 2
+  defaultClip: Reposo
+  bobAmplitude: 0.035
+  bobSpeed: 1.3
 --- !u!212 &596977078
 SpriteRenderer:
   serializedVersion: 2
@@ -1205,12 +1222,12 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: b179472b8c5cce14eab2d8616ad99483, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 3.3066666, y: 3.08}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -1225,7 +1242,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -5, y: -1.6, z: 0}
-  m_LocalScale: {x: 2.5, y: 2.5, z: 2.5}
+  m_LocalScale: {x: 1.3, y: 1.3, z: 1.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1471,7 +1488,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 3657433087
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -2252,7 +2269,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 788529151
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -2415,12 +2432,10 @@ MonoBehaviour:
   rightOption: 1
   bubble: {fileID: 1864533729}
   stars: {fileID: 1094693388}
-  animIdle: Idle
-  animGreet: React
-  animListen: Listening
-  animAsk: Asking
-  animEncourage: Nod
-  animCelebrate: React
+  animRest: Reposo
+  animRule1: Listening
+  animRule2: Asking
+  animRule3: 
   intro:
     id: 01_intro
     text: "\xA1Hola! \xA1Bienvenido al libro El Principito! \xBFC\xF3mo te llamas?"
@@ -3067,7 +3082,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 788529151
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3247,7 +3262,7 @@ Transform:
   m_GameObject: {fileID: 1864533728}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5, y: 1.9, z: 0}
+  m_LocalPosition: {x: -5, y: 2.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3484,7 +3499,7 @@ Transform:
   m_GameObject: {fileID: 1874133640}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.9, y: -0.35, z: 0}
+  m_LocalPosition: {x: 4.9, y: -0.55, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3591,7 +3606,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 3657433087
+    rgba: 4294967295
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3

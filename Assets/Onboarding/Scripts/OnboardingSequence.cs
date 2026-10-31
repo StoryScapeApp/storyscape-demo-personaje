@@ -13,6 +13,7 @@ using UnityEngine.Events;
 ///    y correcto (la opción crece, estrellas, "¡Muy bien!").
 /// 4. "¿Estás listo? ¡Empecemos!" → espera la respuesta → onFinished.
 ///
+/// Fuera de las reglas 1 y 2, el Principito se mantiene en reposo (alterna Idle y Nod).
 /// Los audios son pregenerados con ElevenLabs (TTS). Si una línea no tiene audio,
 /// se espera un tiempo según la longitud del texto (útil para probar sin audios).
 /// </summary>
@@ -50,12 +51,14 @@ public class OnboardingSequence : MonoBehaviour
     public StarBurst stars;
 
     [Header("Animaciones del Principito (nombres de clips)")]
-    public string animIdle = "Idle";
-    public string animGreet = "React";
-    public string animListen = "Listening";
-    public string animAsk = "Asking";
-    public string animEncourage = "Nod";
-    public string animCelebrate = "React";
+    [Tooltip("Reposo: se usa en todo momento salvo en las reglas 1 y 2 (alterna Idle y Nod)")]
+    public string animRest = "Reposo";
+    [Tooltip("Mientras se presenta la regla 1 (lee en voz alta)")]
+    public string animRule1 = "Listening";
+    [Tooltip("Mientras se presenta la regla 2 (pídeme ayuda)")]
+    public string animRule2 = "Asking";
+    [Tooltip("Mientras se presenta la regla 3 (vacío = reposo)")]
+    public string animRule3 = "";
 
     [Header("Guion (audios en Assets/Onboarding/Audio con el mismo id)")]
     public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas?" };
@@ -82,6 +85,7 @@ public class OnboardingSequence : MonoBehaviour
     void Start()
     {
         HideAll(true);
+        Anim(animRest);
         if (startOnPlay) Invoke(nameof(IniciarOnboarding), startDelay);
     }
 
@@ -98,23 +102,22 @@ public class OnboardingSequence : MonoBehaviour
         IsRunning = true;
         onStarted?.Invoke();
         HideAll(true);
+        Anim(animRest);
 
         // 1. Saludo y nombre
-        Anim(animGreet);
         yield return Say(intro);
-        Anim(animListen);
         if (listener) yield return listener.WaitForResponse();
-        Anim(animEncourage);
         yield return Say(nameReply);
 
         // 2. Reglas
         Show(rulesTitle);
-        Show(rules, 0); Anim(animListen);
+        Show(rules, 0); Anim(animRule1);
         yield return Say(rule1);
-        Show(rules, 1); Anim(animAsk);
+        Show(rules, 1); Anim(animRule2);
         yield return Say(rule2);
-        Show(rules, 2); Anim(animIdle);
+        Show(rules, 2); Anim(string.IsNullOrEmpty(animRule3) ? animRest : animRule3);
         yield return Say(rule3);
+        Anim(animRest);
 
         // 3. Ejemplo del juego de preguntas
         Hide(rulesTitle);
@@ -123,7 +126,6 @@ public class OnboardingSequence : MonoBehaviour
 
         Show(question);
         foreach (var o in options) Show(o);
-        Anim(animAsk);
         yield return Say(quizIntro);
 
         //    Intento incorrecto: la opción elegida brilla y luego se apaga, sin rojo ni error.
@@ -132,12 +134,10 @@ public class OnboardingSequence : MonoBehaviour
         Glow(wrongOption, false);
         Dim(wrongOption);
         SetBubble("¡Casi! Otra vez");
-        Anim(animEncourage);
         yield return Say(quizWrong);
         Hide(bubble);
 
         //    Segundo intento correcto: brilla, crece, estrellas y celebración.
-        Anim(animAsk);
         Glow(rightOption, true);
         yield return new WaitForSeconds(choiceThinkTime);
         Glow(rightOption, false);
@@ -145,7 +145,6 @@ public class OnboardingSequence : MonoBehaviour
         for (int i = 0; i < options.Length; i++) if (i != rightOption) Dim(i);
         if (stars && Valid(rightOption)) stars.Burst(options[rightOption].transform.position);
         SetBubble("¡Muy bien!");
-        Anim(animCelebrate);
         yield return Say(quizRight);
 
         // 4. Cierre
@@ -153,13 +152,9 @@ public class OnboardingSequence : MonoBehaviour
         Hide(question);
         foreach (var o in options) Hide(o);
         yield return new WaitForSeconds(0.6f);
-        Anim(animEncourage);
         yield return Say(closing);
-        Anim(animListen);
         if (listener) yield return listener.WaitForResponse();
-        Anim(animCelebrate);
         if (!string.IsNullOrEmpty(farewell.text) || farewell.clip) yield return Say(farewell);
-        Anim(animIdle);
 
         IsRunning = false;
         onFinished?.Invoke();
