@@ -180,7 +180,8 @@ public class OnboardingSequence : MonoBehaviour
             voice.clip = line.clip;
             voice.Play();
             yield return null;
-            while (voice.isPlaying) yield return null;
+            float limit = line.clip.length + 1.5f, t = 0f;   // seguro: nunca esperar de más
+            while (voice.isPlaying && t < limit) { t += Time.unscaledDeltaTime; yield return null; }
         }
         else
         {

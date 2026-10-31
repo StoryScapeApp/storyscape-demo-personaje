@@ -115,16 +115,30 @@ public class VoiceActivityWaiter : MonoBehaviour
             return false;
         }
         device = string.IsNullOrEmpty(microphoneDevice) ? null : microphoneDevice;
-        Microphone.GetDeviceCaps(device, out int min, out int max);
-        int rate = (min == 0 && max == 0) ? 16000 : Mathf.Clamp(16000, min, max);
-        clip = Microphone.Start(device, true, 1, rate);
+        if (device != null && System.Array.IndexOf(Microphone.devices, device) < 0)
+        {
+            // Otra computadora: el micrófono configurado no existe → se usa el predeterminado de Windows
+            Debug.LogWarning($"[Onboarding] El micrófono \"{device}\" no existe en esta computadora; se usa el predeterminado. Disponibles: {string.Join(" | ", Microphone.devices)}");
+            device = null;
+        }
+        try
+        {
+            Microphone.GetDeviceCaps(device, out int min, out int max);
+            int rate = (min == 0 && max == 0) ? 16000 : Mathf.Clamp(16000, min, max);
+            clip = Microphone.Start(device, true, 1, rate);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[Onboarding] No se pudo abrir el micrófono: " + e.Message + ". Se continúa sin escuchar.");
+            clip = null;
+        }
         readPos = 0;
         return clip != null;
     }
 
     void StopMic()
     {
-        if (clip != null) Microphone.End(device);
+        try { if (clip != null) Microphone.End(device); } catch { }
         clip = null;
         Level = 0f;
     }
