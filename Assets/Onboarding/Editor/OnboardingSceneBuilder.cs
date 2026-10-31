@@ -70,9 +70,6 @@ public static class OnboardingSceneBuilder
         AddPlaceholderClips(anim);
         prinSr.sprite = anim.clips[0].frames[0];
 
-        var bubble = CreateCard("GloboDialogo", null, new Vector3(LeftX, 1.9f, 0f), new Vector2(2.8f, 0.75f),
-            new Color(0.55f, 0.92f, 0.75f), "¡Muy bien!", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
-
         // ── Voz y escucha
         var voiceGo = new GameObject("VozPrincipito");
         var voice = voiceGo.AddComponent<AudioSource>();
@@ -101,15 +98,15 @@ public static class OnboardingSceneBuilder
 
         // ── Ejemplo del juego de preguntas (derecha)
         var quiz = new GameObject("EjemploPreguntas").transform;
-        var question = CreateCard("Pregunta", quiz, new Vector3(QuizX, 2.5f, 0f), new Vector2(3.8f, 1.05f),
-            new Color(0.92f, 0.88f, 0.8f), "¿Cómo vas a leer el cuento?", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+        var question = CreateText("Pregunta", quiz, new Vector3(QuizX, 2.5f, 0f), new Vector2(4.2f, 1.1f),
+            "<b>¿Cómo vas a leer el cuento?</b>", 4.2f, TextAlignmentOptions.Center);
         var options = new ProjectedCard[3];
-        options[0] = CreateCard("Opcion_Azul", quiz, new Vector3(QuizX, 1.15f, 0f), new Vector2(3.8f, 0.85f),
-            new Color(0.35f, 0.62f, 1f), "En silencio", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
-        options[1] = CreateCard("Opcion_Verde", quiz, new Vector3(QuizX, 0.0f, 0f), new Vector2(3.8f, 0.85f),
-            new Color(0.35f, 0.88f, 0.45f), "En voz alta", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
-        options[2] = CreateCard("Opcion_Naranja", quiz, new Vector3(QuizX, -1.15f, 0f), new Vector2(3.8f, 0.85f),
-            new Color(1f, 0.65f, 0.3f), "Cantando", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+        options[0] = CreateCard("Opcion_Planeta", quiz, new Vector3(QuizX, 1.15f, 0f), new Vector2(3.8f, 0.85f),
+            Hex("#4FB3E8"), "En silencio", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+        options[1] = CreateCard("Opcion_Rosa", quiz, new Vector3(QuizX, 0.0f, 0f), new Vector2(3.8f, 0.85f),
+            Hex("#F2727F"), "En voz alta", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+        options[2] = CreateCard("Opcion_Estrella", quiz, new Vector3(QuizX, -1.15f, 0f), new Vector2(3.8f, 0.85f),
+            Hex("#F7C948"), "Cantando", 4f, fillSprite, borderSprite, TextAlignmentOptions.Center);
 
         var starsGo = new GameObject("Estrellas");
         var stars = starsGo.AddComponent<StarBurst>();
@@ -126,7 +123,6 @@ public static class OnboardingSceneBuilder
         seq.rules = rules;
         seq.question = question;
         seq.options = options;
-        seq.bubble = bubble;
         seq.stars = stars;
         AssignAudioClips(seq);
 
@@ -190,6 +186,9 @@ public static class OnboardingSceneBuilder
         anim.clips.Add(new SpriteAnimator2D.Clip { name = "React", frames = new[] { S("personaje_habla_2"), S("personaje_habla_0") }, fps = 5, loop = true });
         anim.defaultClip = "Idle";
     }
+
+    // Paleta StoryScape: planeta #4FB3E8, la rosa #F2727F, estrella #F7C948
+    static Color Hex(string h) { ColorUtility.TryParseHtmlString(h, out var c); return c; }
 
     // ───────────── Creación de elementos ─────────────
     static ProjectedCard CreateCard(string name, Transform parent, Vector3 pos, Vector2 size, Color color, string text,

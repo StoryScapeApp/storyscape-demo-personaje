@@ -4,38 +4,53 @@ using UnityEngine;
 /// <summary>
 /// Espera la respuesta hablada del niño sin enviarla a ningún servicio (gratis y local):
 /// detecta cuando empieza a hablar y continúa cuando se queda en silencio.
-/// Si no responde en "No Response Timeout" segundos, continúa igual.
+/// Se calibra solo: mide el ruido del ambiente al empezar a escuchar y fija el umbral de voz
+/// por encima de ese ruido. Si el niño no responde en "No Response Timeout" segundos, continúa igual.
 /// </summary>
 public class VoiceActivityWaiter : MonoBehaviour
 {
     [Header("Micrófono")]
-    [Tooltip("Nombre exacto del micrófono. Vacío = predeterminado de Windows")]
+    [Tooltip("Nombre exacto del micrófono (se listan en la consola al dar Play). Vacío = predeterminado de Windows")]
     public string microphoneDevice = "";
     [Range(1f, 30f)] public float micGain = 8f;
 
     [Header("Detección de voz")]
-    [Tooltip("Volumen (RMS, ya amplificado) a partir del cual se considera que el niño habla")]
-    public float speechThreshold = 0.04f;
+    [Tooltip("Umbral mínimo de voz (RMS, ya amplificado). El umbral real se ajusta según el ruido del ambiente")]
+    public float minSpeechThreshold = 0.012f;
+    [Tooltip("La voz debe superar el ruido del ambiente por este factor")]
+    public float noiseMultiplier = 2.5f;
+    [Tooltip("Segundos que se mide el ruido del ambiente antes de escuchar")]
+    public float calibrationTime = 0.4f;
     [Tooltip("Segundos mínimos de voz para contar como respuesta (ignora ruidos cortos)")]
-    public float minSpeechTime = 0.3f;
+    public float minSpeechTime = 0.25f;
     [Tooltip("Segundos de silencio después de hablar para dar la respuesta por terminada")]
-    public float endSilence = 1.0f;
+    public float endSilence = 0.5f;
     [Tooltip("Si el niño no habla en este tiempo, se continúa")]
     public float noResponseTimeout = 7f;
     [Tooltip("Tiempo máximo de espera aunque siga hablando")]
     public float maxWait = 12f;
 
     [Header("Depuración")]
+    [Tooltip("Muestra un medidor en pantalla mientras escucha")]
     public bool showLevel = false;
 
     public bool IsListening { get; private set; }
     public bool LastResponded { get; private set; }
     public float Level { get; private set; }
+    public float Threshold { get; private set; }
 
     AudioClip clip;
     string device;
     int readPos;
-    float[] buffer = new float[0];
+
+    void Start()
+    {
+        string dev = string.IsNullOrEmpty(microphoneDevice) ? "predeterminado de Windows" : microphoneDevice;
+        if (!string.IsNullOrEmpty(microphoneDevice) && System.Array.IndexOf(Microphone.devices, microphoneDevice) < 0)
+            Debug.LogWarning($"[Onboarding] El micrófono \"{microphoneDevice}\" no existe. Disponibles: {string.Join(" | ", Microphone.devices)}");
+        else
+            Debug.Log($"[Onboarding] Micrófono: {dev} (ganancia x{micGain:0.#})");
+    }
 
     public IEnumerator WaitForResponse()
     {
@@ -47,16 +62,28 @@ public class VoiceActivityWaiter : MonoBehaviour
         }
 
         IsListening = true;
-        float elapsed = 0f, speech = 0f, silence = 0f;
-        bool spoke = false;
 
+        // Calibración: ruido del ambiente
+        float noiseSum = 0f; int noiseN = 0;
+        for (float t = 0f; t < calibrationTime; t += Time.deltaTime)
+        {
+            Level = ReadLevel();
+            noiseSum += Level; noiseN++;
+            yield return null;
+        }
+        float noise = noiseN > 0 ? noiseSum / noiseN : 0f;
+        Threshold = Mathf.Max(minSpeechThreshold, noise * noiseMultiplier);
+
+        float elapsed = 0f, speech = 0f, silence = 0f, peak = 0f;
+        bool spoke = false;
         while (true)
         {
             float dt = Time.deltaTime;
             elapsed += dt;
             Level = ReadLevel();
+            peak = Mathf.Max(peak, Level);
 
-            if (Level >= speechThreshold)
+            if (Level >= Threshold)
             {
                 speech += dt;
                 silence = 0f;
@@ -76,7 +103,8 @@ public class VoiceActivityWaiter : MonoBehaviour
         IsListening = false;
         LastResponded = spoke;
         StopMic();
-        Debug.Log(spoke ? "[Onboarding] El niño respondió." : "[Onboarding] Sin respuesta; se continúa.");
+        Debug.Log((spoke ? "[Onboarding] El niño respondió." : "[Onboarding] Sin respuesta; se continúa.") +
+                  $" (ruido {noise:0.000}, umbral {Threshold:0.000}, pico {peak:0.000})");
     }
 
     bool StartMic()
@@ -109,7 +137,6 @@ public class VoiceActivityWaiter : MonoBehaviour
 
         int total = clip.samples;
         int count = pos > readPos ? pos - readPos : total - readPos + pos;
-        if (buffer.Length < total) buffer = new float[total];
 
         float sum = 0f;
         if (pos > readPos)
@@ -138,11 +165,14 @@ public class VoiceActivityWaiter : MonoBehaviour
     void OnGUI()
     {
         if (!showLevel || !IsListening) return;
-        GUI.Label(new Rect(16, 10, 300, 20), "Escuchando respuesta…");
+        GUI.Label(new Rect(16, 10, 400, 20), $"Escuchando respuesta…  (umbral {Threshold:0.000})");
         GUI.color = new Color(1f, 1f, 1f, 0.25f);
         GUI.DrawTexture(new Rect(16, 32, 160, 8), Texture2D.whiteTexture);
-        GUI.color = Level >= speechThreshold ? new Color(0.3f, 1f, 0.4f) : new Color(0.6f, 0.6f, 0.6f);
+        GUI.color = Level >= Threshold ? new Color(0.3f, 1f, 0.4f) : new Color(0.6f, 0.6f, 0.6f);
         GUI.DrawTexture(new Rect(16, 32, 160 * Mathf.Clamp01(Level * 8f), 8), Texture2D.whiteTexture);
+        // marca del umbral
+        GUI.color = new Color(1f, 0.8f, 0.2f);
+        GUI.DrawTexture(new Rect(16 + 160 * Mathf.Clamp01(Threshold * 8f), 30, 2, 12), Texture2D.whiteTexture);
         GUI.color = Color.white;
     }
 

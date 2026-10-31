@@ -44,7 +44,7 @@ public class OnboardingSequence : MonoBehaviour
 
     [Header("Ejemplo del juego de preguntas")]
     public ProjectedCard question;
-    [Tooltip("0 = Azul (en silencio), 1 = Verde (en voz alta), 2 = Naranja (cantando)")]
+    [Tooltip("0 = Planeta #4FB3E8 (en silencio), 1 = Rosa #F2727F (en voz alta), 2 = Estrella #F7C948 (cantando)")]
     public ProjectedCard[] options = new ProjectedCard[3];
     public int wrongOption = 0;
     public int rightOption = 1;
