@@ -122,6 +122,22 @@ public class ElevenLabsAgentClient : MonoBehaviour
     }
 
     // ───────────── API pública ─────────────
+    /// Inicia la conversación con cualquier conjunto de variables dinámicas del agente
+    /// (p. ej. pagina_actual y texto_leido para el modo "Principito, tengo una duda").
+    public void StartConversation(Dictionary<string, string> variables)
+    {
+        if (running) return;
+        string summary = variables != null && variables.TryGetValue("pagina_actual", out var pg) ? "página " + pg : "";
+        if (simulate) { StartCoroutine(Simulate(summary)); return; }
+        if (!TryLoadAgentId(out string agentId))
+        {
+            Debug.LogWarning("[ElevenLabs] No se encontró un agentId en StreamingAssets/" + configFileName + ". Se usa el modo simulado.");
+            StartCoroutine(Simulate(summary));
+            return;
+        }
+        _ = RunAsync(agentId, variables ?? new Dictionary<string, string>());
+    }
+
     public void StartConversation(string termino, string significado)
     {
         if (running) return;
@@ -138,7 +154,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
             StartCoroutine(Simulate(termino));
             return;
         }
-        _ = RunAsync(agentId, termino, significado);
+        _ = RunAsync(agentId, new Dictionary<string, string> { { "termino", termino }, { "significado", significado } });
     }
 
     public void EndConversation()
@@ -147,7 +163,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
     }
 
     // ───────────── Conexión ─────────────
-    async Task RunAsync(string agentId, string termino, string significado)
+    async Task RunAsync(string agentId, Dictionary<string, string> variables)
     {
         running = true;
         subtitleAgent = subtitleUser = "";
@@ -158,8 +174,13 @@ public class ElevenLabsAgentClient : MonoBehaviour
         {
             await ws.ConnectAsync(new Uri(Endpoint + agentId), cts.Token);
 
-            string init = "{\"type\":\"conversation_initiation_client_data\",\"dynamic_variables\":{" +
-                          "\"termino\":" + Json(termino) + ",\"significado\":" + Json(significado) + "}}";
+            var sbVars = new StringBuilder();
+            foreach (var kv in variables)
+            {
+                if (sbVars.Length > 0) sbVars.Append(',');
+                sbVars.Append(Json(kv.Key)).Append(':').Append(Json(kv.Value));
+            }
+            string init = "{\"type\":\"conversation_initiation_client_data\",\"dynamic_variables\":{" + sbVars + "}}";
             await SendText(init);
 
             StartMic();
@@ -501,7 +522,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
     static string Json(string s)
     {
         if (s == null) return "\"\"";
-        return "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "") + "\"";
+        return "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "").Replace("\t", " ") + "\"";
     }
 
     void OnGUI()
