@@ -1,3 +1,4 @@
 {
-  "agentId": "PEGA_AQUI_TU_AGENT_ID"
+  "agentId": "PEGA_AQUI_EL_AGENT_ID_DE_DUDAS",
+  "agentIdBienvenida": "PEGA_AQUI_EL_AGENT_ID_DE_BIENVENIDA"
 }

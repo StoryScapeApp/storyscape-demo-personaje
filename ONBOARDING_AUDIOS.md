@@ -1,29 +1,32 @@
 # Audios del onboarding – ElevenLabs (Text to Speech)
 
-El onboarding usa **audios pregenerados** (no gasta minutos del agente). Genera cada línea en **ElevenLabs → Text to Speech** con **la misma voz del agente**, descárgala y guárdala en:
+Genera cada línea en **ElevenCreative → Text to Speech** con **la misma voz del agente**, descárgala y guárdala en:
 
 ```
 Assets/Onboarding/Audio/<id>.mp3
 ```
 
-El nombre del archivo debe ser **exactamente el id** (por ejemplo `01_intro.mp3`). Luego, con la escena `Onboarding` abierta, ejecuta **StoryScape → Onboarding → Asignar audios**.
+El nombre del archivo debe ser **exactamente el id**. Luego, con la escena `Onboarding` abierta, ejecuta **StoryScape → Onboarding → Asignar audios**.
 
-> Si falta algún audio, el onboarding igual funciona: espera un tiempo según la longitud del texto (útil para probar).
+> Si falta algún audio, el onboarding igual funciona: espera un tiempo según la longitud del texto.
 
-| id | Momento | Texto a generar |
-|---|---|---|
-| `01_intro` | Saludo (luego espera la respuesta del niño) | ¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas? |
-| `02_nombre` | Después de que el niño dice su nombre | ¡Qué lindo nombre! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles. |
-| `03_regla1` | Aparece la regla 1 · Principito **escucha** | Uno: lee en voz alta. Así yo puedo escucharte y acompañarte en la lectura. |
-| `04_regla2` | Aparece la regla 2 · Principito **pregunta** | Dos: si tienes una duda, pídeme ayuda. Solo tienes que decir: Principito, tengo una duda, y yo te ayudaré. |
-| `05_regla3` | Aparece la regla 3 | Tres: al terminar cada capítulo, jugaremos a las preguntas. Te haré dos preguntas sobre lo que leíste. ¡No te preocupes, no es un examen, es un juego! |
-| `06_juego_intro` | Aparecen la pregunta y las 3 opciones | Mira, así se verá el juego. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando? |
-| `07_juego_casi` | La opción azul se apaga · "¡Casi! Otra vez" | Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez! |
-| `08_juego_bien` | La opción verde crece, estrellas · "¡Muy bien!" · luego la pregunta desaparece y se espera la respuesta del niño | Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos! |
-| `09_final` | Despedida (después de la respuesta del niño) | ¡Genial! Pasa la página y empieza a leer en voz alta. |
+| id | Estado | Momento | Texto |
+|---|---|---|---|
+| `01_intro` | ya existe | 1. Bienvenida (luego espera el nombre) | ¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas? |
+| `02_nombre` | ya existe | 1. Después del nombre | ¡Qué lindo nombre! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles. |
+| `03_libro` | **nuevo** | 2. Tarjeta 1 · bordes del marcador | Primero: no tapes el cuadro negro con tus manos. Así sé en qué página estás. |
+| `04_voz_alta` | **nuevo** | 3. Tarjeta 2 · meteoro y planeta | Segundo: lee en voz alta. Así podrás ver animaciones durante la historia. ¡Mira, ahí va un meteoro! |
+| `05_duda` | **nuevo** | 4. Tarjeta 3 · Principito escucha | Tercero: si tienes una duda, llámame diciendo: Principito, tengo una duda. |
+| `05b_duda_ejemplo` | **nuevo** | 4. Se resalta "Dedicatoria" y aparece su significado | Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa: son palabras al inicio de un libro para regalárselo a alguien especial. |
+| `05c_quiz` | **nuevo** | 5. Aparece el panel del quiz | Y al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. |
+| `06_juego_intro` | ya existe | 5. Pregunta y opciones | Mira, así se verá el juego. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando? |
+| `07_juego_casi` | ya existe | 5. Opción A se apaga · Principito desaprueba | Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez! |
+| `08_juego_bien` | ya existe | 5. Opción B crece, estrellas · Principito celebra (luego espera la respuesta) | Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos! |
+| `09_final` | ya existe | 6. Cierre · luego todo se desvanece | ¡Genial! Pasa la página y empieza a leer en voz alta. |
+
+Los audios anteriores `03_regla1`, `04_regla2` y `05_regla3` ya no se usan y se pueden borrar.
 
 ## Consejos
 
-- Usa la **misma voz y configuración** en todas las líneas para que suene como un solo personaje.
-- Si quieres cambiar un texto, cámbialo también en el componente `OnboardingSequence` (campo *Text* de esa línea) para que la documentación y los tiempos de prueba coincidan.
-- Para no usar `09_final`, deja vacío su texto en `OnboardingSequence` y quita el audio.
+- Usa la **misma voz y configuración** en todas las líneas.
+- Si cambias un texto, cámbialo también en el componente `OnboardingSequence` (campo *Text* de esa línea).

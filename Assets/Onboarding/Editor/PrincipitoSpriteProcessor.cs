@@ -305,6 +305,90 @@ public static class PrincipitoSpriteProcessor
         return big;
     }
 
+    // ───────────── Cuadros sueltos (PNG transparentes) ─────────────
+    /// Importa los PNG de raw/<carpeta> sin redimensionarlos. El tamaño en escena se fija con la escala de
+    /// importación (Pixels Per Unit): la altura de la imagen equivale a la altura del Principito en Idle,
+    /// así que con la escala del objeto Principito cada píxel del PNG se proyecta como un píxel (1:1).
+    /// El pivote se coloca en los pies de cada cuadro para que no salte al animar.
+    public static Sprite[] ImportFrameFolder(string folder)
+    {
+        string dir = null;
+        foreach (var d in SourceDirs) if (Directory.Exists(d + "/" + folder)) { dir = d + "/" + folder; break; }
+        if (dir == null) return null;
+        var files = new List<string>(Directory.GetFiles(dir, "*.png"));
+        files.Sort();
+        if (files.Count == 0) return null;
+
+        float idleWorld = IdleWorldHeight();
+        var result = new List<Sprite>();
+        foreach (var f0 in files)
+        {
+            string f = f0.Replace('\\', '/');
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            tex.LoadImage(File.ReadAllBytes(f));
+            int W = tex.width, H = tex.height;
+            var px = tex.GetPixels32();
+            Object.DestroyImmediate(tex);
+
+            int minY = H, maxY = 0;
+            for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (px[y * W + x].a > 20) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
+            if (minY > maxY) { minY = 0; maxY = H - 1; }
+            int band = Mathf.Max(2, (maxY - minY) / 14);
+            float sum = 0; int cnt = 0;
+            for (int y = minY; y <= minY + band && y < H; y++) for (int x = 0; x < W; x++) if (px[y * W + x].a > 20) { sum += x + 0.5f; cnt++; }
+            float ax = cnt > 0 ? sum / cnt : W / 2f;
+
+            var ti = (TextureImporter)AssetImporter.GetAtPath(f);
+            ti.textureType = TextureImporterType.Sprite;
+            ti.spriteImportMode = SpriteImportMode.Single;
+            ti.spritePixelsPerUnit = H / idleWorld;
+            ti.filterMode = FilterMode.Point;
+            ti.mipmapEnabled = false;
+            ti.alphaIsTransparency = true;
+            ti.textureCompression = TextureImporterCompression.Uncompressed;
+            ti.npotScale = TextureImporterNPOTScale.None;
+            var st = new TextureImporterSettings();
+            ti.ReadTextureSettings(st);
+            st.spriteAlignment = (int)SpriteAlignment.Custom;
+            st.spritePivot = new Vector2(Mathf.Round(ax) / W, (float)minY / H);
+            st.spriteMeshType = SpriteMeshType.FullRect;
+            ti.SetTextureSettings(st);
+            ti.SaveAndReimport();
+            result.Add(AssetDatabase.LoadAssetAtPath<Sprite>(f));
+        }
+        Debug.Log($"[Principito] {folder}: {result.Count} cuadros importados sin redimensionar (PPU {result[0].pixelsPerUnit:0.0}).");
+        return result.ToArray();
+    }
+
+    /// Altura del Principito en Idle, en unidades de escena (sin la escala del objeto).
+    static float IdleWorldHeight()
+    {
+        var idle = AssetDatabase.LoadAssetAtPath<Sprite>(OutDir + "/Idle_0.png");
+        if (idle == null) return 376f / PixelsPerUnit;
+        var tex = new Texture2D(2, 2);
+        tex.LoadImage(File.ReadAllBytes(OutDir + "/Idle_0.png"));
+        var px = tex.GetPixels32(); int W = tex.width, H = tex.height, minY = H, maxY = 0;
+        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (px[y * W + x].a > 20) { if (y < minY) minY = y; if (y > maxY) maxY = y; }
+        Object.DestroyImmediate(tex);
+        return (maxY - minY + 1) / idle.pixelsPerUnit;
+    }
+
+    [MenuItem("StoryScape/Onboarding/Importar sprites de duda")]
+    public static void ImportDudaMenu()
+    {
+        var anim = Object.FindFirstObjectByType<SpriteAnimator2D>();
+        var frames = ImportFrameFolder("duda");
+        if (anim == null || frames == null) { Debug.LogWarning("[Principito] Falta la escena Onboarding o la carpeta raw/duda."); return; }
+        anim.clips.RemoveAll(c => c.name == "Duda");
+        anim.clips.Add(new SpriteAnimator2D.Clip { name = "Duda", frames = frames, fps = 4f, loop = true });
+        var seq = Object.FindFirstObjectByType<OnboardingSequence>();
+        if (seq != null) { seq.animDoubt = "Duda"; EditorUtility.SetDirty(seq); }
+        EditorUtility.SetDirty(anim);
+        EditorSceneManager.MarkSceneDirty(anim.gameObject.scene);
+        EditorSceneManager.SaveScene(anim.gameObject.scene);
+        Debug.Log("[Principito] Animación \"Duda\" asignada al momento ¿Una duda?");
+    }
+
     // ───────────── Asignación al Principito ─────────────
     static void AssignToPrincipito(Dictionary<string, Sprite[]> clips)
     {
@@ -333,6 +417,9 @@ public static class PrincipitoSpriteProcessor
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "Nod", frames = new[] { idle[0], nod[0] }, fps = 1.2f, loop = true });
         if (react != null && idle != null)
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "React", frames = new[] { react[0], idle[0] }, fps = 1.2f, loop = true });
+        var duda = ImportFrameFolder("duda");
+        if (duda != null && duda.Length > 0)
+            anim.clips.Add(new SpriteAnimator2D.Clip { name = "Duda", frames = duda, fps = 4f, loop = true });
         anim.defaultClip = (idle != null && nod != null) ? "Reposo" : "Idle";
 
         var sr = anim.GetComponent<SpriteRenderer>();

@@ -4,17 +4,16 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// Onboarding de StoryScape (se activa al escanear el ArUco de la primera página).
-/// Principito a la izquierda, contenido a la derecha, libro físico al centro.
+/// Onboarding de StoryScape (se activa al escanear el ArUco de la primera página: marker_0).
+/// Principito a la izquierda del libro, tarjetas arriba, ejemplos a la derecha; la zona de manos no se proyecta.
 ///
-/// 1. Saludo y "¿Cómo te llamas?" → espera la respuesta del niño.
-/// 2. Tres reglas, que aparecen escritas una por una (regla 1: Principito escucha; regla 2: pregunta).
-/// 3. Ejemplo del juego de preguntas: intento incorrecto (la opción se apaga, "¡Casi! Otra vez")
-///    y correcto (la opción crece, estrellas, "¡Muy bien!").
-/// 4. "¿Estás listo? ¡Empecemos!" → espera la respuesta → onFinished.
+/// 1. Bienvenida: el Principito aparece, saluda y pregunta el nombre (espera la respuesta).
+/// 2. "En el libro": se iluminan suavemente los bordes del área del marcador.
+/// 3. "Lee en voz alta": un meteoro cruza junto al libro hacia un planeta.
+/// 4. "¿Una duda?": el Principito dice la frase gatillo; se resalta "Dedicatoria" y aparece su significado.
+/// 5. Quiz (solo mirar): respuesta incorrecta y luego correcta.
+/// 6. Cierre: el Principito invita a leer en voz alta y todo se desvanece (mesa limpia).
 ///
-/// Fuera de las reglas 1 y 2 y de las reacciones del ejemplo (correcto / incorrecto),
-/// el Principito se mantiene en reposo (alterna Idle y Nod).
 /// Los audios son pregenerados con ElevenLabs (TTS). Si una línea no tiene audio,
 /// se espera un tiempo según la longitud del texto (útil para probar sin audios).
 /// </summary>
@@ -30,57 +29,73 @@ public class OnboardingSequence : MonoBehaviour
 
     [Header("Inicio")]
     [Tooltip("Inicia al dar Play (para probar sin el ArUco)")]
-    public bool startOnPlay = true;
+    public bool startOnPlay = false;
     public float startDelay = 1f;
 
     [Header("Personaje y voz")]
     public SpriteAnimator2D principito;
     public AudioSource voice;
     public VoiceActivityWaiter listener;
+    public float principitoFade = 0.8f;
 
-    [Header("Reglas (lado derecho)")]
-    public ProjectedCard rulesTitle;
-    public ProjectedCard[] rules = new ProjectedCard[3];
+    [Header("1. Bienvenida en vivo (agente de ElevenLabs)")]
+    [Tooltip("El agente saluda, pregunta el nombre y responde con él. Si no está disponible, se usan 01_intro y 02_nombre.")]
+    public bool liveWelcome = true;
+    public ElevenLabsAgentClient welcomeAgent;
+    [Tooltip("Tiempo máximo de la bienvenida en vivo; luego se corta y sigue el onboarding")]
+    public float liveWelcomeMaxSeconds = 45f;
 
-    [Header("Ejemplo del juego de preguntas")]
+    [Header("2. En el libro")]
+    public ProjectedCard cardBook;
+    public ProjectedCard markerFrame;
+
+    [Header("3. Lee en voz alta")]
+    public ProjectedCard cardRead;
+    public MeteorFlight meteor;
+    public ProjectedCard planet;
+    [Tooltip("Segundo del audio 04_voz_alta en que empieza el meteoro (\"¡Mira, ahí va un meteoro!\")")]
+    public float meteorStartTime = 5.75f;
+
+    [Header("4. ¿Una duda?")]
+    public ProjectedCard cardDoubt;
+    public ProjectedCard wordHighlight;
+    public ProjectedCard definition;
+
+    [Header("5. Quiz (solo mirar)")]
+    public ProjectedCard quizPanel;
+    public ProjectedCard quizTitle;
     public ProjectedCard question;
-    [Tooltip("0 = Planeta #4FB3E8 (en silencio), 1 = Rosa #F2727F (en voz alta), 2 = Estrella #F7C948 (cantando)")]
+    [Tooltip("0 = Planeta #4FB3E8, 1 = Rosa #F2727F, 2 = Estrella #F7C948")]
     public ProjectedCard[] options = new ProjectedCard[3];
     public int wrongOption = 0;
     public int rightOption = 1;
-    public ProjectedCard bubble;
     public StarBurst stars;
 
     [Header("Animaciones del Principito (nombres de clips)")]
-    [Tooltip("Reposo: se usa en todo momento salvo en las reglas 1 y 2 (alterna Idle y Nod)")]
     public string animRest = "Reposo";
-    [Tooltip("Mientras se presenta la regla 1 (lee en voz alta)")]
-    public string animRule1 = "Listening";
-    [Tooltip("Mientras se presenta la regla 2 (pídeme ayuda)")]
-    public string animRule2 = "Asking";
-    [Tooltip("Mientras se presenta la regla 3 (vacío = reposo)")]
-    public string animRule3 = "";
-    [Tooltip("Reacción a la respuesta incorrecta del ejemplo (desaprobación)")]
+    public string animGreet = "React";
+    public string animDoubt = "Duda";
+    public string animQuiz = "Asking";
     public string animWrong = "Incorrecto";
-    [Tooltip("Reacción a la respuesta correcta del ejemplo (alegría)")]
     public string animRight = "Correcto";
 
     [Header("Guion (audios en Assets/Onboarding/Audio con el mismo id)")]
     public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas?" };
     public Line nameReply = new Line { id = "02_nombre", text = "¡Qué lindo nombre! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles." };
-    public Line rule1 = new Line { id = "03_regla1", text = "Uno: lee en voz alta. Así yo puedo escucharte y acompañarte en la lectura." };
-    public Line rule2 = new Line { id = "04_regla2", text = "Dos: si tienes una duda, pídeme ayuda. Solo tienes que decir: Principito, tengo una duda, y yo te ayudaré." };
-    public Line rule3 = new Line { id = "05_regla3", text = "Tres: al terminar cada capítulo, jugaremos a las preguntas. Te haré dos preguntas sobre lo que leíste. ¡No te preocupes, no es un examen, es un juego!" };
+    public Line bookLine = new Line { id = "03_libro", text = "Primero: deja el libro aquí, frente a mí, y no tapes el cuadro negro con tus manos. Así sé en qué página estás." };
+    public Line readLine = new Line { id = "04_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia. ¡Mira, ahí va un meteoro!" };
+    public Line doubtLine = new Line { id = "05_duda", text = "Tercero: si tienes una duda, llámame diciendo: Principito, tengo una duda." };
+    public Line doubtExample = new Line { id = "05b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa: son palabras al inicio de un libro para regalárselo a alguien especial." };
+    public Line quizLine = new Line { id = "05c_quiz", text = "Y al terminar cada capítulo, jugaremos a las preguntas. ¡No te preocupes, no es un examen, es un juego!" };
     public Line quizIntro = new Line { id = "06_juego_intro", text = "Mira, así se verá el juego. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando?" };
     public Line quizWrong = new Line { id = "07_juego_casi", text = "Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez!" };
     public Line quizRight = new Line { id = "08_juego_bien", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos!" };
-    [Tooltip("Opcional: línea de cierre aparte (vacía = no se usa; el cierre está incluido en 08_juego_bien)")]
-    public Line closing = new Line { id = "", text = "" };
     public Line farewell = new Line { id = "09_final", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
 
     [Header("Tiempos")]
     public float pauseBetweenLines = 0.35f;
     public float choiceThinkTime = 1.4f;
+    public float cleanupFade = 1.2f;
 
     [Header("Eventos")]
     public UnityEvent onStarted;
@@ -88,14 +103,17 @@ public class OnboardingSequence : MonoBehaviour
 
     public bool IsRunning { get; private set; }
 
+    SpriteRenderer principitoSr;
+
     void Start()
     {
+        if (principito) principitoSr = principito.GetComponent<SpriteRenderer>();
         HideAll(true);
-        Anim(animRest);
+        SetPrincipitoAlpha(0f);
         if (startOnPlay) Invoke(nameof(IniciarOnboarding), startDelay);
     }
 
-    /// Punto de entrada: lo llamará la detección del ArUco de la primera página.
+    /// Punto de entrada: lo llama la detección del ArUco de la primera página (marker_0).
     [ContextMenu("Iniciar onboarding")]
     public void IniciarOnboarding()
     {
@@ -108,42 +126,70 @@ public class OnboardingSequence : MonoBehaviour
         IsRunning = true;
         onStarted?.Invoke();
         HideAll(true);
+
+        // 1. Bienvenida: en vivo con el agente (dice el nombre del niño); si no se puede, audios pregenerados
+        Anim(animGreet);
+        yield return FadePrincipito(1f);
+        bool liveOk = false;
+        if (liveWelcome && welcomeAgent != null && !welcomeAgent.simulate && welcomeAgent.HasAgentId())
+            yield return LiveWelcome(ok => liveOk = ok);
+        if (!liveOk)
+        {
+            Anim(animGreet);
+            yield return Say(intro);
+            Anim(animRest);
+            if (listener) yield return listener.WaitForResponse();
+            yield return Say(nameReply);
+        }
         Anim(animRest);
 
-        // 1. Saludo y nombre
-        yield return Say(intro);
-        if (listener) yield return listener.WaitForResponse();
-        yield return Say(nameReply);
+        // 2. En el libro: bordes del área del marcador
+        Show(cardBook);
+        Show(markerFrame);
+        if (markerFrame) markerFrame.SetGlow(true);
+        yield return Say(bookLine);
+        Hide(markerFrame);
 
-        // 2. Reglas
-        Show(rulesTitle);
-        Show(rules, 0); Anim(animRule1);
-        yield return Say(rule1);
-        Show(rules, 1); Anim(animRule2);
-        yield return Say(rule2);
-        Show(rules, 2); Anim(string.IsNullOrEmpty(animRule3) ? animRest : animRule3);
-        yield return Say(rule3);
+        // 3. Lee en voz alta: meteoro hacia el planeta
+        Show(cardRead);
+        Show(planet);
+        meteorPending = meteor != null;
+        if (meteorPending) StartCoroutine(MeteorAfter(MeteorDelay()));
+        yield return Say(readLine);
+        while (meteorPending || (meteor && meteor.IsPlaying)) yield return null;
+        Hide(planet);
+
+        // 4. ¿Una duda?: frase gatillo + ejemplo con "Dedicatoria"
+        Show(cardDoubt);
+        Anim(animDoubt);
+        yield return Say(doubtLine);
+        Show(wordHighlight);
+        if (wordHighlight) wordHighlight.SetGlow(true);
+        Show(definition);
+        yield return Say(doubtExample);
         Anim(animRest);
+        Hide(wordHighlight);
+        Hide(definition);
+        yield return new WaitForSeconds(0.5f);
 
-        // 3. Ejemplo del juego de preguntas
-        Hide(rulesTitle);
-        foreach (var r in rules) Hide(r);
-        yield return new WaitForSeconds(0.8f);
-
+        // 5. Quiz (solo mirar)
+        Show(quizPanel);
+        Show(quizTitle);
         Show(question);
         foreach (var o in options) Show(o);
+        Anim(animQuiz);
+        yield return Say(quizLine);
         yield return Say(quizIntro);
 
-        //    Intento incorrecto: la opción elegida brilla y luego se apaga, sin rojo ni error.
+        //    Intento incorrecto: la opción brilla y luego se apaga, sin rojo ni error.
+        Anim(animRest);
         Glow(wrongOption, true);
         yield return new WaitForSeconds(choiceThinkTime);
         Glow(wrongOption, false);
         Dim(wrongOption);
-        SetBubble("¡Casi! Otra vez");
         Anim(animWrong);
         yield return Say(quizWrong);
         Anim(animRest);
-        Hide(bubble);
 
         //    Segundo intento correcto: brilla, crece, estrellas y celebración.
         Glow(rightOption, true);
@@ -152,23 +198,74 @@ public class OnboardingSequence : MonoBehaviour
         Grow(rightOption);
         for (int i = 0; i < options.Length; i++) if (i != rightOption) Dim(i);
         if (stars && Valid(rightOption)) stars.Burst(options[rightOption].transform.position);
-        SetBubble("¡Muy bien!");
         Anim(animRight);
         yield return Say(quizRight);
         Anim(animRest);
 
-        // 4. Cierre
-        Hide(bubble);
-        Hide(question);
-        foreach (var o in options) Hide(o);
-        yield return new WaitForSeconds(0.6f);
-        if (HasContent(closing)) yield return Say(closing);
-        if (listener) yield return listener.WaitForResponse();   // respuesta a "¿Estás listo?"
+        // 6. Cierre: espera la respuesta a "¿Estás listo?", invita a leer y deja la mesa limpia
+        if (listener) yield return listener.WaitForResponse();
         if (HasContent(farewell)) yield return Say(farewell);
+        HideAll(false);
+        yield return FadePrincipito(0f, cleanupFade);
 
         IsRunning = false;
         onFinished?.Invoke();
-        Debug.Log("[Onboarding] Terminado.");
+        Debug.Log("[Onboarding] Terminado: mesa limpia.");
+    }
+
+    /// Conversación corta con el agente de bienvenida: saluda, pregunta el nombre, responde y cierra (end_call).
+    IEnumerator LiveWelcome(Action<bool> done)
+    {
+        Debug.Log("[Onboarding] Bienvenida en vivo con el agente.");
+        welcomeAgent.StartConversation(new System.Collections.Generic.Dictionary<string, string>());
+        float t = 0f;
+        bool spokeOnce = false;
+        // Espera a que conecte (máx. 8 s)
+        while (welcomeAgent.IsRunning && !welcomeAgent.LastConnected && t < 8f) { t += Time.deltaTime; yield return null; }
+        if (!welcomeAgent.LastConnected)
+        {
+            welcomeAgent.EndConversation();
+            while (welcomeAgent.IsRunning) yield return null;
+            Debug.LogWarning("[Onboarding] No se pudo conectar con el agente de bienvenida; se usan los audios pregenerados.");
+            done(false);
+            yield break;
+        }
+        // Mientras dura la conversación: saluda al hablar la primera vez, luego reposo
+        t = 0f;
+        while (welcomeAgent.IsRunning && t < liveWelcomeMaxSeconds)
+        {
+            t += Time.deltaTime;
+            if (welcomeAgent.AgentSpeaking) spokeOnce = true;
+            else if (spokeOnce) Anim(animRest);
+            yield return null;
+        }
+        if (welcomeAgent.IsRunning)
+        {
+            Debug.LogWarning("[Onboarding] La bienvenida superó el tiempo máximo; se continúa.");
+            welcomeAgent.EndConversation();
+            while (welcomeAgent.IsRunning) yield return null;
+        }
+        yield return new WaitForSeconds(pauseBetweenLines);
+        done(true);
+    }
+
+    bool meteorPending;
+
+    /// El meteoro sale cuando el Principito dice "¡Mira, ahí va un meteoro!".
+    float MeteorDelay()
+    {
+        if (readLine != null && readLine.clip != null) return Mathf.Clamp(meteorStartTime, 0f, readLine.clip.length);
+        // Sin audio: proporcional a la posición de la frase en el texto
+        float total = Mathf.Clamp(readLine.text.Length * 0.065f, 1.5f, 10f);
+        int i = readLine.text.IndexOf("¡Mira", StringComparison.Ordinal);
+        return i > 0 ? total * i / readLine.text.Length : 0f;
+    }
+
+    IEnumerator MeteorAfter(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        yield return meteor.Play();
+        meteorPending = false;
     }
 
     // ───────────── Ayudas ─────────────
@@ -191,6 +288,25 @@ public class OnboardingSequence : MonoBehaviour
         yield return new WaitForSeconds(pauseBetweenLines);
     }
 
+    IEnumerator FadePrincipito(float to, float duration = -1f)
+    {
+        if (principitoSr == null) yield break;
+        if (duration < 0f) duration = principitoFade;
+        float from = principitoSr.color.a;
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            SetPrincipitoAlpha(Mathf.Lerp(from, to, t / duration));
+            yield return null;
+        }
+        SetPrincipitoAlpha(to);
+    }
+
+    void SetPrincipitoAlpha(float a)
+    {
+        if (principitoSr == null) return;
+        var c = principitoSr.color; c.a = a; principitoSr.color = c;
+    }
+
     static bool HasContent(Line l) => l != null && (l.clip != null || !string.IsNullOrEmpty(l.text));
 
     void Anim(string clip) { if (principito && !string.IsNullOrEmpty(clip)) principito.Play(clip); }
@@ -202,21 +318,14 @@ public class OnboardingSequence : MonoBehaviour
 
     static void Show(ProjectedCard c) { if (c) c.Show(); }
     static void Hide(ProjectedCard c) { if (c) c.Hide(); }
-    static void Show(ProjectedCard[] arr, int i) { if (arr != null && i < arr.Length && arr[i]) arr[i].Show(); }
-
-    void SetBubble(string text)
-    {
-        if (!bubble) return;
-        if (bubble.label) bubble.label.text = text;
-        bubble.Show();
-    }
 
     void HideAll(bool instant)
     {
-        if (rulesTitle) rulesTitle.Hide(instant);
-        if (rules != null) foreach (var r in rules) if (r) r.Hide(instant);
-        if (question) question.Hide(instant);
+        foreach (var c in new[] { cardBook, markerFrame, cardRead, planet, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+            if (c) { c.ResetState(); c.Hide(instant); }
         if (options != null) foreach (var o in options) if (o) { o.ResetState(); o.Hide(instant); }
-        if (bubble) bubble.Hide(instant);
     }
+
+    // Compatibilidad con el generador anterior (ya no se usa en este flujo)
+    [HideInInspector] public Line closing = new Line { id = "", text = "" };
 }

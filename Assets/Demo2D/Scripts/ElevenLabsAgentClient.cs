@@ -25,6 +25,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Header("Configuración")]
     [Tooltip("Archivo en StreamingAssets con { \"agentId\": \"...\" }")]
     public string configFileName = "elevenlabs.local.json";
+    [Tooltip("Campo del archivo con el ID de este agente: agentId (dudas) o agentIdBienvenida (onboarding)")]
+    public string configKey = "agentId";
     [Tooltip("No se conecta a ElevenLabs: muestra un diálogo simulado y no gasta minutos")]
     public bool simulate = true;
     [Tooltip("Debe coincidir con el formato PCM configurado en el agente")]
@@ -51,6 +53,10 @@ public class ElevenLabsAgentClient : MonoBehaviour
     public UnityEvent onConversationEnded;
 
     public bool IsRunning => running;
+    /// <summary>True si la última conversación llegó a conectarse con ElevenLabs.</summary>
+    public bool LastConnected { get; private set; }
+    /// <summary>True si hay un Agent ID configurado (archivo local) para este agente.</summary>
+    public bool HasAgentId() => TryLoadAgentId(out _);
     public bool AgentSpeaking { get { lock (playLock) return playQueue.Count > 0; } }
     /// <summary>El personaje está hablando (voz real o diálogo simulado).</summary>
     public bool IsAgentTalking => AgentSpeaking || SimulatedTalking;
@@ -103,7 +109,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Serializable] class UserTranscriptEvt { public string user_transcript; }
     [Serializable] class AgentResponseEvt { public string agent_response; }
     [Serializable] class InitMetaEvt { public string conversation_id; public string agent_output_audio_format; public string user_input_audio_format; }
-    [Serializable] class LocalConfig { public string agentId; }
+    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; }
 
     void Awake()
     {
@@ -166,6 +172,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
     async Task RunAsync(string agentId, Dictionary<string, string> variables)
     {
         running = true;
+        LastConnected = false;
         subtitleAgent = subtitleUser = "";
         cts = new CancellationTokenSource();
         ws = new ClientWebSocket();
@@ -195,6 +202,10 @@ public class ElevenLabsAgentClient : MonoBehaviour
         finally
         {
             StopMic();
+            if (cts != null && !cts.IsCancellationRequested)
+            {
+                for (int i = 0; i < 300 && AgentSpeaking; i++) await Task.Delay(50);   // máx. 15 s
+            }
             ClearPlayback();
             try
             {
@@ -246,6 +257,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 var meta = m.conversation_initiation_metadata_event;
                 if (meta != null)
                 {
+                    LastConnected = true;
                     Debug.Log($"[ElevenLabs] Conectado. Conversación {meta.conversation_id} | salida {meta.agent_output_audio_format} | entrada {meta.user_input_audio_format}");
                     if (!string.IsNullOrEmpty(meta.agent_output_audio_format) && !meta.agent_output_audio_format.StartsWith("pcm_" + sampleRate))
                         Debug.LogWarning("[ElevenLabs] El agente no está en PCM " + sampleRate + " Hz. Cámbialo en la pestaña Voice del agente.");
@@ -510,7 +522,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
         try
         {
             var cfg = JsonUtility.FromJson<LocalConfig>(File.ReadAllText(path));
-            agentId = cfg?.agentId?.Trim();
+            agentId = (configKey == "agentIdBienvenida" ? cfg?.agentIdBienvenida : cfg?.agentId)?.Trim();
         }
         catch { return false; }
         return !string.IsNullOrEmpty(agentId) && !agentId.StartsWith("PEGA_");
