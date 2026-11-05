@@ -32,7 +32,7 @@ public static class OnboardingSceneBuilder
 
     // Distribución (unidades de escena; cámara ortográfica de tamaño 4)
     static readonly Vector3 PrincipitoPos = new Vector3(-3.9f, -2.0f, 0f);
-    const float PrincipitoScale = 0.526f;   // Principito de 178 px de alto en una proyección de 1920×1080
+    const float PrincipitoScale = 0.768f;   // Principito de 260 px de alto en una proyección de 1920×1080
     // Área proyectada 1920×1080 px = 80×44.5 cm (1 unidad = 135 px ≈ 5.56 cm). Libro 744×504 px (31×21 cm), centrado.
     static readonly Vector3 BookCenter = Vector3.zero;
     static readonly Vector2 BookSize = new Vector2(5.511f, 3.733f);
@@ -247,16 +247,6 @@ public static class OnboardingSceneBuilder
         agent.micGain = micGain;
         agent.showSubtitles = false;
 
-        var welcomeGo = new GameObject("AgenteBienvenida");
-        welcomeGo.AddComponent<AudioSource>();
-        var welcome = welcomeGo.AddComponent<ElevenLabsAgentClient>();
-        welcome.configKey = "agentIdBienvenida";
-        welcome.simulate = false;
-        welcome.microphoneDevice = micDevice;
-        welcome.micGain = micGain;
-        welcome.showSubtitles = false;
-        seq.welcomeAgent = welcome;
-
         var bookGo = new GameObject("LibroPaginas");
         var tracker = bookGo.AddComponent<BookPageTracker>();
         tracker.receiver = rec;
@@ -293,7 +283,7 @@ public static class OnboardingSceneBuilder
     {
         missing = new List<string>();
         int n = 0;
-        foreach (var line in new[] { seq.intro, seq.nameReply, seq.bookLine, seq.readLine, seq.doubtLine, seq.doubtExample,
+        foreach (var line in new[] { seq.intro, seq.bookLine, seq.readLine, seq.doubtLine, seq.doubtExample,
                                      seq.quizLine, seq.quizIntro, seq.quizWrong, seq.quizRight, seq.farewell })
         {
             if (line == null || string.IsNullOrEmpty(line.id)) continue;

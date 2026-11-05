@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 0
   alignment: 9
   spritePivot: {x: 0.5576923, y: 0}
-  spritePixelsToUnits: 71.010635
+  spritePixelsToUnits: 103.723404
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -116,10 +116,10 @@ TextureImporter:
       name: duda_03_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 1
         y: 0
-        width: 104
-        height: 178
+        width: 151
+        height: 260
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

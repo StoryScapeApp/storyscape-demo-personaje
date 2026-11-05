@@ -373,20 +373,51 @@ public static class PrincipitoSpriteProcessor
         return (maxY - minY + 1) / idle.pixelsPerUnit;
     }
 
-    [MenuItem("StoryScape/Onboarding/Importar sprites de duda")]
-    public static void ImportDudaMenu()
+    /// Carpetas de cuadros sueltos (raw/<carpeta>) → animación del Principito.
+    static readonly (string folder, string clip, float fps, bool loop)[] FolderClips =
+    {
+        ("reposo", "Reposo", 2f, true),
+        ("saludo", "Saludo", 6f, false),
+        ("duda", "Duda", 4f, true),
+        ("quiz", "Quiz", 4f, true),
+        ("correcto", "Correcto", 5f, true),
+        ("incorrecto", "Incorrecto", 3f, true),
+    };
+
+    /// Importa cada carpeta que exista y reemplaza la animación del mismo nombre.
+    static List<string> AddFolderClips(SpriteAnimator2D anim)
+    {
+        var done = new List<string>();
+        foreach (var fc in FolderClips)
+        {
+            var frames = ImportFrameFolder(fc.folder);
+            if (frames == null || frames.Length == 0) continue;
+            anim.clips.RemoveAll(c => c.name == fc.clip);
+            anim.clips.Add(new SpriteAnimator2D.Clip { name = fc.clip, frames = frames, fps = fc.fps, loop = fc.loop });
+            done.Add($"{fc.clip}({frames.Length})");
+        }
+        return done;
+    }
+
+    [MenuItem("StoryScape/Onboarding/Importar sprites nuevos")]
+    public static void ImportFoldersMenu()
     {
         var anim = Object.FindFirstObjectByType<SpriteAnimator2D>();
-        var frames = ImportFrameFolder("duda");
-        if (anim == null || frames == null) { Debug.LogWarning("[Principito] Falta la escena Onboarding o la carpeta raw/duda."); return; }
-        anim.clips.RemoveAll(c => c.name == "Duda");
-        anim.clips.Add(new SpriteAnimator2D.Clip { name = "Duda", frames = frames, fps = 4f, loop = true });
+        if (anim == null) { Debug.LogWarning("[Principito] Abre la escena Onboarding primero."); return; }
+        var done = AddFolderClips(anim);
         var seq = Object.FindFirstObjectByType<OnboardingSequence>();
-        if (seq != null) { seq.animDoubt = "Duda"; EditorUtility.SetDirty(seq); }
+        if (seq != null)
+        {
+            bool Has(string c) => anim.clips.Exists(x => x.name == c);
+            if (Has("Saludo")) seq.animGreet = "Saludo";
+            if (Has("Duda")) seq.animDoubt = "Duda";
+            if (Has("Quiz")) seq.animQuiz = "Quiz";
+            EditorUtility.SetDirty(seq);
+        }
         EditorUtility.SetDirty(anim);
         EditorSceneManager.MarkSceneDirty(anim.gameObject.scene);
         EditorSceneManager.SaveScene(anim.gameObject.scene);
-        Debug.Log("[Principito] Animación \"Duda\" asignada al momento ¿Una duda?");
+        Debug.Log("[Principito] Animaciones importadas: " + string.Join(", ", done));
     }
 
     // ───────────── Asignación al Principito ─────────────
@@ -417,9 +448,7 @@ public static class PrincipitoSpriteProcessor
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "Nod", frames = new[] { idle[0], nod[0] }, fps = 1.2f, loop = true });
         if (react != null && idle != null)
             anim.clips.Add(new SpriteAnimator2D.Clip { name = "React", frames = new[] { react[0], idle[0] }, fps = 1.2f, loop = true });
-        var duda = ImportFrameFolder("duda");
-        if (duda != null && duda.Length > 0)
-            anim.clips.Add(new SpriteAnimator2D.Clip { name = "Duda", frames = duda, fps = 4f, loop = true });
+        AddFolderClips(anim);
         anim.defaultClip = (idle != null && nod != null) ? "Reposo" : "Idle";
 
         var sr = anim.GetComponent<SpriteRenderer>();

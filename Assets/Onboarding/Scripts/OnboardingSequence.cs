@@ -7,7 +7,7 @@ using UnityEngine.Events;
 /// Onboarding de StoryScape (se activa al escanear el ArUco de la primera página: marker_0).
 /// Principito a la izquierda del libro, tarjetas arriba, ejemplos a la derecha; la zona de manos no se proyecta.
 ///
-/// 1. Bienvenida: el Principito aparece, saluda y pregunta el nombre (espera la respuesta).
+/// 1. Bienvenida: el Principito aparece, saluda y anuncia las reglas.
 /// 2. "En el libro": se iluminan suavemente los bordes del área del marcador.
 /// 3. "Lee en voz alta": un meteoro cruza junto al libro hacia un planeta.
 /// 4. "¿Una duda?": el Principito dice la frase gatillo; se resalta "Dedicatoria" y aparece su significado.
@@ -38,12 +38,6 @@ public class OnboardingSequence : MonoBehaviour
     public VoiceActivityWaiter listener;
     public float principitoFade = 0.8f;
 
-    [Header("1. Bienvenida en vivo (agente de ElevenLabs)")]
-    [Tooltip("El agente saluda, pregunta el nombre y responde con él. Si no está disponible, se usan 01_intro y 02_nombre.")]
-    public bool liveWelcome = true;
-    public ElevenLabsAgentClient welcomeAgent;
-    [Tooltip("Tiempo máximo de la bienvenida en vivo; luego se corta y sigue el onboarding")]
-    public float liveWelcomeMaxSeconds = 45f;
 
     [Header("2. En el libro")]
     public ProjectedCard cardBook;
@@ -53,7 +47,7 @@ public class OnboardingSequence : MonoBehaviour
     public ProjectedCard cardRead;
     public MeteorFlight meteor;
     public ProjectedCard planet;
-    [Tooltip("Segundo del audio 04_voz_alta en que empieza el meteoro (\"¡Mira, ahí va un meteoro!\")")]
+    [Tooltip("Segundo del audio 03_voz_alta en que empieza el meteoro (\"¡Mira, ahí va un meteoro!\")")]
     public float meteorStartTime = 5.75f;
 
     [Header("4. ¿Una duda?")]
@@ -80,17 +74,16 @@ public class OnboardingSequence : MonoBehaviour
     public string animRight = "Correcto";
 
     [Header("Guion (audios en Assets/Onboarding/Audio con el mismo id)")]
-    public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas?" };
-    public Line nameReply = new Line { id = "02_nombre", text = "¡Qué lindo nombre! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles." };
-    public Line bookLine = new Line { id = "03_libro", text = "Primero: deja el libro aquí, frente a mí, y no tapes el cuadro negro con tus manos. Así sé en qué página estás." };
-    public Line readLine = new Line { id = "04_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia. ¡Mira, ahí va un meteoro!" };
-    public Line doubtLine = new Line { id = "05_duda", text = "Tercero: si tienes una duda, llámame diciendo: Principito, tengo una duda." };
-    public Line doubtExample = new Line { id = "05b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa: son palabras al inicio de un libro para regalárselo a alguien especial." };
-    public Line quizLine = new Line { id = "05c_quiz", text = "Y al terminar cada capítulo, jugaremos a las preguntas. ¡No te preocupes, no es un examen, es un juego!" };
-    public Line quizIntro = new Line { id = "06_juego_intro", text = "Mira, así se verá el juego. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando?" };
-    public Line quizWrong = new Line { id = "07_juego_casi", text = "Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez!" };
-    public Line quizRight = new Line { id = "08_juego_bien", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos!" };
-    public Line farewell = new Line { id = "09_final", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
+    public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles." };
+    public Line bookLine = new Line { id = "02_libro", text = "Primero: no tapes el cuadro negro con tus manos. Así sé en qué página estás." };
+    public Line readLine = new Line { id = "03_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia. ¡Mira, ahí va un meteoro!" };
+    public Line doubtLine = new Line { id = "04_duda", text = "Tercero: si tienes una duda, llámame diciendo: Principito, tengo una duda." };
+    public Line doubtExample = new Line { id = "04b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa: son palabras al inicio de un libro para regalárselo a alguien especial como cuando escribes \"Para mi mamá\" en un dibujo que le regalas." };
+    public Line quizLine = new Line { id = "04c_quiz", text = "Y al terminar cada capítulo, te haré dos preguntas sobre lo que leíste." };
+    public Line quizIntro = new Line { id = "05_juego_intro", text = "Mira, así se verán las preguntas. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando? Se responde diciendo la letra de la opción." };
+    public Line quizWrong = new Line { id = "06_juego_casi", text = "Si eliges una respuesta que no es como por ejemplo la opción A, no pasa nada. ¡Puedes intentarlo otra vez!" };
+    public Line quizRight = new Line { id = "07_juego_bien", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos!" };
+    public Line farewell = new Line { id = "08_final", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
 
     [Header("Tiempos")]
     public float pauseBetweenLines = 0.35f;
@@ -127,20 +120,10 @@ public class OnboardingSequence : MonoBehaviour
         onStarted?.Invoke();
         HideAll(true);
 
-        // 1. Bienvenida: en vivo con el agente (dice el nombre del niño); si no se puede, audios pregenerados
+        // 1. Bienvenida: el Principito aparece, saluda y anuncia las reglas
         Anim(animGreet);
         yield return FadePrincipito(1f);
-        bool liveOk = false;
-        if (liveWelcome && welcomeAgent != null && !welcomeAgent.simulate && welcomeAgent.HasAgentId())
-            yield return LiveWelcome(ok => liveOk = ok);
-        if (!liveOk)
-        {
-            Anim(animGreet);
-            yield return Say(intro);
-            Anim(animRest);
-            if (listener) yield return listener.WaitForResponse();
-            yield return Say(nameReply);
-        }
+        yield return Say(intro);
         Anim(animRest);
 
         // 2. En el libro: bordes del área del marcador
@@ -211,42 +194,6 @@ public class OnboardingSequence : MonoBehaviour
         IsRunning = false;
         onFinished?.Invoke();
         Debug.Log("[Onboarding] Terminado: mesa limpia.");
-    }
-
-    /// Conversación corta con el agente de bienvenida: saluda, pregunta el nombre, responde y cierra (end_call).
-    IEnumerator LiveWelcome(Action<bool> done)
-    {
-        Debug.Log("[Onboarding] Bienvenida en vivo con el agente.");
-        welcomeAgent.StartConversation(new System.Collections.Generic.Dictionary<string, string>());
-        float t = 0f;
-        bool spokeOnce = false;
-        // Espera a que conecte (máx. 8 s)
-        while (welcomeAgent.IsRunning && !welcomeAgent.LastConnected && t < 8f) { t += Time.deltaTime; yield return null; }
-        if (!welcomeAgent.LastConnected)
-        {
-            welcomeAgent.EndConversation();
-            while (welcomeAgent.IsRunning) yield return null;
-            Debug.LogWarning("[Onboarding] No se pudo conectar con el agente de bienvenida; se usan los audios pregenerados.");
-            done(false);
-            yield break;
-        }
-        // Mientras dura la conversación: saluda al hablar la primera vez, luego reposo
-        t = 0f;
-        while (welcomeAgent.IsRunning && t < liveWelcomeMaxSeconds)
-        {
-            t += Time.deltaTime;
-            if (welcomeAgent.AgentSpeaking) spokeOnce = true;
-            else if (spokeOnce) Anim(animRest);
-            yield return null;
-        }
-        if (welcomeAgent.IsRunning)
-        {
-            Debug.LogWarning("[Onboarding] La bienvenida superó el tiempo máximo; se continúa.");
-            welcomeAgent.EndConversation();
-            while (welcomeAgent.IsRunning) yield return null;
-        }
-        yield return new WaitForSeconds(pauseBetweenLines);
-        done(true);
     }
 
     bool meteorPending;

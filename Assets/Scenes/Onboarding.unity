@@ -1747,9 +1747,6 @@ MonoBehaviour:
   voice: {fileID: 798142288}
   listener: {fileID: 798142287}
   principitoFade: 0.8
-  liveWelcome: 1
-  welcomeAgent: {fileID: 479190567}
-  liveWelcomeMaxSeconds: 45
   cardBook: {fileID: 1402922321}
   markerFrame: {fileID: 223083698}
   cardRead: {fileID: 987859758}
@@ -1770,62 +1767,60 @@ MonoBehaviour:
   rightOption: 1
   stars: {fileID: 242872462}
   animRest: Reposo
-  animGreet: React
+  animGreet: Saludo
   animDoubt: Duda
-  animQuiz: Asking
+  animQuiz: Quiz
   animWrong: Incorrecto
   animRight: Correcto
   intro:
     id: 01_intro
-    text: "\xA1Hola! \xA1Bienvenido al libro El Principito! \xBFC\xF3mo te llamas?"
+    text: "\xA1Hola! \xA1Bienvenido al libro El Principito! Antes de empezar nuestra
+      aventura, te voy a comentar unas reglas muy f\xE1ciles."
     clip: {fileID: 8300000, guid: 08da2dba26bb7214bb3d7c5bc1995bbc, type: 3}
-  nameReply:
-    id: 02_nombre
-    text: "\xA1Qu\xE9 lindo nombre! Antes de empezar nuestra aventura, te voy a contar
-      tres reglas muy f\xE1ciles."
-    clip: {fileID: 8300000, guid: 6bf1da2829a27ec4190a8d6e054e620c, type: 3}
   bookLine:
-    id: 03_libro
-    text: "Primero: deja el libro aqu\xED, frente a m\xED, y no tapes el cuadro negro
-      con tus manos. As\xED s\xE9 en qu\xE9 p\xE1gina est\xE1s."
+    id: 02_libro
+    text: "Primero: no tapes el cuadro negro con tus manos. As\xED s\xE9 en qu\xE9
+      p\xE1gina est\xE1s."
     clip: {fileID: 8300000, guid: 6e150277c0b5b70448a2c8e2ed3aed9c, type: 3}
   readLine:
-    id: 04_voz_alta
+    id: 03_voz_alta
     text: "Segundo: lee en voz alta. As\xED podr\xE1s ver animaciones durante la
       historia. \xA1Mira, ah\xED va un meteoro!"
     clip: {fileID: 8300000, guid: 58c5a4fc84bacc749b34c2fe3794cfee, type: 3}
   doubtLine:
-    id: 05_duda
+    id: 04_duda
     text: "Tercero: si tienes una duda, ll\xE1mame diciendo: Principito, tengo una
       duda."
     clip: {fileID: 8300000, guid: baab3d6a6b48b414c9cb0cb2961e1a9b, type: 3}
   doubtExample:
-    id: 05b_duda_ejemplo
+    id: 04b_duda_ejemplo
     text: "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el
       libro y te cuento lo que significa: son palabras al inicio de un libro para
-      regal\xE1rselo a alguien especial."
+      regal\xE1rselo a alguien especial como cuando escribes \"Para mi mam\xE1\"
+      en un dibujo que le regalas."
     clip: {fileID: 8300000, guid: 4c421a6bf8d2cfa43b5ab881b256c56c, type: 3}
   quizLine:
-    id: 05c_quiz
-    text: "Y al terminar cada cap\xEDtulo, jugaremos a las preguntas. \xA1No te preocupes,
-      no es un examen, es un juego!"
+    id: 04c_quiz
+    text: "Y al terminar cada cap\xEDtulo, te har\xE9 dos preguntas sobre lo que
+      le\xEDste."
     clip: {fileID: 8300000, guid: 13d9a50e9263f034eb96800ef417e6c8, type: 3}
   quizIntro:
-    id: 06_juego_intro
-    text: "Mira, as\xED se ver\xE1 el juego. Por ejemplo: \xBFc\xF3mo vas a leer
-      el cuento? \xBFEn silencio, en voz alta o cantando?"
-    clip: {fileID: 8300000, guid: 3b426c153bbbf5046acb56fd5ee4218e, type: 3}
+    id: 05_juego_intro
+    text: "Mira, as\xED se ver\xE1n las preguntas. Por ejemplo: \xBFc\xF3mo vas a
+      leer el cuento? \xBFEn silencio, en voz alta o cantando? Se responde diciendo
+      la letra de la opci\xF3n."
+    clip: {fileID: 8300000, guid: 66677cb01f791924d93ac0679a10e1fa, type: 3}
   quizWrong:
-    id: 07_juego_casi
-    text: "Si eliges una respuesta que no es, no pasa nada. \xA1Puedes intentarlo
-      otra vez!"
-    clip: {fileID: 8300000, guid: 97bcf8f8c1f849b47920f64826d514ab, type: 3}
+    id: 06_juego_casi
+    text: "Si eliges una respuesta que no es como por ejemplo la opci\xF3n A, no
+      pasa nada. \xA1Puedes intentarlo otra vez!"
+    clip: {fileID: 8300000, guid: 30d7e29ee94a8cc4dacae886e23141b6, type: 3}
   quizRight:
-    id: 08_juego_bien
+    id: 07_juego_bien
     text: "Y cuando aciertes, \xA1lo celebramos juntos! \xBFEst\xE1s listo? \xA1Empecemos!"
     clip: {fileID: 8300000, guid: 80d8b6380da74834c8d9142e1c035aa5, type: 3}
   farewell:
-    id: 09_final
+    id: 08_final
     text: "\xA1Genial! Pasa la p\xE1gina y empieza a leer en voz alta."
     clip: {fileID: 8300000, guid: 2f25ab39ad81c884dad90e6e368a3bf2, type: 3}
   pauseBetweenLines: 0.35
@@ -1848,164 +1843,6 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 461914786}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &479190566
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 479190569}
-  - component: {fileID: 479190568}
-  - component: {fileID: 479190567}
-  m_Layer: 0
-  m_Name: AgenteBienvenida
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &479190567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 479190566}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19be64ac9a1689c4db9db92fb7ce7dca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ElevenLabsAgentClient
-  configFileName: elevenlabs.local.json
-  configKey: agentIdBienvenida
-  simulate: 0
-  sampleRate: 16000
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
-  micGain: 8
-  muteMicWhileAgentSpeaks: 1
-  showMicLevel: 1
-  showSubtitles: 0
-  subtitleFontSize: 22
-  onConversationStarted:
-    m_PersistentCalls:
-      m_Calls: []
-  onConversationEnded:
-    m_PersistentCalls:
-      m_Calls: []
---- !u!82 &479190568
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 479190566}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
-  m_Volume: 1
-  m_Pitch: 1
-  Loop: 0
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 128
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
-  Pan2D: 0
-  rolloffMode: 0
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
---- !u!4 &479190569
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 479190566}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -4237,6 +4074,18 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
     fps: 1.2
     loop: 1
+  - name: Saludo
+    frames:
+    - {fileID: 21300000, guid: 1885ecb8840946144b8c976bffa81996, type: 3}
+    - {fileID: 21300000, guid: 273a95c98930fcc439a22d56cd3f3b0c, type: 3}
+    - {fileID: 21300000, guid: 08acf15120a51e540b8fb0dfbf077fad, type: 3}
+    - {fileID: 21300000, guid: a2ce6886366043b4794fb88607da1e52, type: 3}
+    - {fileID: 21300000, guid: 6d77a2133c2b2534083b2007b91c5099, type: 3}
+    - {fileID: 21300000, guid: adc56858267646e488d045eeddea95ed, type: 3}
+    - {fileID: 21300000, guid: 059d5c25e52f8a7478f2a6a354dce7ff, type: 3}
+    - {fileID: 21300000, guid: 885016a780c54244886a4988c88b921f, type: 3}
+    fps: 6
+    loop: 0
   - name: Duda
     frames:
     - {fileID: 21300000, guid: 809bc910c498b534ca68a43fe33e7df1, type: 3}
@@ -4247,6 +4096,20 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 3c5b4feb9603f3843ade137dbdede17b, type: 3}
     - {fileID: 21300000, guid: 413e60608f5f85a4c8026c1d74f65631, type: 3}
     - {fileID: 21300000, guid: 85ef5702f1c9f304eb79b6fc3418d350, type: 3}
+    fps: 4
+    loop: 1
+  - name: Quiz
+    frames:
+    - {fileID: 21300000, guid: c7ad57108ad449b43aecd9abc679071b, type: 3}
+    - {fileID: 21300000, guid: 7a1ebbc671450ce4d83c0323233014ad, type: 3}
+    - {fileID: 21300000, guid: 1f40623c41cef464e83a6c8fb93c5e91, type: 3}
+    - {fileID: 21300000, guid: 4c66d12692e95c347a3690cae86ee6cc, type: 3}
+    - {fileID: 21300000, guid: 0d8a8d2b3463d1b4ab6a53c984b26a57, type: 3}
+    - {fileID: 21300000, guid: 7a60ca4ee02ab884db0616caad5108a0, type: 3}
+    - {fileID: 21300000, guid: 905d4b9f5620caf4bb6cc922d8141c20, type: 3}
+    - {fileID: 21300000, guid: e6f00c410eeb2324081ebea4a4a665f9, type: 3}
+    - {fileID: 21300000, guid: ffe0c03b4b5b7dc4cb30bcaf704620a4, type: 3}
+    - {fileID: 21300000, guid: 6a58692cf30932d449ff58baa08de0d5, type: 3}
     fps: 4
     loop: 1
   defaultClip: Reposo
@@ -4321,7 +4184,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -3.9, y: -2, z: 0}
-  m_LocalScale: {x: 0.52600473, y: 0.52600473, z: 0.52600473}
+  m_LocalScale: {x: 0.7683215, y: 0.7683215, z: 0.7683215}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -5797,4 +5660,3 @@ SceneRoots:
   - {fileID: 922220416}
   - {fileID: 1877727997}
   - {fileID: 1447588208}
-  - {fileID: 479190569}
