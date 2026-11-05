@@ -17,6 +17,8 @@ public class SpriteAnimator2D : MonoBehaviour
         public Sprite[] frames;
         public float fps = 8f;
         public bool loop = true;
+        [Tooltip("Si no está en loop: animación que sigue al terminar (vacío = la de por defecto)")]
+        public string next = "";
     }
 
     public List<Clip> clips = new List<Clip>();
@@ -27,6 +29,8 @@ public class SpriteAnimator2D : MonoBehaviour
     public float bobSpeed = 1.3f;
 
     public string CurrentClip => current != null ? current.name : null;
+    /// Permite decidir en ejecución qué animación sigue a un clip sin loop (clip terminado, siguiente propuesta).
+    public System.Func<string, string, string> NextOverride;
 
     SpriteRenderer sr;
     Clip current;
@@ -80,7 +84,9 @@ public class SpriteAnimator2D : MonoBehaviour
                 if (current.loop) frame = 0;
                 else
                 {
-                    Play(defaultClip);
+                    string after = string.IsNullOrEmpty(current.next) ? defaultClip : current.next;
+                    if (NextOverride != null) after = NextOverride(current.name, after);
+                    Play(after);
                     return;
                 }
             }

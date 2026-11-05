@@ -306,10 +306,16 @@ public static class PrincipitoSpriteProcessor
     }
 
     // ───────────── Cuadros sueltos (PNG transparentes) ─────────────
-    /// Importa los PNG de raw/<carpeta> sin redimensionarlos. El tamaño en escena se fija con la escala de
-    /// importación (Pixels Per Unit): la altura de la imagen equivale a la altura del Principito en Idle,
-    /// así que con la escala del objeto Principito cada píxel del PNG se proyecta como un píxel (1:1).
-    /// El pivote se coloca en los pies de cada cuadro para que no salte al animar.
+    /// Altura de referencia de los cuadros sueltos: 260 px de imagen = altura del Principito en Idle.
+    /// Con la escala del objeto Principito, cada píxel del PNG se proyecta como un píxel (1:1),
+    /// sin importar la altura del lienzo (por ejemplo, 305 px en los cuadros con salto).
+    const float ReferenceFrameHeight = 260f;
+
+    /// Importa los PNG de raw/<carpeta> sin redimensionarlos.
+    /// - Escala de importación fija (ReferenceFrameHeight), igual para todas las carpetas.
+    /// - Todos los cuadros de una carpeta comparten la misma línea de suelo (la más baja de la carpeta),
+    ///   así los saltos se conservan y los cuadros de pie no se mueven.
+    /// - Horizontalmente, cada cuadro se centra en sus pies para que no se desplace al animar.
     public static Sprite[] ImportFrameFolder(string folder)
     {
         string dir = null;
@@ -319,8 +325,9 @@ public static class PrincipitoSpriteProcessor
         files.Sort();
         if (files.Count == 0) return null;
 
-        float idleWorld = IdleWorldHeight();
-        var result = new List<Sprite>();
+        float ppu = ReferenceFrameHeight / IdleWorldHeight();
+        var infos = new List<(string path, int W, int H, int minY, float ax)>();
+        int ground = int.MaxValue;   // fila más baja con dibujo en toda la carpeta (desde abajo)
         foreach (var f0 in files)
         {
             string f = f0.Replace('\\', '/');
@@ -338,10 +345,19 @@ public static class PrincipitoSpriteProcessor
             for (int y = minY; y <= minY + band && y < H; y++) for (int x = 0; x < W; x++) if (px[y * W + x].a > 20) { sum += x + 0.5f; cnt++; }
             float ax = cnt > 0 ? sum / cnt : W / 2f;
 
-            var ti = (TextureImporter)AssetImporter.GetAtPath(f);
+            infos.Add((f, W, H, minY, ax));
+            ground = Mathf.Min(ground, minY);
+        }
+
+        var result = new List<Sprite>();
+        int maxH = 0;
+        foreach (var info in infos)
+        {
+            maxH = Mathf.Max(maxH, info.H);
+            var ti = (TextureImporter)AssetImporter.GetAtPath(info.path);
             ti.textureType = TextureImporterType.Sprite;
             ti.spriteImportMode = SpriteImportMode.Single;
-            ti.spritePixelsPerUnit = H / idleWorld;
+            ti.spritePixelsPerUnit = ppu;
             ti.filterMode = FilterMode.Point;
             ti.mipmapEnabled = false;
             ti.alphaIsTransparency = true;
@@ -350,13 +366,13 @@ public static class PrincipitoSpriteProcessor
             var st = new TextureImporterSettings();
             ti.ReadTextureSettings(st);
             st.spriteAlignment = (int)SpriteAlignment.Custom;
-            st.spritePivot = new Vector2(Mathf.Round(ax) / W, (float)minY / H);
+            st.spritePivot = new Vector2(Mathf.Round(info.ax) / info.W, (float)ground / info.H);
             st.spriteMeshType = SpriteMeshType.FullRect;
             ti.SetTextureSettings(st);
             ti.SaveAndReimport();
-            result.Add(AssetDatabase.LoadAssetAtPath<Sprite>(f));
+            result.Add(AssetDatabase.LoadAssetAtPath<Sprite>(info.path));
         }
-        Debug.Log($"[Principito] {folder}: {result.Count} cuadros importados sin redimensionar (PPU {result[0].pixelsPerUnit:0.0}).");
+        Debug.Log($"[Principito] {folder}: {result.Count} cuadros importados sin redimensionar (lienzo hasta {maxH} px, PPU {ppu:0.0}).");
         return result.ToArray();
     }
 
@@ -374,14 +390,17 @@ public static class PrincipitoSpriteProcessor
     }
 
     /// Carpetas de cuadros sueltos (raw/<carpeta>) → animación del Principito.
-    static readonly (string folder, string clip, float fps, bool loop)[] FolderClips =
+    static readonly (string folder, string clip, float fps, bool loop, string next)[] FolderClips =
     {
-        ("reposo", "Reposo", 2f, true),
-        ("saludo", "Saludo", 6f, false),
-        ("duda", "Duda", 4f, true),
-        ("quiz", "Quiz", 4f, true),
-        ("correcto", "Correcto", 5f, true),
-        ("incorrecto", "Incorrecto", 3f, true),
+        ("reposo", "Reposo", 2f, true, ""),
+        ("hablando", "Hablando", 5f, true, ""),
+        ("saludo", "Saludo", 6f, false, "Hablando"),
+        ("voz_alta", "VozAlta", 4f, false, "Hablando"),
+        ("duda", "Duda", 4f, true, ""),   // en bucle durante 04_duda; el ejemplo pasa a Hablando
+        ("quiz", "Quiz", 4f, false, "Hablando"),
+        ("pensando", "Pensando", 3f, true, ""),
+        ("incorrecto", "Incorrecto", 3f, true, ""),
+        ("correcto", "Correcto", 5f, true, ""),
     };
 
     /// Importa cada carpeta que exista y reemplaza la animación del mismo nombre.
@@ -393,7 +412,7 @@ public static class PrincipitoSpriteProcessor
             var frames = ImportFrameFolder(fc.folder);
             if (frames == null || frames.Length == 0) continue;
             anim.clips.RemoveAll(c => c.name == fc.clip);
-            anim.clips.Add(new SpriteAnimator2D.Clip { name = fc.clip, frames = frames, fps = fc.fps, loop = fc.loop });
+            anim.clips.Add(new SpriteAnimator2D.Clip { name = fc.clip, frames = frames, fps = fc.fps, loop = fc.loop, next = fc.next });
             done.Add($"{fc.clip}({frames.Length})");
         }
         return done;

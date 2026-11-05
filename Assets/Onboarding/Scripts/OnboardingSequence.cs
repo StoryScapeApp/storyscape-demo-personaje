@@ -70,6 +70,12 @@ public class OnboardingSequence : MonoBehaviour
     public string animGreet = "React";
     public string animDoubt = "Duda";
     public string animQuiz = "Asking";
+    [Tooltip("Mientras habla en las líneas que no tienen animación propia (vacío = reposo)")]
+    public string animTalk = "Hablando";
+    [Tooltip("Regla 2: pide leer en voz alta, hasta que pasa el meteoro")]
+    public string animRead = "VozAlta";
+    [Tooltip("En el quiz, mientras una opción brilla antes de saber si es correcta")]
+    public string animThink = "Pensando";
     public string animWrong = "Incorrecto";
     public string animRight = "Correcto";
 
@@ -100,7 +106,11 @@ public class OnboardingSequence : MonoBehaviour
 
     void Start()
     {
-        if (principito) principitoSr = principito.GetComponent<SpriteRenderer>();
+        if (principito)
+        {
+            principitoSr = principito.GetComponent<SpriteRenderer>();
+            principito.NextOverride = (finished, next) => next == animTalk && !speaking ? animRest : next;
+        }
         HideAll(true);
         SetPrincipitoAlpha(0f);
         if (startOnPlay) Invoke(nameof(IniciarOnboarding), startDelay);
@@ -136,10 +146,12 @@ public class OnboardingSequence : MonoBehaviour
         // 3. Lee en voz alta: meteoro hacia el planeta
         Show(cardRead);
         Show(planet);
+        Anim(animRead);
         meteorPending = meteor != null;
         if (meteorPending) StartCoroutine(MeteorAfter(MeteorDelay()));
         yield return Say(readLine);
         while (meteorPending || (meteor && meteor.IsPlaying)) yield return null;
+        Anim(animRest);
         Hide(planet);
 
         // 4. ¿Una duda?: frase gatillo + ejemplo con "Dedicatoria"
@@ -149,6 +161,7 @@ public class OnboardingSequence : MonoBehaviour
         Show(wordHighlight);
         if (wordHighlight) wordHighlight.SetGlow(true);
         Show(definition);
+        Anim(animTalk);   // explica "Dedicatoria": pasa a hablar
         yield return Say(doubtExample);
         Anim(animRest);
         Hide(wordHighlight);
@@ -165,16 +178,16 @@ public class OnboardingSequence : MonoBehaviour
         yield return Say(quizIntro);
 
         //    Intento incorrecto: la opción brilla y luego se apaga, sin rojo ni error.
-        Anim(animRest);
+        Anim(animThink);
         Glow(wrongOption, true);
         yield return new WaitForSeconds(choiceThinkTime);
         Glow(wrongOption, false);
         Dim(wrongOption);
         Anim(animWrong);
         yield return Say(quizWrong);
-        Anim(animRest);
 
         //    Segundo intento correcto: brilla, crece, estrellas y celebración.
+        Anim(animThink);
         Glow(rightOption, true);
         yield return new WaitForSeconds(choiceThinkTime);
         Glow(rightOption, false);
@@ -216,21 +229,29 @@ public class OnboardingSequence : MonoBehaviour
     }
 
     // ───────────── Ayudas ─────────────
+    bool speaking;
+
     IEnumerator Say(Line line)
     {
         if (line == null) yield break;
+        speaking = true;
         if (line.clip != null && voice != null)
         {
             voice.clip = line.clip;
             voice.Play();
             yield return null;
             float limit = line.clip.length + 1.5f, t = 0f;   // seguro: nunca esperar de más
-            while (voice.isPlaying && t < limit) { t += Time.unscaledDeltaTime; yield return null; }
+            while (voice.isPlaying && t < limit) { t += Time.unscaledDeltaTime; TalkIfResting(); yield return null; }
+            speaking = false;
+            StopTalking();
         }
         else
         {
             Debug.Log($"[Onboarding] (sin audio {line.id}) {line.text}");
-            yield return new WaitForSeconds(Mathf.Clamp(line.text.Length * 0.065f, 1.5f, 10f));
+            float dur = Mathf.Clamp(line.text.Length * 0.065f, 1.5f, 10f);
+            for (float t = 0f; t < dur; t += Time.deltaTime) { TalkIfResting(); yield return null; }
+            speaking = false;
+            StopTalking();
         }
         yield return new WaitForSeconds(pauseBetweenLines);
     }
@@ -252,6 +273,16 @@ public class OnboardingSequence : MonoBehaviour
     {
         if (principitoSr == null) return;
         var c = principitoSr.color; c.a = a; principitoSr.color = c;
+    }
+
+    void TalkIfResting()
+    {
+        if (principito && !string.IsNullOrEmpty(animTalk) && principito.CurrentClip == animRest) principito.Play(animTalk);
+    }
+
+    void StopTalking()
+    {
+        if (principito && !string.IsNullOrEmpty(animTalk) && principito.CurrentClip == animTalk) principito.Play(animRest);
     }
 
     static bool HasContent(Line l) => l != null && (l.clip != null || !string.IsNullOrEmpty(l.text));

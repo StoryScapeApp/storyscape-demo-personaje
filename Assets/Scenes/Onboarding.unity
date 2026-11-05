@@ -1770,6 +1770,9 @@ MonoBehaviour:
   animGreet: Saludo
   animDoubt: Duda
   animQuiz: Quiz
+  animTalk: Hablando
+  animRead: VozAlta
+  animThink: Pensando
   animWrong: Incorrecto
   animRight: Correcto
   intro:
@@ -4012,14 +4015,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
     fps: 1
     loop: 1
-  - name: Reposo
-    frames:
-    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
-    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
-    - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
-    - {fileID: 21300000, guid: 7cfc9b6df6d65104aa7a5634b3c52a18, type: 3}
-    fps: 1.5
-    loop: 1
+    next: 
   - name: Listening
     frames:
     - {fileID: 21300000, guid: 1f0ad9bf3ae9b614fa29beff75cf4db0, type: 3}
@@ -4032,6 +4028,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 6a067c44fee7af944a514ae8eb530a09, type: 3}
     fps: 4.5
     loop: 1
+    next: 
   - name: Asking
     frames:
     - {fileID: 21300000, guid: 8e51be00920b43d4e83d8515fb32807e, type: 3}
@@ -4044,36 +4041,55 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 7c4cad78d6a1fb4468f3e312d8a9721e, type: 3}
     fps: 3.5
     loop: 1
-  - name: Correcto
-    frames:
-    - {fileID: 21300000, guid: 3202dac79b72edb408a0a7d01af8225c, type: 3}
-    - {fileID: 21300000, guid: 11f62a20b0741e04da1df44681692d9e, type: 3}
-    - {fileID: 21300000, guid: bb3e371c617f9c14d88bf0f2098236c2, type: 3}
-    - {fileID: 21300000, guid: 022283cf9f360fa47be28f77e5ac5f0f, type: 3}
-    - {fileID: 21300000, guid: 6c633122397dd624489af88933ba3ae9, type: 3}
-    - {fileID: 21300000, guid: 2d785464b911aa64e9e908c2bc78cb62, type: 3}
-    fps: 4
-    loop: 1
-  - name: Incorrecto
-    frames:
-    - {fileID: 21300000, guid: 42991467efba6a64c83298ce8e45a4eb, type: 3}
-    - {fileID: 21300000, guid: 8485a104436db284aaff4e69850ddca0, type: 3}
-    - {fileID: 21300000, guid: 3e67f88b937b6cb4da8441bbb91413d5, type: 3}
-    - {fileID: 21300000, guid: 66557d6334145274aa11421e121e744a, type: 3}
-    fps: 2.5
-    loop: 1
+    next: 
   - name: Nod
     frames:
     - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
     - {fileID: 21300000, guid: 7cfc9b6df6d65104aa7a5634b3c52a18, type: 3}
     fps: 1.2
     loop: 1
+    next: 
   - name: React
     frames:
     - {fileID: 21300000, guid: fc19099ffa0e7b242b07dadbb3e2e8f2, type: 3}
     - {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
     fps: 1.2
     loop: 1
+    next: 
+  - name: Reposo
+    frames:
+    - {fileID: 21300000, guid: 49d48303610dd9149807fe7aebf88e4f, type: 3}
+    - {fileID: 21300000, guid: a2e72bef42c57c6468c12a7925256879, type: 3}
+    - {fileID: 21300000, guid: 82f363222470b7249a55e55fd5b734f9, type: 3}
+    - {fileID: 21300000, guid: 85f473c74f4eef84e87a77a6d4d6af80, type: 3}
+    - {fileID: 21300000, guid: 6986e8dcd0a8f004bb9e6791873e3c3a, type: 3}
+    - {fileID: 21300000, guid: 310c644cb51d3394e94c8861b23614a0, type: 3}
+    - {fileID: 21300000, guid: 929c71c542148bf448a0ae3598370af8, type: 3}
+    - {fileID: 21300000, guid: 3a40264ecb9766f49b04e4724777e034, type: 3}
+    fps: 2
+    loop: 1
+    next: 
+  - name: Hablando
+    frames:
+    - {fileID: 21300000, guid: 686e383a7a46c7140ab8dabc4931f5a6, type: 3}
+    - {fileID: 21300000, guid: a9f87de9c44758649b8e83f33a286cb3, type: 3}
+    - {fileID: 21300000, guid: 709f43c45e1275241a9dc5ddb2aae595, type: 3}
+    - {fileID: 21300000, guid: 5a046a58bf12b5a4697569faafe80f6e, type: 3}
+    - {fileID: 21300000, guid: 29551c31ff522d447ac034bd853561f0, type: 3}
+    - {fileID: 21300000, guid: e314964031220f348a61085ec4c84fbf, type: 3}
+    - {fileID: 21300000, guid: a0545fd00f53bde4f9445cd9a3f09162, type: 3}
+    - {fileID: 21300000, guid: f0125bc6d476d1f42927be4cc4395604, type: 3}
+    - {fileID: 21300000, guid: 76912809dd368a648b11143ce9dc46eb, type: 3}
+    - {fileID: 21300000, guid: b436f61f1a9c29b438f433ad167e2135, type: 3}
+    - {fileID: 21300000, guid: f5b7ce83f011a954aaa851ea52a0658b, type: 3}
+    - {fileID: 21300000, guid: d9d4632fb0cda734490d34898711689a, type: 3}
+    - {fileID: 21300000, guid: 8781d7378cd851e4691c08e788a2dede, type: 3}
+    - {fileID: 21300000, guid: 79306f35c92d04e44bcd257f0e01f64c, type: 3}
+    - {fileID: 21300000, guid: 69c9164f47d9ec54ab8ac88dc6120ed0, type: 3}
+    - {fileID: 21300000, guid: 3768633cb0d221a4c846fcd80f3630c1, type: 3}
+    fps: 5
+    loop: 1
+    next: 
   - name: Saludo
     frames:
     - {fileID: 21300000, guid: 1885ecb8840946144b8c976bffa81996, type: 3}
@@ -4086,6 +4102,20 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 885016a780c54244886a4988c88b921f, type: 3}
     fps: 6
     loop: 0
+    next: Hablando
+  - name: VozAlta
+    frames:
+    - {fileID: 21300000, guid: aeff6ec6466eb75429bb9138f579e98d, type: 3}
+    - {fileID: 21300000, guid: 48c914e99a5e2a745a419c785465275c, type: 3}
+    - {fileID: 21300000, guid: f2bc6c60ed60f5642839f4a94a5cdb34, type: 3}
+    - {fileID: 21300000, guid: 6ae5d8da27af75f468273f240477717e, type: 3}
+    - {fileID: 21300000, guid: 055ac7c6bd1caf543bb3506aeae7130c, type: 3}
+    - {fileID: 21300000, guid: 53c9dfa407001cc479c77b32df7a83c0, type: 3}
+    - {fileID: 21300000, guid: 8969cc147fe94dc4d9da58e350018727, type: 3}
+    - {fileID: 21300000, guid: c8342ad4fe3c9184bb1651c08d1cd842, type: 3}
+    fps: 4
+    loop: 0
+    next: Hablando
   - name: Duda
     frames:
     - {fileID: 21300000, guid: 809bc910c498b534ca68a43fe33e7df1, type: 3}
@@ -4098,6 +4128,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 85ef5702f1c9f304eb79b6fc3418d350, type: 3}
     fps: 4
     loop: 1
+    next: 
   - name: Quiz
     frames:
     - {fileID: 21300000, guid: c7ad57108ad449b43aecd9abc679071b, type: 3}
@@ -4111,7 +4142,47 @@ MonoBehaviour:
     - {fileID: 21300000, guid: ffe0c03b4b5b7dc4cb30bcaf704620a4, type: 3}
     - {fileID: 21300000, guid: 6a58692cf30932d449ff58baa08de0d5, type: 3}
     fps: 4
+    loop: 0
+    next: Hablando
+  - name: Pensando
+    frames:
+    - {fileID: 21300000, guid: 0607923913f861348bafe908ce24eecd, type: 3}
+    - {fileID: 21300000, guid: e61fa62825100f144b2bedb358e0cc04, type: 3}
+    - {fileID: 21300000, guid: 2cd8010331d5aea4f93f066ad8b1d157, type: 3}
+    - {fileID: 21300000, guid: f88c8a19aa1709e45bc2ebd9c12f54e5, type: 3}
+    - {fileID: 21300000, guid: d8860d5fa32ecc944a83d4a2b3163284, type: 3}
+    - {fileID: 21300000, guid: fd502be898a0b894a89f26af8a5e5ba1, type: 3}
+    - {fileID: 21300000, guid: 19e58e1def916a64499d6f40e1cfda21, type: 3}
+    - {fileID: 21300000, guid: 220a90dcb81ae094e9da5dde44ec22aa, type: 3}
+    fps: 3
     loop: 1
+    next: 
+  - name: Incorrecto
+    frames:
+    - {fileID: 21300000, guid: 86cafa33d5778134ea278ab60c91180f, type: 3}
+    - {fileID: 21300000, guid: 5c2e62c4127a92348a95528cfd2d3b32, type: 3}
+    - {fileID: 21300000, guid: ab4a8775647be6840af73dbefd5a24ce, type: 3}
+    - {fileID: 21300000, guid: 1a4f6faee49b55e4db36ea3ca8b13819, type: 3}
+    - {fileID: 21300000, guid: a0f33840e80c171458034dab78721b5d, type: 3}
+    - {fileID: 21300000, guid: dc1afa1435ac2384ebc72d701b3f1f46, type: 3}
+    - {fileID: 21300000, guid: 24f8bfa7c7618264a90704722ecd1928, type: 3}
+    - {fileID: 21300000, guid: 4245e79c0df42ed4ebfa65f5b5cf742b, type: 3}
+    fps: 3
+    loop: 1
+    next: 
+  - name: Correcto
+    frames:
+    - {fileID: 21300000, guid: 6bf7c0d5401360d4aa9ffd1ca95bd24f, type: 3}
+    - {fileID: 21300000, guid: 973314de51d1cf64dbaf38d262d15bbf, type: 3}
+    - {fileID: 21300000, guid: 5e955a686af6f7e4bbd06e25aab79a25, type: 3}
+    - {fileID: 21300000, guid: a84f19dcee823264aad470e148e85e50, type: 3}
+    - {fileID: 21300000, guid: c27fb32065bb2194ba4a4a4c134bc375, type: 3}
+    - {fileID: 21300000, guid: a04f7601e3977de459b836aaf54a80d6, type: 3}
+    - {fileID: 21300000, guid: a1715ada2b23f2142bb16cee64dc4e49, type: 3}
+    - {fileID: 21300000, guid: 576905aca90409648ad01c7d7893acb9, type: 3}
+    fps: 5
+    loop: 1
+    next: 
   defaultClip: Reposo
   bobAmplitude: 0.03
   bobSpeed: 1.3
@@ -4164,7 +4235,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 531fb506b78cc97439240cc1f82d55d7, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 49d48303610dd9149807fe7aebf88e4f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
