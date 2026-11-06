@@ -51,12 +51,15 @@ public class ArucoUdpReceiver : MonoBehaviour
 
     /// <summary>Se dispara con cada detección estable: (id, posición normalizada; -1 si no se envió).</summary>
     public event Action<int, Vector2> MarkerDetected;
+    /// <summary>Otros mensajes del script de Python, p. ej. {"tipo":"duda"} al detectar "Principito, tengo una duda".</summary>
+    public event Action<string> CommandReceived;
 
     [Serializable] class Msg { public string tipo; public int id = -1; public float x = -1f; public float y = -1f; }
 
     struct Hit { public int id; public Vector2 pos; public float time; }
 
     readonly ConcurrentQueue<Msg> incoming = new ConcurrentQueue<Msg>();
+    readonly ConcurrentQueue<string> commands = new ConcurrentQueue<string>();
     readonly Dictionary<int, List<float>> recentHits = new Dictionary<int, List<float>>();
     readonly Dictionary<int, Vector2> lastPositions = new Dictionary<int, Vector2>();
     UdpClient client;
@@ -93,7 +96,10 @@ public class ArucoUdpReceiver : MonoBehaviour
             {
                 byte[] data = client.Receive(ref any);
                 var msg = JsonUtility.FromJson<Msg>(Encoding.UTF8.GetString(data));
-                if (msg != null && msg.id >= 0) incoming.Enqueue(msg);
+                if (msg == null) continue;
+                bool isMarker = string.IsNullOrEmpty(msg.tipo) || msg.tipo == "aruco";
+                if (isMarker && msg.id >= 0) incoming.Enqueue(msg);
+                else if (!isMarker) commands.Enqueue(msg.tipo);
             }
             catch (SocketException) { if (!running) break; }
             catch (ObjectDisposedException) { break; }
@@ -104,6 +110,11 @@ public class ArucoUdpReceiver : MonoBehaviour
     void Update()
     {
         float now = Time.unscaledTime;
+        while (commands.TryDequeue(out var cmd))
+        {
+            Debug.Log($"[UDP] Mensaje recibido: {cmd}");
+            CommandReceived?.Invoke(cmd);
+        }
         while (incoming.TryDequeue(out var msg))
         {
             if (msg.x >= 0f && msg.y >= 0f) lastPositions[msg.id] = new Vector2(msg.x, msg.y);

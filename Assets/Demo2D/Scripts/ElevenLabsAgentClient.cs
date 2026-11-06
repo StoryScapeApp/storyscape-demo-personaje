@@ -29,6 +29,9 @@ public class ElevenLabsAgentClient : MonoBehaviour
     public string configKey = "agentId";
     [Tooltip("No se conecta a ElevenLabs: muestra un diálogo simulado y no gasta minutos")]
     public bool simulate = true;
+    [Tooltip("Modo simulado: palabra que \"pregunta\" el niño (prueba el resaltado sin gastar minutos)")]
+    public string simulatedWord = "excusa";
+    [TextArea] public string simulatedMeaning = "Razón que das para explicar por qué hiciste algo.";
     [Tooltip("Debe coincidir con el formato PCM configurado en el agente")]
     public int sampleRate = 16000;
 
@@ -67,6 +70,12 @@ public class ElevenLabsAgentClient : MonoBehaviour
     /// <summary>Volumen actual del micrófono ya amplificado (RMS).</summary>
     public float MicLevel => micLevel;
 
+    /// <summary>
+    /// Herramientas de cliente (Client tools) del agente, p. ej. "resaltar_palabra".
+    /// Recibe (nombre, parámetros) y devuelve el texto que se responde al agente, o null si no la reconoce.
+    /// </summary>
+    public Func<string, ToolArgs, string> ClientToolHandler;
+
     const string Endpoint = "wss://api.elevenlabs.io/v1/convai/conversation?agent_id=";
     const int ChunkSamples = 1600; // 100 ms a 16 kHz
 
@@ -103,6 +112,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
         public UserTranscriptEvt user_transcription_event;
         public AgentResponseEvt agent_response_event;
         public InitMetaEvt conversation_initiation_metadata_event;
+        public ClientToolCallEvt client_tool_call;
     }
     [Serializable] class AudioEvt { public string audio_base_64; public int event_id; }
     [Serializable] class PingEvt { public int event_id; public int ping_ms; }
@@ -110,6 +120,9 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Serializable] class AgentResponseEvt { public string agent_response; }
     [Serializable] class InitMetaEvt { public string conversation_id; public string agent_output_audio_format; public string user_input_audio_format; }
     [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; }
+    [Serializable] class ClientToolCallEvt { public string tool_name; public string tool_call_id; public ToolArgs parameters; }
+    /// Parámetros de las herramientas de cliente del agente (los que una herramienta no usa llegan vacíos).
+    [Serializable] public class ToolArgs { public string palabra; public string significado; }
 
     void Awake()
     {
@@ -292,11 +305,31 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 ClearPlayback();
                 break;
 
+            case "client_tool_call":
+                HandleClientTool(m.client_tool_call);
+                break;
+
             case "ping":
                 if (m.ping_event != null)
                     _ = SendText("{\"type\":\"pong\",\"event_id\":" + m.ping_event.event_id + "}");
                 break;
         }
+    }
+
+    void HandleClientTool(ClientToolCallEvt call)
+    {
+        if (call == null || string.IsNullOrEmpty(call.tool_call_id)) return;
+        Debug.Log($"[ElevenLabs] Herramienta: {call.tool_name} (palabra: \"{call.parameters?.palabra}\")");
+        string result;
+        bool error = false;
+        try
+        {
+            result = ClientToolHandler?.Invoke(call.tool_name, call.parameters ?? new ToolArgs());
+            if (result == null) { result = "Herramienta no disponible: " + call.tool_name; error = true; }
+        }
+        catch (Exception e) { result = "Error: " + e.Message; error = true; Debug.LogException(e); }
+        _ = SendText("{\"type\":\"client_tool_result\",\"tool_call_id\":" + Json(call.tool_call_id) +
+                     ",\"result\":" + Json(result) + ",\"is_error\":" + (error ? "true" : "false") + "}");
     }
 
     async Task SendText(string text)
@@ -495,6 +528,13 @@ public class ElevenLabsAgentClient : MonoBehaviour
 
         subtitleUser = "(simulación) Respuesta del niño…";
         yield return new WaitForSeconds(3f);
+
+        if (ClientToolHandler != null && !string.IsNullOrEmpty(simulatedWord))
+        {
+            ClientToolHandler("resaltar_palabra", new ToolArgs { palabra = simulatedWord, significado = simulatedMeaning });
+            yield return SimSay("Simulación: explicando " + simulatedWord + ". " + simulatedMeaning);
+            yield return new WaitForSeconds(2f);
+        }
 
         subtitleUser = "";
         subtitleAgent = "¡Muy bien! Esa es la idea. Ya puedes seguir leyendo la siguiente página.";
