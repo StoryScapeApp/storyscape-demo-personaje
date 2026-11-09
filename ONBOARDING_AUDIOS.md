@@ -12,16 +12,11 @@ El nombre del archivo debe ser **exactamente el id**. Luego, con la escena `Onbo
 
 | id | Estado | Momento | Texto |
 |---|---|---|---|
-| `01_intro` | **actualizado** | 1. Bienvenida | ¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles. |
-| `02_libro` | ya existe | 2. Tarjeta 1 · bordes del marcador | Primero: no tapes el cuadro negro con tus manos. Así sé en qué página estás. |
-| `03_voz_alta` | ya existe | 3. Tarjeta 2 · meteoro y planeta | Segundo: lee en voz alta. Así podrás ver animaciones durante la historia. ¡Mira, ahí va un meteoro! |
-| `04_duda` | ya existe | 4. Tarjeta 3 · Principito escucha | Tercero: si tienes una duda, llámame diciendo: Principito, tengo una duda. |
-| `04b_duda_ejemplo` | ya existe | 4. Se resalta "Dedicatoria" y aparece su significado | Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa: son palabras al inicio de un libro para regalárselo a alguien especial como cuando escribes "Para mi mamá" en un dibujo que le regalas. |
-| `04c_quiz` | ya existe | 5. Aparece el panel del quiz | Y al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. |
-| `05_juego_intro` | **actualizado** | 5. Pregunta y opciones | Mira, así se verán las preguntas. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando? Se responde diciendo la letra de la opción.|
-| `06_juego_casi` | **actualizado** | 5. Opción A se apaga · Principito desaprueba | Si eliges una respuesta que no es como por ejemplo la opción A, no pasa nada. ¡Puedes intentarlo otra vez! |
-| `07_juego_bien` | ya existe | 5. Opción B crece, estrellas · Principito celebra (luego espera la respuesta) | Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos! |
-| `08_final` | ya existe | 6. Cierre · luego todo se desvanece | ¡Genial! Pasa la página y empieza a leer en voz alta. |
+| `01_intro` | ya existe | 1. Bienvenida | ¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles. |
+| `02_libro` | **actualizado** | 2. Tarjeta 1 · bordes del marcador | Primero: no tapes el cuadrado de barras con tus manos. Así sé en qué página estás. |
+| `03_voz_alta` | **actualizado**  | 3. Tarjeta 2 · lee en voz alta | Segundo: lee en voz alta. Así podrás ver animaciones durante la historia.|
+| `04_quiz` | **actualizado**  | 4. Tarjeta 3 · panel del quiz | Tercero: al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. Responde diciendo la letra de la opción. Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez! |
+| `05_final` | **actualizado** | 5. Opción correcta y cierre onboarding · luego todo se desvanece | Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo?|
 
 ## Consejos
 
