@@ -3802,7 +3802,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: '<b>1. En el libro</b>
 
-    <size=75%>No tapes el cuadro</size>'
+    <size=75%>No tapes el cuadrado</size>'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5352,6 +5352,8 @@ MonoBehaviour:
   configFileName: elevenlabs.local.json
   configKey: agentId
   simulate: 0
+  simulatedWord: excusa
+  simulatedMeaning: "Raz\xF3n que das para explicar por qu\xE9 hiciste algo."
   sampleRate: 16000
   microphoneDevice: "Micr\xF3fono (USB Audio Device)"
   micGain: 8
