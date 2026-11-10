@@ -31,7 +31,7 @@ public static class DudasSceneBuilder
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
         // Quita lo que solo usa el onboarding
-        foreach (var name in new[] { "Tarjetas", "Meteoro", "Planeta", "Quiz", "Estrellas", "Onboarding", "VozPrincipito", "MarcoMarcador" })
+        foreach (var name in new[] { "Tarjetas", "Meteoro", "Planeta", "Quiz", "Estrellas", "Onboarding", "VozPrincipito", "MarcoMarcador", "Encabezado", "Dudas" })
         {
             var go = FindIncludingInactive(name);
             if (go) Object.DestroyImmediate(go);

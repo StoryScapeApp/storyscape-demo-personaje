@@ -24,6 +24,8 @@ public class DoubtSession : MonoBehaviour
     [Tooltip("Opcional: abre las dudas al recibir {\"tipo\":\"duda\"} por UDP (detección de la frase en Python)")]
     public ArucoUdpReceiver receiver;
     public string udpCommand = "duda";
+    [Tooltip("Reconocedor de la frase; se activa junto con las dudas (Activar)")]
+    public TriggerPhraseListener phraseListener;
 
     [Header("Herramienta del agente")]
     public string toolName = "resaltar_palabra";
@@ -108,6 +110,14 @@ public class DoubtSession : MonoBehaviour
             if (agent.IsAgentTalking && cur == animRest) principito.Play(animTalk);
             else if (!agent.IsAgentTalking && cur == animTalk) principito.Play(animRest);
         }
+    }
+
+    /// Activa el modo dudas y la escucha de la frase (lo llama el onboarding al terminar).
+    public void Activar()
+    {
+        enabled = true;
+        if (phraseListener) phraseListener.enabled = true;
+        Debug.Log("[Dudas] Agente en vivo activo: di \"Principito, tengo una duda\" para preguntar.");
     }
 
     void OnUdpCommand(string cmd)

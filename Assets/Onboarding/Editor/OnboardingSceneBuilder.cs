@@ -31,7 +31,7 @@ public static class OnboardingSceneBuilder
     static readonly Color Gris = Hex("#D9D2CF");
 
     // Distribución (unidades de escena; cámara ortográfica de tamaño 4)
-    static readonly Vector3 PrincipitoPos = new Vector3(-3.9f, -2.0f, 0f);
+    static readonly Vector3 PrincipitoPos = new Vector3(-4.4f, -1.95f, 0f);
     const float PrincipitoScale = 0.768f;   // Principito de 260 px de alto en una proyección de 1920×1080
     // Área proyectada 1920×1080 px = 80×44.5 cm (1 unidad = 135 px ≈ 5.56 cm). Libro 744×504 px (31×21 cm), centrado.
     static readonly Vector3 BookCenter = Vector3.zero;
@@ -40,9 +40,13 @@ public static class OnboardingSceneBuilder
     const float MarkerFrameSize = 1.6f;
     static readonly Vector3 WordCenter = new Vector3(1.314f, 0.657f, 0f);    // "DEDICATORIA", relativo al centro del libro
     static readonly Vector2 WordSize = new Vector2(0.7f, 0.22f);
-    const float CardsY = 2.5f;
-    static readonly float[] CardsX = { -3.56f, 0.1f, 3.73f };
-    static readonly Vector2 CardSize = new Vector2(2.7f, 1.0f);
+    const float TitleY = 3.2f, SubtitleY = 2.72f;
+    const float CardsY = -2.85f;                          // tarjetas debajo del libro
+    static readonly float[] CardsX = { -4.7f, 0f, 4.7f };
+    static readonly Vector2 CardSize = new Vector2(3.1f, 1.1f);
+    const float OptionsX = 6.62f, OptionDiameter = 0.44f; // círculos A y B junto a la tarjeta 3
+    static readonly float[] OptionsY = { -2.6f, -3.1f };
+    static readonly Vector3 PlanetPos = new Vector3(4.9f, 0.45f, 0f);
     const float RightX = 4.45f;
 
     // ───────────── Menús ─────────────
@@ -117,14 +121,21 @@ public static class OnboardingSceneBuilder
         listener.micGain = micGain;
         listener.endSilence = endSilence;
 
-        // ── Tarjetas superiores
+        // ── Encabezado
+        var header = new GameObject("Encabezado").transform;
+        var title = CreateText("Titulo", header, new Vector3(0f, TitleY, 0f), new Vector2(11f, 0.7f),
+            "<b>¡Bienvenido a la mesa de la lectura!</b>", 3.6f, TextAlignmentOptions.Center);
+        var subtitle = CreateText("Subtitulo", header, new Vector3(0f, SubtitleY, 0f), new Vector2(11f, 0.45f),
+            "Lee, descubre y juega con El Principito", 2.3f, TextAlignmentOptions.Center);
+
+        // ── Tarjetas (debajo del libro)
         var cards = new GameObject("Tarjetas").transform;
         var cardBook = CreateCard("Tarjeta_1_Libro", cards, new Vector3(CardsX[0], CardsY, 0f), CardSize, Violeta,
-            "<b>1. En el libro</b>\n<size=75%>No tapes el cuadro</size>", 2.2f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+            "<b>1. No tapes el cuadrado</b>\n<size=75%>Deja visible para que la mesa reconozca la página</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
         var cardRead = CreateCard("Tarjeta_2_VozAlta", cards, new Vector3(CardsX[1], CardsY, 0f), CardSize, Violeta,
-            "<b>2. Lee en voz alta</b>\n<size=75%>Para que puedas ver animaciones durante la historia</size>", 2.2f, fillSprite, borderSprite, TextAlignmentOptions.Center);
-        var cardDoubt = CreateCard("Tarjeta_3_Duda", cards, new Vector3(CardsX[2], CardsY, 0f), CardSize, Violeta,
-            "<b>3. ¿Una duda?</b>\n<size=75%>Llama al Principito</size>", 2.2f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+            "<b>2. Lee en voz alta</b>\n<size=75%>Mientras lees, la historia cobra vida a tu alrededor</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+        var cardQuiz = CreateCard("Tarjeta_3_Quiz", cards, new Vector3(CardsX[2], CardsY, 0f), CardSize, Violeta,
+            "<b>3. Responde el mini quiz</b>\n<size=75%>Al final, elige una respuesta y descubre cuánto recuerdas</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
 
         // ── 2. Bordes del área del marcador
         var frameGo = new GameObject("MarcoMarcador");
@@ -141,7 +152,7 @@ public static class OnboardingSceneBuilder
 
         // ── 3. Meteoro y planeta
         var planetGo = new GameObject("Planeta");
-        planetGo.transform.position = new Vector3(4.1f, 2.35f, 0f);
+        planetGo.transform.position = PlanetPos;
         var planetSr = planetGo.AddComponent<SpriteRenderer>();
         planetSr.sprite = planetSprite;
         planetSr.sortingOrder = 4;
@@ -164,8 +175,9 @@ public static class OnboardingSceneBuilder
         meteor.trailSprite = starSprite;
         Vector3[] path =
         {
-            new Vector3(-2.8f, 3.2f, 0f), new Vector3(-0.6f, 3.3f, 0f), new Vector3(1.9f, 3.2f, 0f),
-            new Vector3(2.75f, 2.8f, 0f), new Vector3(3.95f, 1.35f, 0f), new Vector3(4.3f, 0.3f, 0f)
+            // entre el subtítulo y el libro, de izquierda a derecha, y baja hacia el planeta
+            new Vector3(-6.2f, 1.7f, 0f), new Vector3(-3.4f, 2.25f, 0f), new Vector3(-0.4f, 2.3f, 0f),
+            new Vector3(2.6f, 2.2f, 0f), new Vector3(4.4f, 1.75f, 0f), new Vector3(4.95f, 1.05f, 0f)
         };
         meteor.waypoints = new Transform[path.Length];
         for (int i = 0; i < path.Length; i++)
@@ -184,29 +196,22 @@ public static class OnboardingSceneBuilder
             fillSprite, borderSprite, TextAlignmentOptions.MidlineLeft);
         definition.fillAlpha = 0.18f;
 
-        // ── 5. Panel del quiz (solo mirar)
+        // ── 3. Mini quiz (solo mirar): círculos A y B junto a la tarjeta 3
         var quiz = new GameObject("Quiz").transform;
-        float panelTop = 1.55f, panelH = 3.85f;
-        var panel = CreateCard("PanelQuiz", quiz, new Vector3(RightX, panelTop - panelH / 2f, 0f), new Vector2(2.6f, panelH), Gris,
-            "", 1f, fillSprite, borderSprite, TextAlignmentOptions.Center);
-        panel.fillAlpha = 0.12f;
-        var title = CreateText("Quiz_Titulo", quiz, new Vector3(RightX, panelTop - 0.38f, 0f), new Vector2(2.4f, 0.6f),
-            "<b>4. Quiz</b>\n<size=70%>Demo: solo mirar</size>", 2.5f, TextAlignmentOptions.Center);
-        var question = CreateText("Pregunta", quiz, new Vector3(RightX, panelTop - 1.05f, 0f), new Vector2(2.4f, 0.6f),
-            "<b>¿Cómo vas a leer el cuento?</b>", 2.3f, TextAlignmentOptions.Center);
-        var options = new ProjectedCard[3];
-        string[] optText = { "<b>A</b>   En silencio", "<b>B</b>   En voz alta", "<b>C</b>   Cantando" };
-        Color[] optColor = { Planeta, Rosa, Estrella };
-        string[] optName = { "Opcion_Planeta", "Opcion_Rosa", "Opcion_Estrella" };
-        for (int i = 0; i < 3; i++)
-            options[i] = CreateCard(optName[i], quiz, new Vector3(RightX, panelTop - 1.75f - i * 0.68f, 0f), new Vector2(2.2f, 0.52f),
-                optColor[i], optText[i], 2.3f, fillSprite, borderSprite, TextAlignmentOptions.MidlineLeft);
+        var circleFill = SaveSprite(DrawCircle(false), 64, "circulo_fondo", Vector4.zero);
+        var circleRing = SaveSprite(DrawCircle(true), 64, "circulo_borde", Vector4.zero);
+        var options = new ProjectedCard[2];
+        string[] optLetter = { "A", "B" };
+        Color[] optColor = { Planeta, Estrella };
+        for (int i = 0; i < options.Length; i++)
+            options[i] = CreateCircle("Opcion_" + optLetter[i], quiz, new Vector3(OptionsX, OptionsY[i], 0f), OptionDiameter,
+                optColor[i], optLetter[i], circleFill, circleRing);
 
         var starsGo = new GameObject("Estrellas");
         var stars = starsGo.AddComponent<StarBurst>();
         stars.star = starSprite;
-        stars.starSize = 0.35f;
-        stars.radius = 1.2f;
+        stars.starSize = 0.3f;
+        stars.radius = 0.8f;
 
         // ── Secuencia
         var seqGo = new GameObject("Onboarding");
@@ -220,12 +225,11 @@ public static class OnboardingSceneBuilder
         seq.cardRead = cardRead;
         seq.meteor = meteor;
         seq.planet = planet;
-        seq.cardDoubt = cardDoubt;
+        seq.cardQuiz = cardQuiz;
         seq.wordHighlight = word;
         seq.definition = definition;
-        seq.quizPanel = panel;
-        seq.quizTitle = title;
-        seq.question = question;
+        seq.title = title;
+        seq.subtitle = subtitle;
         seq.options = options;
         seq.stars = stars;
         AssignAudioClips(seq);
@@ -251,6 +255,26 @@ public static class OnboardingSceneBuilder
         var tracker = bookGo.AddComponent<BookPageTracker>();
         tracker.receiver = rec;
         tracker.agent = agent;
+
+        // ── Al terminar el onboarding: agente en vivo ("Principito, tengo una duda")
+        var dudasGo = new GameObject("Dudas");
+        var highlighter = dudasGo.AddComponent<WordHighlighter>();
+        highlighter.book = bookRef.transform;
+        highlighter.template = word;
+        var session = dudasGo.AddComponent<DoubtSession>();
+        session.agent = agent;
+        session.tracker = tracker;
+        session.highlighter = highlighter;
+        session.principito = anim;
+        session.definition = definition;
+        session.receiver = rec;
+        var phrase = dudasGo.AddComponent<TriggerPhraseListener>();
+        phrase.agent = agent;
+        UnityEventTools.AddPersistentListener(phrase.onPhrase, session.AbrirDudas);
+        session.phraseListener = phrase;
+        session.enabled = false;   // se activan con onFinished del onboarding
+        phrase.enabled = false;
+        UnityEventTools.AddPersistentListener(seq.onFinished, session.Activar);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -283,8 +307,7 @@ public static class OnboardingSceneBuilder
     {
         missing = new List<string>();
         int n = 0;
-        foreach (var line in new[] { seq.intro, seq.bookLine, seq.readLine, seq.doubtLine, seq.doubtExample,
-                                     seq.quizLine, seq.quizIntro, seq.quizWrong, seq.quizRight, seq.farewell })
+        foreach (var line in seq.AllLines())
         {
             if (line == null || string.IsNullOrEmpty(line.id)) continue;
             line.clip = null;
@@ -333,12 +356,61 @@ public static class OnboardingSceneBuilder
         if (!string.IsNullOrEmpty(text))
             label = NewTmp("Texto", go.transform, Vector3.zero, size - new Vector2(0.3f, 0.12f), text, fontSize, align);
 
+        if (label) { label.enableAutoSizing = true; label.fontSizeMin = fontSize * 0.6f; label.fontSizeMax = fontSize; }
+
         var card = go.AddComponent<ProjectedCard>();
         card.fill = fill;
         card.border = border;
         card.label = label;
         card.color = color;
         return card;
+    }
+
+    /// Opción circular del mini quiz (A, B) con relleno, borde y letra.
+    static ProjectedCard CreateCircle(string name, Transform parent, Vector3 pos, float diameter, Color color, string letter,
+                                      Sprite fillSprite, Sprite ringSprite)
+    {
+        var go = new GameObject(name);
+        if (parent) go.transform.SetParent(parent, false);
+        go.transform.position = pos;
+        float s = diameter / 0.64f;   // sprites de 64 px a 100 px/unidad
+
+        var fill = new GameObject("Fondo").AddComponent<SpriteRenderer>();
+        fill.transform.SetParent(go.transform, false);
+        fill.transform.localScale = Vector3.one * s;
+        fill.sprite = fillSprite;
+        fill.sortingOrder = 5;
+
+        var ring = new GameObject("Borde").AddComponent<SpriteRenderer>();
+        ring.transform.SetParent(go.transform, false);
+        ring.transform.localScale = Vector3.one * s;
+        ring.sprite = ringSprite;
+        ring.sortingOrder = 6;
+
+        var label = NewTmp("Texto", go.transform, Vector3.zero, new Vector2(diameter, diameter), "<b>" + letter + "</b>", 2.4f,
+            TextAlignmentOptions.Center);
+        var card = go.AddComponent<ProjectedCard>();
+        card.fill = fill;
+        card.border = ring;
+        card.label = label;
+        card.color = color;
+        card.fillAlpha = 0.45f;
+        return card;
+    }
+
+    static Color32[] DrawCircle(bool ringOnly)
+    {
+        const int N = 64;
+        const float r = 30f, thickness = 4f;
+        var px = new Color32[N * N];
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float d = new Vector2(x + 0.5f - N / 2f, y + 0.5f - N / 2f).magnitude - r;
+                float a = ringOnly ? Mathf.Clamp01(thickness / 2f + 0.5f - Mathf.Abs(d + thickness / 2f)) : Mathf.Clamp01(0.5f - d);
+                px[y * N + x] = new Color32(255, 255, 255, (byte)(a * 255));
+            }
+        return px;
     }
 
     static ProjectedCard CreateText(string name, Transform parent, Vector3 pos, Vector2 size, string text,

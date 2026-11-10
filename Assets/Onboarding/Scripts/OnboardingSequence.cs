@@ -6,16 +6,19 @@ using UnityEngine.Events;
 /// <summary>
 /// Onboarding de StoryScape (se activa al escanear el ArUco de la primera página: marker_0).
 /// Principito a la izquierda del libro, tarjetas arriba, ejemplos a la derecha; la zona de manos no se proyecta.
+/// Guion: ONBOARDING_AUDIOS.md
 ///
-/// 1. Bienvenida: el Principito aparece, saluda y anuncia las reglas.
-/// 2. "En el libro": se iluminan suavemente los bordes del área del marcador.
-/// 3. "Lee en voz alta": un meteoro cruza junto al libro hacia un planeta.
-/// 4. "¿Una duda?": el Principito dice la frase gatillo; se resalta "Dedicatoria" y aparece su significado.
-/// 5. Quiz (solo mirar): respuesta incorrecta y luego correcta.
-/// 6. Cierre: el Principito invita a leer en voz alta y todo se desvanece (mesa limpia).
+/// 1. 01_intro     Bienvenida: el Principito aparece, saluda y anuncia las reglas.
+/// 2. 02_libro     Tarjeta 1 "En el libro": se iluminan los bordes del área del marcador.
+/// 3. 03_voz_alta  Tarjeta 2 "Lee en voz alta": en "Así podrás ver animaciones…" un meteoro cruza hacia el planeta.
+/// 4. 04_quiz      Tarjeta 3 "Quiz": aparece el panel; en "Responde diciendo la letra…" el Principito elige
+///                 una opción y en "Si eliges una respuesta que no es…" esa opción se apaga (sin rojo ni error).
+/// 5. 05_final     "Y cuando aciertes, ¡lo celebramos juntos!": la opción correcta brilla, crece, salen estrellas;
+///                 "¿Estás listo?" y luego todo se desvanece (mesa limpia).
 ///
-/// Los audios son pregenerados con ElevenLabs (TTS). Si una línea no tiene audio,
-/// se espera un tiempo según la longitud del texto (útil para probar sin audios).
+/// La parte "Principito, tengo una duda" está desactivada por ahora (Incluir Dudas).
+/// Los momentos (segundos) están medidos en los audios; si una línea no tiene audio, se espera un tiempo
+/// según la longitud del texto (útil para probar sin audios).
 /// </summary>
 public class OnboardingSequence : MonoBehaviour
 {
@@ -35,27 +38,29 @@ public class OnboardingSequence : MonoBehaviour
     [Header("Personaje y voz")]
     public SpriteAnimator2D principito;
     public AudioSource voice;
+    [Tooltip("Solo se usa si \"Esperar respuesta final\" está activo")]
     public VoiceActivityWaiter listener;
     public float principitoFade = 0.8f;
 
+    [Header("Encabezado")]
+    public ProjectedCard title;
+    public ProjectedCard subtitle;
 
-    [Header("2. En el libro")]
+    [Header("1. En el libro")]
     public ProjectedCard cardBook;
     public ProjectedCard markerFrame;
 
-    [Header("3. Lee en voz alta")]
+    [Header("2. Lee en voz alta")]
     public ProjectedCard cardRead;
     public MeteorFlight meteor;
     public ProjectedCard planet;
-    [Tooltip("Segundo del audio 03_voz_alta en que empieza el meteoro (\"¡Mira, ahí va un meteoro!\")")]
-    public float meteorStartTime = 5.75f;
+    [Tooltip("Muestra el meteoro y el planeta durante la regla 2")]
+    public bool mostrarMeteoro = true;
+    [Tooltip("Segundo del audio 03_voz_alta en que sale el meteoro (\"Así podrás ver animaciones…\")")]
+    public float meteorStartTime = 2.94f;
 
-    [Header("4. ¿Una duda?")]
-    public ProjectedCard cardDoubt;
-    public ProjectedCard wordHighlight;
-    public ProjectedCard definition;
-
-    [Header("5. Quiz (solo mirar)")]
+    [Header("3. Quiz (solo mirar)")]
+    public ProjectedCard cardQuiz;
     public ProjectedCard quizPanel;
     public ProjectedCard quizTitle;
     public ProjectedCard question;
@@ -64,15 +69,31 @@ public class OnboardingSequence : MonoBehaviour
     public int wrongOption = 0;
     public int rightOption = 1;
     public StarBurst stars;
+    [Tooltip("Segundo de 04_quiz en que aparece el panel (\"…al terminar cada capítulo…\")")]
+    public float quizShowTime = 0f;
+    [Tooltip("Segundo de 04_quiz en que el Principito elige la opción incorrecta (\"Responde diciendo la letra…\")")]
+    public float quizTryTime = 5.64f;
+    [Tooltip("Segundo de 04_quiz en que la opción incorrecta se apaga (\"Si eliges una respuesta que no es…\")")]
+    public float quizWrongTime = 8.36f;
+    [Tooltip("Segundo de 05_final en que se celebra la correcta (\"¡lo celebramos juntos!\")")]
+    public float celebrateTime = 1.40f;
+
+    [Header("Dudas (desactivado por ahora)")]
+    public bool incluirDudas = false;
+    public ProjectedCard cardDoubt;
+    public ProjectedCard wordHighlight;
+    public ProjectedCard definition;
 
     [Header("Animaciones del Principito (nombres de clips)")]
     public string animRest = "Reposo";
-    public string animGreet = "React";
+    public string animGreet = "Saludo";
+    [Tooltip("Regla 1: \"no tapes el cuadrado\" (dedo levantado)")]
+    public string animBook = "Incorrecto";
     public string animDoubt = "Duda";
-    public string animQuiz = "Asking";
+    public string animQuiz = "Quiz";
     [Tooltip("Mientras habla en las líneas que no tienen animación propia (vacío = reposo)")]
     public string animTalk = "Hablando";
-    [Tooltip("Regla 2: pide leer en voz alta, hasta que pasa el meteoro")]
+    [Tooltip("Regla 2: pide leer en voz alta")]
     public string animRead = "VozAlta";
     [Tooltip("En el quiz, mientras una opción brilla antes de saber si es correcta")]
     public string animThink = "Pensando";
@@ -81,24 +102,25 @@ public class OnboardingSequence : MonoBehaviour
 
     [Header("Guion (audios en Assets/Onboarding/Audio con el mismo id)")]
     public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles." };
-    public Line bookLine = new Line { id = "02_libro", text = "Primero: no tapes el cuadro negro con tus manos. Así sé en qué página estás." };
-    public Line readLine = new Line { id = "03_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia. ¡Mira, ahí va un meteoro!" };
-    public Line doubtLine = new Line { id = "04_duda", text = "Tercero: si tienes una duda, llámame diciendo: Principito, tengo una duda." };
-    public Line doubtExample = new Line { id = "04b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa: son palabras al inicio de un libro para regalárselo a alguien especial como cuando escribes \"Para mi mamá\" en un dibujo que le regalas." };
-    public Line quizLine = new Line { id = "04c_quiz", text = "Y al terminar cada capítulo, te haré dos preguntas sobre lo que leíste." };
-    public Line quizIntro = new Line { id = "05_juego_intro", text = "Mira, así se verán las preguntas. Por ejemplo: ¿cómo vas a leer el cuento? ¿En silencio, en voz alta o cantando? Se responde diciendo la letra de la opción." };
-    public Line quizWrong = new Line { id = "06_juego_casi", text = "Si eliges una respuesta que no es como por ejemplo la opción A, no pasa nada. ¡Puedes intentarlo otra vez!" };
-    public Line quizRight = new Line { id = "07_juego_bien", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo? ¡Empecemos!" };
-    public Line farewell = new Line { id = "08_final", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
+    public Line bookLine = new Line { id = "02_libro", text = "Primero: no tapes el cuadrado de barras con tus manos. Así sé en qué página estás." };
+    public Line readLine = new Line { id = "03_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia." };
+    public Line quizLine = new Line { id = "04_quiz", text = "Tercero: al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. Responde diciendo la letra de la opción. Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez!" };
+    public Line finalLine = new Line { id = "05_final", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo?" };
+    [Tooltip("Solo si Incluir Dudas está activo")]
+    public Line doubtLine = new Line { id = "04_duda", text = "Si tienes una duda, llámame diciendo: Principito, tengo una duda." };
+    public Line doubtExample = new Line { id = "04b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa." };
 
     [Header("Tiempos")]
     public float pauseBetweenLines = 0.35f;
-    public float choiceThinkTime = 1.4f;
+    [Tooltip("Espera tras \"¿Estás listo?\" antes de que todo se desvanezca")]
+    public float finalHold = 1.2f;
+    [Tooltip("Espera que el niño responda a \"¿Estás listo?\" (micrófono) antes de desvanecer")]
+    public bool esperarRespuestaFinal = false;
     public float cleanupFade = 1.2f;
 
     [Header("Eventos")]
-    public UnityEvent onStarted;
-    public UnityEvent onFinished;
+    public UnityEvent onStarted = new UnityEvent();
+    public UnityEvent onFinished = new UnityEvent();
 
     public bool IsRunning { get; private set; }
 
@@ -130,77 +152,90 @@ public class OnboardingSequence : MonoBehaviour
         onStarted?.Invoke();
         HideAll(true);
 
-        // 1. Bienvenida: el Principito aparece, saluda y anuncia las reglas
+        // 1. Bienvenida
+        Show(title);
+        Show(subtitle);
         Anim(animGreet);
         yield return FadePrincipito(1f);
         yield return Say(intro);
         Anim(animRest);
 
-        // 2. En el libro: bordes del área del marcador
+        // 2. Tarjeta 1: bordes del área del marcador
         Show(cardBook);
         Show(markerFrame);
+        Anim(animBook);
         if (markerFrame) markerFrame.SetGlow(true);
         yield return Say(bookLine);
         Hide(markerFrame);
+        Anim(animRest);
 
-        // 3. Lee en voz alta: meteoro hacia el planeta
+        // 3. Tarjeta 2: lee en voz alta → meteoro en "Así podrás ver animaciones…"
         Show(cardRead);
-        Show(planet);
+        if (mostrarMeteoro) Show(planet);
         Anim(animRead);
-        meteorPending = meteor != null;
-        if (meteorPending) StartCoroutine(MeteorAfter(MeteorDelay()));
+        bool meteorRunning = mostrarMeteoro && meteor != null;
+        if (meteorRunning)
+            StartCoroutine(At(readLine, meteorStartTime, () => StartCoroutine(PlayMeteor(() => meteorRunning = false))));
         yield return Say(readLine);
-        while (meteorPending || (meteor && meteor.IsPlaying)) yield return null;
+        while (meteorRunning) yield return null;
         Anim(animRest);
         Hide(planet);
 
-        // 4. ¿Una duda?: frase gatillo + ejemplo con "Dedicatoria"
-        Show(cardDoubt);
-        Anim(animDoubt);
-        yield return Say(doubtLine);
-        Show(wordHighlight);
-        if (wordHighlight) wordHighlight.SetGlow(true);
-        Show(definition);
-        Anim(animTalk);   // explica "Dedicatoria": pasa a hablar
-        yield return Say(doubtExample);
-        Anim(animRest);
-        Hide(wordHighlight);
-        Hide(definition);
-        yield return new WaitForSeconds(0.5f);
+        // (Opcional, desactivado) ¿Una duda?
+        if (incluirDudas)
+        {
+            Show(cardDoubt);
+            Anim(animDoubt);
+            yield return Say(doubtLine);
+            Show(wordHighlight);
+            if (wordHighlight) wordHighlight.SetGlow(true);
+            Show(definition);
+            Anim(animTalk);
+            yield return Say(doubtExample);
+            Anim(animRest);
+            Hide(wordHighlight);
+            Hide(definition);
+        }
 
-        // 5. Quiz (solo mirar)
-        Show(quizPanel);
-        Show(quizTitle);
-        Show(question);
-        foreach (var o in options) Show(o);
+        // 4. Tarjeta 3: quiz (solo mirar). Todo en un solo audio, con momentos medidos.
+        Show(cardQuiz);
         Anim(animQuiz);
+        StartCoroutine(At(quizLine, quizShowTime, () =>
+        {
+            Show(quizPanel);
+            Show(quizTitle);
+            Show(question);
+            foreach (var o in options) Show(o);
+        }));
+        StartCoroutine(At(quizLine, quizTryTime, () =>      // "Responde diciendo la letra…": elige la A
+        {
+            Anim(animThink);
+            Glow(wrongOption, true);
+        }));
+        StartCoroutine(At(quizLine, quizWrongTime, () =>    // "Si eliges una respuesta que no es…": se apaga
+        {
+            Glow(wrongOption, false);
+            Dim(wrongOption);
+            Anim(animTalk);   // explica que no pasa nada: habla
+        }));
         yield return Say(quizLine);
-        yield return Say(quizIntro);
 
-        //    Intento incorrecto: la opción brilla y luego se apaga, sin rojo ni error.
-        Anim(animThink);
-        Glow(wrongOption, true);
-        yield return new WaitForSeconds(choiceThinkTime);
-        Glow(wrongOption, false);
-        Dim(wrongOption);
-        Anim(animWrong);
-        yield return Say(quizWrong);
-
-        //    Segundo intento correcto: brilla, crece, estrellas y celebración.
+        // 5. Correcta y cierre: brilla → "¡lo celebramos juntos!" crece + estrellas → "¿Estás listo?"
         Anim(animThink);
         Glow(rightOption, true);
-        yield return new WaitForSeconds(choiceThinkTime);
-        Glow(rightOption, false);
-        Grow(rightOption);
-        for (int i = 0; i < options.Length; i++) if (i != rightOption) Dim(i);
-        if (stars && Valid(rightOption)) stars.Burst(options[rightOption].transform.position);
-        Anim(animRight);
-        yield return Say(quizRight);
-        Anim(animRest);
+        StartCoroutine(At(finalLine, celebrateTime, () =>
+        {
+            Glow(rightOption, false);
+            Grow(rightOption);
+            for (int i = 0; i < options.Length; i++) if (i != rightOption) Dim(i);
+            if (stars && Valid(rightOption)) stars.Burst(options[rightOption].transform.position);
+            Anim(animRight);
+        }));
+        yield return Say(finalLine);
+        if (esperarRespuestaFinal && listener) yield return listener.WaitForResponse();
+        else yield return new WaitForSeconds(finalHold);
 
-        // 6. Cierre: espera la respuesta a "¿Estás listo?", invita a leer y deja la mesa limpia
-        if (listener) yield return listener.WaitForResponse();
-        if (HasContent(farewell)) yield return Say(farewell);
+        Anim(animRest);
         HideAll(false);
         yield return FadePrincipito(0f, cleanupFade);
 
@@ -209,27 +244,32 @@ public class OnboardingSequence : MonoBehaviour
         Debug.Log("[Onboarding] Terminado: mesa limpia.");
     }
 
-    bool meteorPending;
-
-    /// El meteoro sale cuando el Principito dice "¡Mira, ahí va un meteoro!".
-    float MeteorDelay()
+    /// Ejecuta una acción en el segundo indicado de una línea que empieza ahora.
+    /// Sin audio, el momento se ajusta proporcionalmente a la duración estimada del texto.
+    IEnumerator At(Line line, float seconds, Action action)
     {
-        if (readLine != null && readLine.clip != null) return Mathf.Clamp(meteorStartTime, 0f, readLine.clip.length);
-        // Sin audio: proporcional a la posición de la frase en el texto
-        float total = Mathf.Clamp(readLine.text.Length * 0.065f, 1.5f, 10f);
-        int i = readLine.text.IndexOf("¡Mira", StringComparison.Ordinal);
-        return i > 0 ? total * i / readLine.text.Length : 0f;
+        float delay = seconds;
+        if (line == null || line.clip == null)
+        {
+            float est = EstimatedDuration(line);
+            delay = Mathf.Min(seconds, est * 0.9f);
+        }
+        else delay = Mathf.Clamp(seconds, 0f, line.clip.length);
+        yield return new WaitForSeconds(delay);
+        action?.Invoke();
     }
 
-    IEnumerator MeteorAfter(float delay)
+    IEnumerator PlayMeteor(Action done)
     {
-        yield return new WaitForSeconds(delay);
         yield return meteor.Play();
-        meteorPending = false;
+        done?.Invoke();
     }
 
     // ───────────── Ayudas ─────────────
     bool speaking;
+
+    static float EstimatedDuration(Line line) =>
+        line == null || string.IsNullOrEmpty(line.text) ? 1.5f : Mathf.Clamp(line.text.Length * 0.065f, 1.5f, 15f);
 
     IEnumerator Say(Line line)
     {
@@ -242,17 +282,15 @@ public class OnboardingSequence : MonoBehaviour
             yield return null;
             float limit = line.clip.length + 1.5f, t = 0f;   // seguro: nunca esperar de más
             while (voice.isPlaying && t < limit) { t += Time.unscaledDeltaTime; TalkIfResting(); yield return null; }
-            speaking = false;
-            StopTalking();
         }
         else
         {
             Debug.Log($"[Onboarding] (sin audio {line.id}) {line.text}");
-            float dur = Mathf.Clamp(line.text.Length * 0.065f, 1.5f, 10f);
+            float dur = EstimatedDuration(line);
             for (float t = 0f; t < dur; t += Time.deltaTime) { TalkIfResting(); yield return null; }
-            speaking = false;
-            StopTalking();
         }
+        speaking = false;
+        StopTalking();
         yield return new WaitForSeconds(pauseBetweenLines);
     }
 
@@ -285,8 +323,6 @@ public class OnboardingSequence : MonoBehaviour
         if (principito && !string.IsNullOrEmpty(animTalk) && principito.CurrentClip == animTalk) principito.Play(animRest);
     }
 
-    static bool HasContent(Line l) => l != null && (l.clip != null || !string.IsNullOrEmpty(l.text));
-
     void Anim(string clip) { if (principito && !string.IsNullOrEmpty(clip)) principito.Play(clip); }
 
     bool Valid(int i) => options != null && i >= 0 && i < options.Length && options[i] != null;
@@ -299,11 +335,11 @@ public class OnboardingSequence : MonoBehaviour
 
     void HideAll(bool instant)
     {
-        foreach (var c in new[] { cardBook, markerFrame, cardRead, planet, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+        foreach (var c in new[] { title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
             if (c) { c.ResetState(); c.Hide(instant); }
         if (options != null) foreach (var o in options) if (o) { o.ResetState(); o.Hide(instant); }
     }
 
-    // Compatibilidad con el generador anterior (ya no se usa en este flujo)
-    [HideInInspector] public Line closing = new Line { id = "", text = "" };
+    /// Lista de líneas (para asignar audios desde el editor).
+    public Line[] AllLines() => new[] { intro, bookLine, readLine, quizLine, finalLine, doubtLine, doubtExample };
 }
