@@ -13,7 +13,7 @@ ArUco 0 (página 1) ──► Onboarding ──► "¿Estás listo?" ──► n
                                        ▼
                          Lectura en vivo (agente "Principito lector" escucha en silencio)
                            │                                   │
-             el niño lee una frase resaltada       el niño dice "Principito, tengo una duda"
+             el niño lee una frase activadora       el niño dice "Principito, tengo una duda"
                            │                                   │
                            ▼                                   ▼
                  animación sobre la mesa           se pausa la lectura → agente de dudas
@@ -42,7 +42,7 @@ Los momentos de cada animación están sincronizados con la voz. Los segundos se
 Componente `ReadingSession`, en el objeto **Lectura**:
 
 - Al terminar el onboarding se conecta el agente **"Principito lector"**, que solo escucha. Unity silencia su voz.
-- Cuando el niño lee una **frase resaltada** del libro, se reproduce su animación. Se detecta de dos formas:
+- Cuando el niño lee una **frase activadora** del libro, se reproduce su animación. Se detecta de dos formas:
   1. **Unity** compara lo que transcribe el agente con la frase. Junta los últimos 20 s y la activa si coincide al menos el 70 % de las palabras.
   2. **El agente** llama a la herramienta de cliente `activar_animacion`, como respaldo.
 - Al cambiar de página (ArUco), Unity le envía al agente el texto de la nueva página.
@@ -54,7 +54,7 @@ Componente `ReadingSession`, en el objeto **Lectura**:
 
 > ⚠️ Mientras está conectado, el agente lector consume minutos de ElevenLabs durante toda la lectura.
 
-### 3. Dudas: "Principito, tengo una duda"
+### 3. Dudas: "Principito, tengo una duda" (Por el momento no esta contemplado su uso)
 
 Componente `DoubtSession`, en el objeto **Dudas**:
 
