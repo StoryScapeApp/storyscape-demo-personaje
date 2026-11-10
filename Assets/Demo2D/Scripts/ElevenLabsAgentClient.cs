@@ -46,6 +46,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
     public bool muteMicWhileAgentSpeaks = true;
     [Tooltip("Muestra un medidor del micrófono en pantalla durante la conversación")]
     public bool showMicLevel = true;
+    [Tooltip("No reproduce la voz del agente (agente que solo escucha, p. ej. durante la lectura)")]
+    public bool muteOutput = false;
 
     [Header("Subtítulos")]
     public bool showSubtitles = true;
@@ -75,6 +77,20 @@ public class ElevenLabsAgentClient : MonoBehaviour
     /// Recibe (nombre, parámetros) y devuelve el texto que se responde al agente, o null si no la reconoce.
     /// </summary>
     public Func<string, ToolArgs, string> ClientToolHandler;
+
+    /// <summary>Texto que el agente transcribió de lo que dijo el niño (cada turno).</summary>
+    public event Action<string> UserTranscript;
+
+    readonly Dictionary<string, Func<ToolArgs, string>> tools = new Dictionary<string, Func<ToolArgs, string>>();
+    /// Registra una herramienta de cliente por nombre (tiene prioridad sobre ClientToolHandler).
+    public void RegisterTool(string name, Func<ToolArgs, string> handler) { if (handler == null) tools.Remove(name); else tools[name] = handler; }
+
+    /// Envía información al agente sin interrumpirlo (p. ej. el niño cambió de página).
+    public void SendContextualUpdate(string text)
+    {
+        if (ws == null || ws.State != WebSocketState.Open) return;
+        _ = SendText("{\"type\":\"contextual_update\",\"text\":" + Json(text) + "}");
+    }
 
     const string Endpoint = "wss://api.elevenlabs.io/v1/convai/conversation?agent_id=";
     const int ChunkSamples = 1600; // 100 ms a 16 kHz
@@ -119,10 +135,10 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Serializable] class UserTranscriptEvt { public string user_transcript; }
     [Serializable] class AgentResponseEvt { public string agent_response; }
     [Serializable] class InitMetaEvt { public string conversation_id; public string agent_output_audio_format; public string user_input_audio_format; }
-    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; }
+    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; public string agentIdLectura; }
     [Serializable] class ClientToolCallEvt { public string tool_name; public string tool_call_id; public ToolArgs parameters; }
     /// Parámetros de las herramientas de cliente del agente (los que una herramienta no usa llegan vacíos).
-    [Serializable] public class ToolArgs { public string palabra; public string significado; }
+    [Serializable] public class ToolArgs { public string palabra; public string significado; public string animacion; }
 
     void Awake()
     {
@@ -278,7 +294,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 break;
 
             case "audio":
-                if (m.audio_event != null && !string.IsNullOrEmpty(m.audio_event.audio_base_64))
+                if (!muteOutput && m.audio_event != null && !string.IsNullOrEmpty(m.audio_event.audio_base_64))
                 {
                     EnqueuePcm(Convert.FromBase64String(m.audio_event.audio_base_64));
                     EnsurePlaying();
@@ -298,6 +314,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 {
                     subtitleUser = m.user_transcription_event.user_transcript;
                     Debug.Log("[ElevenLabs] Niño: " + subtitleUser);
+                    UserTranscript?.Invoke(subtitleUser);
                 }
                 break;
 
@@ -324,7 +341,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
         bool error = false;
         try
         {
-            result = ClientToolHandler?.Invoke(call.tool_name, call.parameters ?? new ToolArgs());
+            var args = call.parameters ?? new ToolArgs();
+            result = tools.TryGetValue(call.tool_name ?? "", out var fn) ? fn(args) : ClientToolHandler?.Invoke(call.tool_name, args);
             if (result == null) { result = "Herramienta no disponible: " + call.tool_name; error = true; }
         }
         catch (Exception e) { result = "Error: " + e.Message; error = true; Debug.LogException(e); }
@@ -562,7 +580,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
         try
         {
             var cfg = JsonUtility.FromJson<LocalConfig>(File.ReadAllText(path));
-            agentId = (configKey == "agentIdBienvenida" ? cfg?.agentIdBienvenida : cfg?.agentId)?.Trim();
+            agentId = (configKey == "agentIdBienvenida" ? cfg?.agentIdBienvenida
+                     : configKey == "agentIdLectura" ? cfg?.agentIdLectura : cfg?.agentId)?.Trim();
         }
         catch { return false; }
         return !string.IsNullOrEmpty(agentId) && !agentId.StartsWith("PEGA_");

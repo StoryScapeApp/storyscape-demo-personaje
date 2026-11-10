@@ -106,6 +106,8 @@ public class OnboardingSequence : MonoBehaviour
     public Line readLine = new Line { id = "03_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia." };
     public Line quizLine = new Line { id = "04_quiz", text = "Tercero: al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. Responde diciendo la letra de la opción. Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez!" };
     public Line finalLine = new Line { id = "05_final", text = "Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo?" };
+    [Tooltip("Respuesta cuando el niño contesta a \"¿Estás listo?\" (luego empieza la lectura en vivo)")]
+    public Line readyLine = new Line { id = "06_listo", text = "¡Genial! Pasa la página y empieza a leer en voz alta." };
     [Tooltip("Solo si Incluir Dudas está activo")]
     public Line doubtLine = new Line { id = "04_duda", text = "Si tienes una duda, llámame diciendo: Principito, tengo una duda." };
     public Line doubtExample = new Line { id = "04b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa." };
@@ -115,7 +117,7 @@ public class OnboardingSequence : MonoBehaviour
     [Tooltip("Espera tras \"¿Estás listo?\" antes de que todo se desvanezca")]
     public float finalHold = 1.2f;
     [Tooltip("Espera que el niño responda a \"¿Estás listo?\" (micrófono) antes de desvanecer")]
-    public bool esperarRespuestaFinal = false;
+    public bool esperarRespuestaFinal = true;
     public float cleanupFade = 1.2f;
 
     [Header("Eventos")]
@@ -232,7 +234,14 @@ public class OnboardingSequence : MonoBehaviour
             Anim(animRight);
         }));
         yield return Say(finalLine);
-        if (esperarRespuestaFinal && listener) yield return listener.WaitForResponse();
+        if (esperarRespuestaFinal && listener)
+        {
+            // Espera el "¡Sí, estoy listo!" (o cualquier respuesta; si no responde, continúa igual)
+            Anim(animRest);
+            yield return listener.WaitForResponse();
+            Debug.Log(listener.LastResponded ? "[Onboarding] El niño respondió." : "[Onboarding] Sin respuesta: se continúa.");
+            yield return Say(readyLine);
+        }
         else yield return new WaitForSeconds(finalHold);
 
         Anim(animRest);
@@ -341,5 +350,5 @@ public class OnboardingSequence : MonoBehaviour
     }
 
     /// Lista de líneas (para asignar audios desde el editor).
-    public Line[] AllLines() => new[] { intro, bookLine, readLine, quizLine, finalLine, doubtLine, doubtExample };
+    public Line[] AllLines() => new[] { intro, bookLine, readLine, quizLine, finalLine, readyLine, doubtLine, doubtExample };
 }

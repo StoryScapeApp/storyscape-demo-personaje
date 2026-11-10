@@ -58,6 +58,14 @@ public class BookPageTracker : MonoBehaviour
         Debug.Log($"[Libro] Página actual: {CurrentPage} ({p.titulo})");
     }
 
+    /// Texto de una sola página.
+    public string GetTextoPagina(int page)
+    {
+        if (libro?.paginas == null) return "";
+        foreach (var p in libro.paginas) if (p.pagina == page) return p.texto;
+        return "";
+    }
+
     /// Texto de las páginas 1 a la actual, rotulado por página.
     public string GetTextoLeido()
     {

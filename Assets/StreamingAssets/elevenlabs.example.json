@@ -1,4 +1,5 @@
 {
   "agentId": "PEGA_AQUI_EL_AGENT_ID_DE_DUDAS",
-  "agentIdBienvenida": "PEGA_AQUI_EL_AGENT_ID_DE_BIENVENIDA"
+  "agentIdBienvenida": "PEGA_AQUI_EL_AGENT_ID_DE_BIENVENIDA",
+  "agentIdLectura": "PEGA_AQUI_EL_AGENT_ID_DEL_PRINCIPITO_LECTOR"
 }

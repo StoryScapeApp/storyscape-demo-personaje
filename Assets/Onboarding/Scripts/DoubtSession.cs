@@ -44,12 +44,11 @@ public class DoubtSession : MonoBehaviour
     [Tooltip("Tecla T: prueba el resaltado SIN conectarse a ElevenLabs, recorriendo esta lista (palabra|significado)")]
     public string[] testWords =
     {
-        "excusa|Razón que das para explicar por qué hiciste algo.",
-        "persona mayor|Una persona adulta, como tus papás o tus profesores.",
-        "consuelo|Cariño o ayuda que hace sentir mejor a alguien que está triste.",
-        "dedicatoria|Palabras al inicio de un libro para regalárselo a alguien especial.",
-        "comprenderlo todo|Entender todas las cosas, hasta las más difíciles.",
-        "recuerdan|Que todavía tienen algo en su memoria.",
+        "multisensorial|Que usa varios sentidos a la vez: ver, oír, tocar.",
+        "comprensión lectora|Entender bien lo que lees.",
+        "proyecciones|Imágenes de luz que se ven sobre una superficie, como en el cine.",
+        "imaginación|Lo que te permite inventar y ver cosas en tu mente.",
+        "relato|Una historia que alguien cuenta.",
         "elefante|(No está en la página: solo debe aparecer el significado.)",
     };
     int testIndex;

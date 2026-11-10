@@ -279,6 +279,10 @@ public static class OnboardingSceneBuilder
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
 
+        // Lectura en vivo (agente que escucha y animaciones de las frases resaltadas)
+        LecturaSetup.ConfigureSprites();
+        LecturaSetup.AddToOpenScene();
+
         var list = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
         list.RemoveAll(s => s.path == ScenePath);
         list.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
