@@ -1,132 +1,199 @@
-# StoryScape – Demo de personaje conversacional proyectado
+# StoryScape – Mesa de lectura interactiva con El Principito
 
-Demo en Unity del proyecto **StoryScape** (realidad aumentada espacial con proyector + cámara). Un personaje 2D en pixel art entra al área proyectada sobre la mesa, camina hasta un punto final y, al llegar, **conversa por voz con el niño** (ElevenLabs) sobre un término o frase resaltada del libro.
+Prototipo en Unity del proyecto **StoryScape**: realidad aumentada espacial con proyector y cámara, más IA generativa, para fortalecer la comprensión lectora de niños de primaria.
 
-## Flujo de la demo
+El libro impreso de *El Principito* se coloca sobre la mesa. Una cámara detecta el marcador **ArUco** de cada página y el proyector muestra sobre la mesa al Principito, las reglas de uso, animaciones de escenas del libro y la ayuda con palabras difíciles.
 
-1. Se proyecta un **resaltado** amarillo que pulsa sobre la zona del libro donde está el término.
-2. El personaje entra caminando, hace algunas paradas y se detiene en el **punto final**, mirando al lector (aparece un anillo de luz bajo sus pies).
-3. Al llegar, se conecta con un **agente de ElevenLabs** y le envía el término y su significado esperado.
-4. El personaje saluda, pregunta qué significa el término, escucha al niño por micrófono, da pistas y retroalimentación. Su **boca se mueve** según el volumen de la voz.
-5. Al terminar la conversación, el resaltado se apaga.
+## Flujo completo
+
+```
+ArUco 0 (página 1) ──► Onboarding ──► "¿Estás listo?" ──► niño responde ──► "¡Genial!…"
+                                                                               │
+                                       ┌───────────────────────────────────────┘
+                                       ▼
+                         Lectura en vivo (agente "Principito lector" escucha en silencio)
+                           │                                   │
+             el niño lee una frase resaltada       el niño dice "Principito, tengo una duda"
+                           │                                   │
+                           ▼                                   ▼
+                 animación sobre la mesa           se pausa la lectura → agente de dudas
+               (p. ej. Principito volando)         resalta la palabra en el libro + significado
+                                                               │
+                                                  al terminar, la lectura se reconecta sola
+```
+
+### 1. Onboarding
+
+Empieza al detectar **marker_0**. Lo controla el componente `OnboardingSequence`. Los audios son pregenerados con ElevenLabs y el guion está en [`ONBOARDING_AUDIOS.md`](ONBOARDING_AUDIOS.md).
+
+| Audio | Lo que se proyecta |
+|---|---|
+| `01_intro` | Título "¡Bienvenido a la mesa de la lectura!". El Principito aparece a la izquierda del libro y saluda. |
+| `02_libro` | Tarjeta **1. No tapes el cuadrado** y se ilumina el marco del marcador. |
+| `03_voz_alta` | Tarjeta **2. Lee en voz alta**. Un meteoro cruza hacia un planeta. |
+| `04_quiz` | Tarjeta **3. Responde el mini quiz** con los círculos **A** y **B**. La A brilla y se apaga (demo de respuesta incorrecta). |
+| `05_final` | La B brilla, crece y salen estrellas. "¿Estás listo?" |
+| `06_listo` | Después de que el niño responde (o tras 7 s): "¡Genial!…". Todo se desvanece y empieza la lectura en vivo. |
+
+Los momentos de cada animación están sincronizados con la voz. Los segundos se ajustan en `OnboardingSequence`: *Meteor Start Time*, *Quiz Try Time*, *Quiz Wrong Time* y *Celebrate Time*.
+
+### 2. Lectura en vivo y animaciones
+
+Componente `ReadingSession`, en el objeto **Lectura**:
+
+- Al terminar el onboarding se conecta el agente **"Principito lector"**, que solo escucha. Unity silencia su voz.
+- Cuando el niño lee una **frase resaltada** del libro, se reproduce su animación. Se detecta de dos formas:
+  1. **Unity** compara lo que transcribe el agente con la frase. Junta los últimos 20 s y la activa si coincide al menos el 70 % de las palabras.
+  2. **El agente** llama a la herramienta de cliente `activar_animacion`, como respaldo.
+- Al cambiar de página (ArUco), Unity le envía al agente el texto de la nueva página.
+- Si la conexión se corta (por ejemplo, por el límite de duración), se reconecta sola.
+
+| Página | Frase | Animación |
+|---|---|---|
+| 1 (marker_0) | "animaciones inspiradas en escenas del libro El Principito" | `principito_volando`: despega de su asteroide, planea con las aves sobre el libro y sale por la izquierda |
+
+> ⚠️ Mientras está conectado, el agente lector consume minutos de ElevenLabs durante toda la lectura.
+
+### 3. Dudas: "Principito, tengo una duda"
+
+Componente `DoubtSession`, en el objeto **Dudas**:
+
+- La frase se detecta con el **reconocedor de voz de Windows** (`TriggerPhraseListener`, gratis y sin internet) o en la transcripción del agente lector.
+- Recién en ese momento se conecta el **agente de dudas**. La lectura se pausa.
+- El Principito aparece y el niño pregunta por una palabra o frase. El agente llama a `resaltar_palabra(palabra, significado)` y Unity:
+  - **resalta la palabra sobre el libro**, usando las posiciones extraídas del PDF;
+  - muestra el **significado a la derecha del libro**.
+- Cuando el agente termina (`end_call`), todo se apaga y la lectura se reconecta.
 
 ## Requisitos
 
-- **Unity 6000.3.23f1** (Unity 6.3 LTS), plantilla 2D (URP)
-- Windows 10/11 con micrófono
-- Cuenta de **ElevenLabs** con un agente configurado (ver abajo)
-- (Opcional) Proyector conectado por HDMI como segunda pantalla
+- **Unity 6000.3.23f1** (Unity 6.3 LTS), 2D URP
+- Windows 10/11 con micrófono. El reconocedor de la frase usa el **micrófono predeterminado** y el **idioma de voz en español** de Windows.
+- Cámara (C920 o webcam) y **Python** con OpenCV para detectar los ArUco
+- Proyector por HDMI como segunda pantalla, en 16:9
+- Cuenta de **ElevenLabs** con dos agentes (ver abajo)
 
 ## Instalación
 
-1. Clona el repositorio:
-   ```bash
-   git clone https://github.com/StoryScapeApp/storyscape-demo-personaje.git
-   ```
-2. En **Unity Hub → Add → Add project from disk**, selecciona la carpeta clonada (la primera apertura tarda: se regenera `Library/`).
-3. Abre la escena `Assets/Scenes/StoryScapeDemo.unity`.
-4. Copia `Assets/StreamingAssets/elevenlabs.example.json` como `elevenlabs.local.json` en la misma carpeta y coloca tu Agent ID:
+1. Clona el repositorio y ábrelo desde **Unity Hub → Add project from disk**.
+2. Copia `Assets/StreamingAssets/elevenlabs.example.json` como `elevenlabs.local.json` y pega los Agent ID:
    ```json
-   { "agentId": "agent_xxxxxxxxxxxxxxxxxxxx" }
+   {
+     "agentId": "agent_… (agente de dudas)",
+     "agentIdLectura": "agent_… (Principito lector)"
+   }
    ```
-   > `elevenlabs.local.json` está en el `.gitignore`: **no se sube al repositorio**.
-5. En el objeto `AgenteElevenLabs`, escribe en **Microphone Device** el nombre de tu micrófono (aparece en la consola al dar Play) y desmarca **Simulate**.
-6. Presiona **Play** y haz clic en la ventana de Unity (sin foco, el Play no avanza ni envía el micrófono).
+   > `elevenlabs.local.json` está en el `.gitignore` y **no se sube** al repositorio. Revisa siempre `git status` antes de hacer un commit.
+3. Abre `Assets/Scenes/Onboarding.unity`. En `VozPrincipito` y en los agentes, revisa el nombre del micrófono (*Microphone Device*) y *Mic Gain*.
+4. Ejecuta el script de Python que envía los ArUco por UDP a `127.0.0.1:5005`:
+   ```json
+   {"tipo": "aruco", "id": 0, "x": 0.5, "y": 0.5}
+   ```
+   También acepta `{"tipo": "duda"}` para abrir las dudas desde Python.
+5. Presiona **Play** y muestra la página 1 a la cámara. Haz clic en la ventana de Unity: sin foco, el Play no avanza.
 
-## Configuración del agente en ElevenLabs
+## Agentes de ElevenLabs
 
-> 📄 El **system prompt** y el **first message** completos del personaje están en [`PROMPTS_ELEVENLABS.md`](PROMPTS_ELEVENLABS.md).
+| Agente | Campo en `elevenlabs.local.json` | Prompt y configuración | Herramienta de cliente |
+|---|---|---|---|
+| Dudas | `agentId` | [`docs/prompt_principito_dudas.md`](docs/prompt_principito_dudas.md) | `resaltar_palabra` (`palabra`, `significado`) |
+| Principito lector | `agentIdLectura` | [`docs/prompt_principito_lector.md`](docs/prompt_principito_lector.md) | `activar_animacion` (`animacion`) |
 
-En **Agents → tu agente**:
+Ajustes comunes:
+- Idioma español.
+- **PCM 16000 Hz** de entrada y salida.
+- El agente de dudas con la System tool **End call**.
+- El lector con el **First message vacío**, **Skip turn** activado y **End call** desactivado.
 
-| Ajuste | Valor |
+Variables que envía Unity:
+- Al agente de dudas: `{{pagina_actual}}` y `{{texto_leido}}` (páginas 1 a la actual, nunca las siguientes).
+- Al agente lector: `{{pagina_actual}}`, `{{texto_pagina}}` y `{{animaciones}}`.
+
+## Escenas
+
+| Escena | Uso |
 |---|---|
-| Idioma | Español |
-| LLM | GPT-4o (u otro) |
-| System prompt | Ver [`PROMPTS_ELEVENLABS.md`](PROMPTS_ELEVENLABS.md) (usa `{{termino}}` y `{{significado}}`, que Unity envía al conectar) |
-| First message | `¡Hola! Qué bueno verte leyendo conmigo. En esta página está resaltado "{{termino}}". ¿Me ayudas a descubrir qué significa?` |
-| Voice → TTS output format | **PCM 16000 Hz** |
-| Advanced → User input audio format | **PCM 16000 Hz** |
-| Advanced → Call limits → Max conversation duration | 120 s (desarrollo) / ~300 s (validación) |
-| Advanced → Client Events | `interruption` activado |
-| Seguridad | Agente público (demo). Para producción: agente privado + URL firmada desde el servidor |
+| `Scenes/Onboarding.unity` | **Escena principal** (primera del build): onboarding, lectura en vivo y dudas. |
+| `Scenes/PruebaDudas.unity` | Prueba **sin proyector**: dibuja la página en pantalla para revisar resaltados y animaciones. ⚠️ Desmarca *Show* en *Simulated Book Page* antes de proyectar. |
+| `Scenes/StoryScapeDemo.unity` | Demo anterior (personaje caminando + conversación por término). Su prompt está en [`PROMPTS_ELEVENLABS.md`](PROMPTS_ELEVENLABS.md). |
 
-> El plan gratuito incluye pocos minutos de agente al mes: usa el **modo simulado** mientras desarrollas.
+## Atajos de prueba (en Play)
 
-## Componentes principales
-
-| Objeto / Script | Función |
+| Tecla | Acción |
 |---|---|
-| `Personaje` → `CharacterPathWalker2D` | Recorrido hasta el punto final (paradas al azar, velocidad, zona, `Loop`) y evento `On Arrived`. |
-| `Personaje` → `CharacterTalkAnimator` | Mueve la boca (cerrada / entreabierta / abierta) según el volumen de la voz del agente. |
-| `AgenteElevenLabs` → `ElevenLabsAgentClient` | Conexión WebSocket con ElevenLabs, micrófono, reproducción de voz y modo simulado. |
-| `FlujoDemo` → `StoryScapeDemoFlow` | Une todo: resaltado del término, llegada del personaje e inicio de la conversación. |
-| `Assets/Demo2D/Data/BancoTerminos.asset` | Banco de términos: término, significado, página y posición/tamaño del resaltado. |
-| `Recorrido/PuntoInicio` y `Recorrido/PuntoFinal` | Desde dónde entra el personaje y dónde se detiene. |
+| **D** | Abre la conversación de dudas (sin decir la frase). |
+| **Esc** | Cierra la conversación de dudas. |
+| **T** | Prueba el resaltado y el significado **sin ElevenLabs** con la lista *Test Words* de `DoubtSession`. |
+| **V** | Reproduce la animación de la página actual **sin ElevenLabs**. |
 
-### Opciones de `ElevenLabsAgentClient`
+También están en el menú contextual (⋮) de cada componente: *Iniciar onboarding*, *Abrir dudas*, *Iniciar lectura en vivo*, *Reiniciar animaciones* y *Reproducir*.
 
-| Campo | Descripción |
+## Datos del libro
+
+En `Assets/StreamingAssets/` (se generan desde el PDF del libro; los fuentes están en `Assets/Lectura/Datos/`):
+
+| Archivo | Contenido |
 |---|---|
-| `Simulate` | Diálogo de prueba sin conectarse (no gasta minutos). |
-| `Microphone Device` | Nombre exacto del micrófono; vacío = predeterminado de Windows. |
-| `Mic Gain` | Amplificación del micrófono (1–30). Al hablar normal, la barra del medidor debe llegar a la mitad. |
-| `Mute Mic While Agent Speaks` | Silencia el micrófono mientras habla el personaje (evita que se escuche por los parlantes). Desactívalo con audífonos para poder interrumpirlo. |
-| `Show Mic Level` | Medidor del micrófono en pantalla (útil para pruebas; desactivar al proyectar). |
-| `Show Subtitles` | Subtítulos en pantalla (desactivados; la conversación se registra en la consola). |
-
-## Banco de términos
-
-Términos de ejemplo de *El Principito*: **domesticar**, **baobab**, **asteroide**, **efímero** y **"lo esencial es invisible a los ojos"**.
-Edita `BancoTerminos.asset` para cambiarlos y elige cuál usar con **Term Index** en `FlujoDemo`.
-
-## Proyectar sobre la mesa
-
-1. Conecta el proyector y en Windows presiona **Win + P → Extender**.
-2. Compila con **File → Build Profiles → Windows → Build** (*Fullscreen Window*; *Run In Background* ya está activado).
-3. Ejecuta el `.exe` con el argumento `-monitor 2` para abrirlo en el proyector.
-4. Corrige orientación y trapecio desde el menú del proyector.
-5. Calibra con el proyector encendido:
-   - `Recorrido/PuntoFinal`: dónde se detiene el personaje.
-   - `Highlight Position / Size` de cada término: que el resaltado caiga sobre la palabra en el papel.
-   - Tamaño: *Scale* de `Personaje` o *Size* de la cámara.
+| `libro_paginas.json` | Texto de cada página. **marker_n = página n+1** (7 páginas: marker_0 a marker_6). |
+| `palabras_paginas.json` | Posición de cada palabra en la página (0–1 del PDF), para resaltar sobre el libro. |
+| `elevenlabs.local.json` | Agent IDs (no se sube). |
 
 ## Menús de editor (StoryScape)
 
 | Menú | Qué hace |
 |---|---|
-| **Generar demo personaje caminando** | Regenera sprites y escena desde cero ⚠️ descarta ajustes manuales (escalas, conversación, boca). |
-| **Configurar conversación ElevenLabs** | Agrega banco de términos, resaltado, agente y flujo a la escena actual. |
-| **Agregar boca al personaje** | Dibuja la boca y crea los sprites de habla. Ejecutar de nuevo si se regeneran los sprites. |
+| **Onboarding → Generar escena** | Regenera `Onboarding.unity` (incluye Dudas y Lectura). Conserva el micrófono. ⚠️ Descarta ajustes manuales de posición. |
+| **Onboarding → Importar sprites nuevos** | Importa las animaciones del Principito desde `raw/<carpeta>` (260 px de alto). Ejecutar después de *Generar escena*. |
+| **Onboarding → Asignar audios** | Asigna `Assets/Onboarding/Audio/<id>.mp3` a cada línea. |
+| **Dudas → Generar escena de prueba** | Crea `PruebaDudas.unity` a partir del onboarding, con la página simulada. |
+| **Lectura → Configurar lectura en vivo** | Configura los sprites del vuelo y agrega el objeto **Lectura** a la escena abierta. |
+
+## Proyección y calibración
+
+- Área proyectada: 1920×1080 px = 80×44.5 cm. Con la cámara ortográfica de tamaño 4, 1 unidad = 135 px ≈ 5.56 cm.
+- Libro: 744×504 px (31×21 cm), centrado, representado por `LibroReferencia`, que solo se ve en la vista Scene.
+- El Principito mide 260 px de alto, en proyección 1:1.
+- Para calibrar con el proyector, mueve `LibroReferencia` (con él se mueven el marco del marcador y los resaltados).
+- Build: **File → Build Profiles → Windows**, *Fullscreen Window*. Ejecuta el `.exe` con `-monitor 2` y envía 16:9 desde Windows.
 
 ## Estructura
 
 ```
 Assets/
+├── Onboarding/
+│   ├── Audio/                 # 01_intro … 06_listo (ElevenLabs TTS)
+│   ├── Editor/                # Generador de escenas, sprites y prueba de dudas
+│   ├── Scripts/               # OnboardingSequence, DoubtSession, WordHighlighter,
+│   │                          # TriggerPhraseListener, BookPageTracker, ArucoUdpReceiver…
+│   └── Sprites/               # Tarjetas, marco, planeta, círculos
 ├── Demo2D/
-│   ├── Data/BancoTerminos.asset           # Términos, significados y posición del resaltado
-│   ├── Editor/                            # Menús de generación y configuración
-│   ├── Scripts/                           # Recorrido, conversación, boca y flujo de la demo
-│   └── Sprites/                           # Personaje (pixel art), anillo y resaltado
-├── Scenes/StoryScapeDemo.unity            # Escena principal
-└── StreamingAssets/
-    ├── elevenlabs.example.json            # Plantilla (sí se sube)
-    └── elevenlabs.local.json              # Tu Agent ID (no se sube)
+│   ├── Scripts/ElevenLabsAgentClient.cs   # WebSocket, micrófono, herramientas de cliente
+│   └── Sprites/raw/<animación>/           # Sprites del Principito (Reposo, Hablando, Saludo…)
+├── Lectura/
+│   ├── Datos/                 # JSON del libro (fuente) y versión anterior
+│   ├── Editor/LecturaSetup.cs
+│   ├── Scripts/               # ReadingSession, PrincipitoVolando
+│   └── Sprites/Vuelo/         # Poses del vuelo con las aves y asteroide
+├── Scenes/                    # Onboarding, PruebaDudas, StoryScapeDemo
+└── StreamingAssets/           # libro_paginas.json, palabras_paginas.json, elevenlabs.*.json
+docs/                          # Prompts de los agentes de ElevenLabs
 ```
 
 ## Solución de problemas
 
-| Síntoma | Causa / solución |
+| Síntoma | Causa o solución |
 |---|---|
-| El personaje no avanza o no te escucha | Haz clic en la ventana de Unity: sin foco, el Play se detiene. |
-| La barra del micrófono apenas se mueve | Sube **Mic Gain** y el volumen de entrada del micrófono en Windows (*Sistema → Sonido → Entrada*). |
-| El agente responde "¿Sigues ahí?" | No le llega voz: revisa el micrófono elegido y la ganancia. |
-| La barra no se mueve con ningún micrófono | Windows → *Privacidad y seguridad → Micrófono* → permitir acceso a aplicaciones de escritorio. |
-| Advertencia de formato de audio | Configura el agente en PCM 16000 Hz (salida y entrada). |
+| El Play no avanza o no escucha | Haz clic en la ventana de Unity: sin foco, el Play se detiene. |
+| No reconoce "Principito, tengo una duda" | Pon como predeterminado el micrófono USB en Windows y el idioma de voz en español. Baja *Min Confidence* a **Baja**. |
+| No se activa la animación al leer | Revisa en la consola las líneas `[ElevenLabs] Niño: …` (lo que transcribió el agente). Baja *Coincidencia* en *Reading Session* si hace falta. |
+| El agente lector no se conecta | Revisa que `agentIdLectura` esté en `elevenlabs.local.json` y no diga `PEGA_AQUI…`. |
+| El agente de dudas no resalta la palabra | Revisa que la Client tool se llame exactamente `resaltar_palabra` y que la palabra esté en la página actual. |
+| No se oye la voz en el build | Revisa la salida de audio de Windows (puede estar yendo al HDMI del proyector). |
+| La barra del micrófono apenas se mueve | Sube *Mic Gain* y el volumen de entrada en Windows. |
+| Se cortan los bordes de la proyección | Envía 16:9 desde Windows. |
 
 ## Próximos pasos
 
-- Anclar `PuntoFinal` y el resaltado a marcadores **ArUco** detectados con la cámara (OpenCV).
-- Elegir el término según la página detectada.
-- Reemplazar los sprites placeholder por los del personaje de StoryScape.
-- Agente privado con URL firmada desde el servidor de la aplicación.
+- Animaciones para las otras 11 frases resaltadas (lista en `docs/prompt_principito_lector.md`).
+- Calibración cámara-proyector (homografía), para que los resaltados sigan al libro aunque se mueva.
+- Agentes privados con URL firmada desde un servidor.
