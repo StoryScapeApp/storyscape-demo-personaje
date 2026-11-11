@@ -26,6 +26,8 @@ public class DoubtSession : MonoBehaviour
     public string udpCommand = "duda";
     [Tooltip("Reconocedor de la frase; se activa junto con las dudas (Activar)")]
     public TriggerPhraseListener phraseListener;
+    [Tooltip("Mientras está activo (p. ej. durante el quiz), no se abren dudas")]
+    public bool bloqueada;
 
     [Header("Herramienta del agente")]
     public string toolName = "resaltar_palabra";
@@ -128,6 +130,7 @@ public class DoubtSession : MonoBehaviour
     public void AbrirDudas()
     {
         if (agent == null || agent.IsRunning) return;
+        if (bloqueada) { Debug.Log("[Dudas] Ahora no: el niño está respondiendo el quiz."); return; }
         Debug.Log("[Dudas] Abriendo conversación de dudas.");
         if (tracker) tracker.AbrirConversacionDudas();
         else agent.StartConversation(new System.Collections.Generic.Dictionary<string, string>());

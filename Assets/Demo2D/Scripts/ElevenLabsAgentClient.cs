@@ -135,10 +135,10 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Serializable] class UserTranscriptEvt { public string user_transcript; }
     [Serializable] class AgentResponseEvt { public string agent_response; }
     [Serializable] class InitMetaEvt { public string conversation_id; public string agent_output_audio_format; public string user_input_audio_format; }
-    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; public string agentIdLectura; }
+    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; public string agentIdLectura; public string agentIdQuiz; }
     [Serializable] class ClientToolCallEvt { public string tool_name; public string tool_call_id; public ToolArgs parameters; }
     /// Parámetros de las herramientas de cliente del agente (los que una herramienta no usa llegan vacíos).
-    [Serializable] public class ToolArgs { public string palabra; public string significado; public string animacion; }
+    [Serializable] public class ToolArgs { public string palabra; public string significado; public string animacion; public string letra; }
 
     void Awake()
     {
@@ -581,7 +581,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
         {
             var cfg = JsonUtility.FromJson<LocalConfig>(File.ReadAllText(path));
             agentId = (configKey == "agentIdBienvenida" ? cfg?.agentIdBienvenida
-                     : configKey == "agentIdLectura" ? cfg?.agentIdLectura : cfg?.agentId)?.Trim();
+                     : configKey == "agentIdLectura" ? cfg?.agentIdLectura
+                     : configKey == "agentIdQuiz" ? cfg?.agentIdQuiz : cfg?.agentId)?.Trim();
         }
         catch { return false; }
         return !string.IsNullOrEmpty(agentId) && !agentId.StartsWith("PEGA_");

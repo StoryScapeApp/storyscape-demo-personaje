@@ -26,6 +26,7 @@ public class ReadingSession : MonoBehaviour
         public string id = "principito_volando";
         [Tooltip("Página del libro (marker + 1). 0 = cualquier página")]
         public int pagina = 1;
+        [Tooltip("Frase del libro. Puedes poner alternativas separadas por | (basta con que coincida una)")]
         [TextArea(2, 3)] public string frase;
         [Tooltip("Proporción de palabras de la frase que deben escucharse para activarla")]
         [Range(0.3f, 1f)] public float coincidencia = 0.7f;
@@ -40,6 +41,8 @@ public class ReadingSession : MonoBehaviour
     [Tooltip("Agente de dudas: mientras conversa, la lectura se pausa")]
     public ElevenLabsAgentClient doubtAgent;
     public DoubtSession doubts;
+    [Tooltip("Mientras el quiz está activo, la lectura se pausa")]
+    public QuizSession quiz;
     public BookPageTracker tracker;
 
     [Header("Animaciones del libro")]
@@ -119,10 +122,10 @@ public class ReadingSession : MonoBehaviour
         }
 
         if (!Activa || !agent) return;
-        bool doubtBusy = doubtAgent && doubtAgent.IsRunning;
+        bool doubtBusy = (doubtAgent && doubtAgent.IsRunning) || (quiz && quiz.IsRunning);
         if (doubtBusy)
         {
-            if (agent.IsRunning) { agent.EndConversation(); Debug.Log("[Lectura] Pausa: el niño tiene una duda."); }
+            if (agent.IsRunning) { agent.EndConversation(); Debug.Log("[Lectura] Pausa: duda o quiz en curso."); }
             retryAt = Time.unscaledTime + reconectarTras;
             return;
         }
@@ -202,6 +205,14 @@ public class ReadingSession : MonoBehaviour
 
     /// Proporción de palabras de la frase (de 3 letras o más) que aparecen en lo escuchado.
     static float Score(string phrase, HashSet<string> heardTokens)
+    {
+        float best = 0f;
+        foreach (var alt in (phrase ?? "").Split('|'))
+            best = Mathf.Max(best, ScoreOne(alt, heardTokens));
+        return best;
+    }
+
+    static float ScoreOne(string phrase, HashSet<string> heardTokens)
     {
         int total = 0, found = 0;
         foreach (var w in Tokens(phrase))
