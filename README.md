@@ -13,13 +13,14 @@ ArUco 0 (página 1) ──► Onboarding ──► "¿Estás listo?" ──► n
                                        ▼
                          Lectura en vivo (agente "Principito lector" escucha en silencio)
                            │                                   │
-             el niño lee una frase resaltada       el niño dice "Principito, tengo una duda"
+             el niño lee una frase activadora       el niño dice "Principito, tengo una duda"
                            │                                   │
                            ▼                                   ▼
                  animación sobre la mesa           se pausa la lectura → agente de dudas
                (p. ej. Principito volando)         resalta la palabra en el libro + significado
-                                                               │
-                                                  al terminar, la lectura se reconecta sola
+                           │                                   │
+            al terminar la página: mini quiz       al terminar, la lectura se reconecta sola
+         (agente "Principito quiz", 2 preguntas)
 ```
 
 ### 1. Onboarding
@@ -42,7 +43,7 @@ Los momentos de cada animación están sincronizados con la voz. Los segundos se
 Componente `ReadingSession`, en el objeto **Lectura**:
 
 - Al terminar el onboarding se conecta el agente **"Principito lector"**, que solo escucha. Unity silencia su voz.
-- Cuando el niño lee una **frase resaltada** del libro, se reproduce su animación. Se detecta de dos formas:
+- Cuando el niño lee una **frase activadora** del libro, se reproduce su animación. Se detecta de dos formas:
   1. **Unity** compara lo que transcribe el agente con la frase. Junta los últimos 20 s y la activa si coincide al menos el 70 % de las palabras.
   2. **El agente** llama a la herramienta de cliente `activar_animacion`, como respaldo.
 - Al cambiar de página (ArUco), Unity le envía al agente el texto de la nueva página.
@@ -51,10 +52,33 @@ Componente `ReadingSession`, en el objeto **Lectura**:
 | Página | Frase | Animación |
 |---|---|---|
 | 1 (marker_0) | "animaciones inspiradas en escenas del libro El Principito" | `principito_volando`: despega de su asteroide, planea con las aves sobre el libro y sale por la izquierda |
+| 1 (marker_0) | "estimula su imaginación, creatividad y conexión con el relato" **o** "Desarrollado por los alumnos de la carrera de Ingeniería de Software" (final de la página) | `quiz_pagina_1`: abre el mini quiz |
+
+En el campo *Frase* se pueden poner alternativas separadas por `|`. Basta con que coincida una.
 
 > ⚠️ Mientras está conectado, el agente lector consume minutos de ElevenLabs durante toda la lectura.
 
-### 3. Dudas: "Principito, tengo una duda"
+### 3. Mini quiz al terminar la página
+
+Componente `QuizSession`, en el objeto **Lectura**:
+
+- Se activa cuando el niño lee el final de la página 1. Si el vuelo del Principito todavía se está reproduciendo, espera a que termine.
+- Pausa la lectura en vivo y bloquea las dudas mientras dura.
+- Muestra las preguntas **una por una** en un panel a la derecha del libro, con las alternativas A, B y C.
+- **Mezcla las alternativas** en cada sesión, para que la correcta no esté siempre en la misma letra.
+- El agente **"Principito quiz"** lee la pregunta y las alternativas en voz alta y escucha la respuesta (letra o texto). Luego llama a `elegir_opcion(letra)`:
+  - Unity ilumina la opción y le devuelve al agente si es correcta.
+  - Si es correcta, crece y salen estrellas. El Principito celebra.
+  - Si es incorrecta, se atenúa y el niño lo intenta otra vez (2 intentos; después el Principito dice cuál era la correcta).
+- El agente no conoce la respuesta correcta, así que no puede dar pistas.
+- Guarda los resultados, sin datos personales, en `resultados_quiz.csv` (en `AppData/LocalLow/StoryScape Onboarding/Prueba Personaje/`).
+
+| Pregunta | Correcta |
+|---|---|
+| ¿Cómo vas a leer el cuento? (En silencio · En voz alta · Cantando) | En voz alta |
+| ¿Para qué sirve leer este libro de forma interactiva? (Para entender mejor la historia · Para leer más rápido · Para no tener que leer) | Para entender mejor la historia |
+
+### 4. Dudas: "Principito, tengo una duda"
 
 Componente `DoubtSession`, en el objeto **Dudas**:
 
@@ -80,7 +104,8 @@ Componente `DoubtSession`, en el objeto **Dudas**:
    ```json
    {
      "agentId": "agent_… (agente de dudas)",
-     "agentIdLectura": "agent_… (Principito lector)"
+     "agentIdLectura": "agent_… (Principito lector)",
+     "agentIdQuiz": "agent_… (Principito quiz)"
    }
    ```
    > `elevenlabs.local.json` está en el `.gitignore` y **no se sube** al repositorio. Revisa siempre `git status` antes de hacer un commit.
@@ -98,6 +123,7 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 |---|---|---|---|
 | Dudas | `agentId` | [`docs/prompt_principito_dudas.md`](docs/prompt_principito_dudas.md) | `resaltar_palabra` (`palabra`, `significado`) |
 | Principito lector | `agentIdLectura` | [`docs/prompt_principito_lector.md`](docs/prompt_principito_lector.md) | `activar_animacion` (`animacion`) |
+| Principito quiz | `agentIdQuiz` | [`docs/prompt_principito_quiz.md`](docs/prompt_principito_quiz.md) | `elegir_opcion` (`letra`) |
 
 Ajustes comunes:
 - Idioma español.
@@ -108,6 +134,7 @@ Ajustes comunes:
 Variables que envía Unity:
 - Al agente de dudas: `{{pagina_actual}}` y `{{texto_leido}}` (páginas 1 a la actual, nunca las siguientes).
 - Al agente lector: `{{pagina_actual}}`, `{{texto_pagina}}` y `{{animaciones}}`.
+- Al agente del quiz: `{{intro}}`, `{{numero_pregunta}}`, `{{total_preguntas}}`, `{{pregunta}}`, `{{opcion_a}}`, `{{opcion_b}}` y `{{opcion_c}}`.
 
 ## Escenas
 
@@ -125,6 +152,7 @@ Variables que envía Unity:
 | **Esc** | Cierra la conversación de dudas. |
 | **T** | Prueba el resaltado y el significado **sin ElevenLabs** con la lista *Test Words* de `DoubtSession`. |
 | **V** | Reproduce la animación de la página actual **sin ElevenLabs**. |
+| **Q** | Inicia el mini quiz de la página 1. Sin el agente del quiz configurado, se responde con **A**, **B** o **C**. |
 
 También están en el menú contextual (⋮) de cada componente: *Iniciar onboarding*, *Abrir dudas*, *Iniciar lectura en vivo*, *Reiniciar animaciones* y *Reproducir*.
 
@@ -172,7 +200,7 @@ Assets/
 ├── Lectura/
 │   ├── Datos/                 # JSON del libro (fuente) y versión anterior
 │   ├── Editor/LecturaSetup.cs
-│   ├── Scripts/               # ReadingSession, PrincipitoVolando
+│   ├── Scripts/               # ReadingSession, PrincipitoVolando, QuizSession
 │   └── Sprites/Vuelo/         # Poses del vuelo con las aves y asteroide
 ├── Scenes/                    # Onboarding, PruebaDudas, StoryScapeDemo
 └── StreamingAssets/           # libro_paginas.json, palabras_paginas.json, elevenlabs.*.json
@@ -188,12 +216,13 @@ docs/                          # Prompts de los agentes de ElevenLabs
 | No se activa la animación al leer | Revisa en la consola las líneas `[ElevenLabs] Niño: …` (lo que transcribió el agente). Baja *Coincidencia* en *Reading Session* si hace falta. |
 | El agente lector no se conecta | Revisa que `agentIdLectura` esté en `elevenlabs.local.json` y no diga `PEGA_AQUI…`. |
 | El agente de dudas no resalta la palabra | Revisa que la Client tool se llame exactamente `resaltar_palabra` y que la palabra esté en la página actual. |
+| El quiz se queda esperando | Revisa que `agentIdQuiz` esté configurado y que el agente tenga **End call** activado: Unity pasa a la siguiente pregunta cuando el agente termina. |
 | No se oye la voz en el build | Revisa la salida de audio de Windows (puede estar yendo al HDMI del proyector). |
 | La barra del micrófono apenas se mueve | Sube *Mic Gain* y el volumen de entrada en Windows. |
 | Se cortan los bordes de la proyección | Envía 16:9 desde Windows. |
 
 ## Próximos pasos
 
-- Animaciones para las otras 11 frases resaltadas (lista en `docs/prompt_principito_lector.md`).
+- Animaciones para las otras 11 frases activadoras (lista en `docs/prompt_principito_lector.md`).
 - Calibración cámara-proyector (homografía), para que los resaltados sigan al libro aunque se mueva.
 - Agentes privados con URL firmada desde un servidor.
