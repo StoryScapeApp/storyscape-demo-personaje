@@ -17,7 +17,7 @@ El nombre del archivo debe ser **exactamente el id**. Luego, con la escena `Onbo
 | `03_voz_alta` | **actualizado**  | 3. Tarjeta 2 · lee en voz alta | Segundo: lee en voz alta. Así podrás ver animaciones durante la historia.|
 | `04_quiz` | **actualizado**  | 4. Tarjeta 3 · panel del quiz | Tercero: al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. Responde diciendo la letra de la opción. Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez! |
 | `05_final` | **actualizado** | 5. Opción correcta y cierre onboarding · luego todo se desvanece | Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo?|
-| `06_listo` | ya existe (antes `08_final`) | 6. Después de que el niño responde a "¿Estás listo?" · luego todo se desvanece y empieza la lectura en vivo | ¡Genial! Pasa la página y empieza a leer en voz alta. |
+| `06_listo` | ya existe (antes `08_final`) | 6. Después de que el niño responde a "¿Estás listo?" · luego todo se desvanece y empieza la lectura en vivo | ¡Genial! empieza a leer en voz alta. |
 
 ## Consejos
 

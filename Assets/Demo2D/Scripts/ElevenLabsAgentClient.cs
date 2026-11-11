@@ -166,7 +166,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
         if (simulate) { StartCoroutine(Simulate(summary)); return; }
         if (!TryLoadAgentId(out string agentId))
         {
-            Debug.LogWarning("[ElevenLabs] No se encontró un agentId en StreamingAssets/" + configFileName + ". Se usa el modo simulado.");
+            Debug.LogWarning($"[ElevenLabs] No hay un Agent ID para \"{configKey}\" en {Path.Combine(Application.streamingAssetsPath, configFileName)}. Se usa el modo simulado.");
             StartCoroutine(Simulate(summary));
             return;
         }
@@ -375,6 +375,12 @@ public class ElevenLabsAgentClient : MonoBehaviour
             return;
         }
         micDevice = string.IsNullOrEmpty(microphoneDevice) ? null : microphoneDevice;
+        if (micDevice != null && Array.IndexOf(Microphone.devices, micDevice) < 0)
+        {
+            // En otro equipo el micrófono tiene otro nombre: se usa el predeterminado de Windows
+            Debug.LogWarning($"[ElevenLabs] El micrófono \"{micDevice}\" no existe en este equipo. Se usa el predeterminado. Disponibles: {string.Join(" | ", Microphone.devices)}");
+            micDevice = null;
+        }
 
         // Graba a la frecuencia que soporta el micrófono; luego se convierte a sampleRate.
         Microphone.GetDeviceCaps(micDevice, out int minFreq, out int maxFreq);

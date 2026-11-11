@@ -43,9 +43,12 @@ Los momentos de cada animación están sincronizados con la voz. Los segundos se
 Componente `ReadingSession`, en el objeto **Lectura**:
 
 - Al terminar el onboarding se conecta el agente **"Principito lector"**, que solo escucha. Unity silencia su voz.
-- Cuando el niño lee una **frase activadora** del libro, se reproduce su animación. Se detecta de dos formas:
-  1. **Unity** compara lo que transcribe el agente con la frase. Junta los últimos 20 s y la activa si coincide al menos el 70 % de las palabras.
-  2. **El agente** llama a la herramienta de cliente `activar_animacion`, como respaldo.
+- Cuando el niño lee una **frase activadora** del libro, se reproduce su animación. Se detecta de tres formas:
+  1. **Detección rápida:** el reconocedor de voz de Windows escucha partes cortas de la frase (*Frases Rápidas*) y la activa al instante. Es la vía más rápida.
+  2. **Unity** compara lo que transcribe el agente con la frase. Junta los últimos 20 s y la activa si coincide al menos el 70 % de las palabras.
+  3. **El agente** llama a la herramienta de cliente `activar_animacion`, como respaldo.
+
+  ElevenLabs solo envía la transcripción cuando el niño hace una pausa. Por eso la detección rápida es la que reduce la demora.
 - Al cambiar de página (ArUco), Unity le envía al agente el texto de la nueva página.
 - Si la conexión se corta (por ejemplo, por el límite de duración), se reconecta sola.
 
@@ -213,6 +216,7 @@ docs/                          # Prompts de los agentes de ElevenLabs
 |---|---|
 | El Play no avanza o no escucha | Haz clic en la ventana de Unity: sin foco, el Play se detiene. |
 | No reconoce "Principito, tengo una duda" | Pon como predeterminado el micrófono USB en Windows y el idioma de voz en español. Baja *Min Confidence* a **Baja**. |
+| La animación tarda en aparecer | Revisa que *Detección Rápida* esté activa en *Reading Session* y que el idioma de voz de Windows sea español. En el agente lector, pon *Turn eagerness* en **High**. |
 | No se activa la animación al leer | Revisa en la consola las líneas `[ElevenLabs] Niño: …` (lo que transcribió el agente). Baja *Coincidencia* en *Reading Session* si hace falta. |
 | El agente lector no se conecta | Revisa que `agentIdLectura` esté en `elevenlabs.local.json` y no diga `PEGA_AQUI…`. |
 | El agente de dudas no resalta la palabra | Revisa que la Client tool se llame exactamente `resaltar_palabra` y que la palabra esté en la página actual. |

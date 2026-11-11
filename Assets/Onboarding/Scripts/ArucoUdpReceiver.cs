@@ -53,13 +53,16 @@ public class ArucoUdpReceiver : MonoBehaviour
     public event Action<int, Vector2> MarkerDetected;
     /// <summary>Otros mensajes del script de Python, p. ej. {"tipo":"duda"} al detectar "Principito, tengo una duda".</summary>
     public event Action<string> CommandReceived;
+    /// <summary>Texto de voz del script de Python (Vosk): {"tipo":"voz","texto":"...","final":false}. final = false es texto parcial.</summary>
+    public event Action<string, bool> TextReceived;
 
-    [Serializable] class Msg { public string tipo; public int id = -1; public float x = -1f; public float y = -1f; }
+    [Serializable] class Msg { public string tipo; public int id = -1; public float x = -1f; public float y = -1f; public string texto; public bool final; }
 
     struct Hit { public int id; public Vector2 pos; public float time; }
 
     readonly ConcurrentQueue<Msg> incoming = new ConcurrentQueue<Msg>();
     readonly ConcurrentQueue<string> commands = new ConcurrentQueue<string>();
+    readonly ConcurrentQueue<Msg> voice = new ConcurrentQueue<Msg>();
     readonly Dictionary<int, List<float>> recentHits = new Dictionary<int, List<float>>();
     readonly Dictionary<int, Vector2> lastPositions = new Dictionary<int, Vector2>();
     UdpClient client;
@@ -99,6 +102,7 @@ public class ArucoUdpReceiver : MonoBehaviour
                 if (msg == null) continue;
                 bool isMarker = string.IsNullOrEmpty(msg.tipo) || msg.tipo == "aruco";
                 if (isMarker && msg.id >= 0) incoming.Enqueue(msg);
+                else if (msg.tipo == "voz") voice.Enqueue(msg);
                 else if (!isMarker) commands.Enqueue(msg.tipo);
             }
             catch (SocketException) { if (!running) break; }
@@ -110,6 +114,7 @@ public class ArucoUdpReceiver : MonoBehaviour
     void Update()
     {
         float now = Time.unscaledTime;
+        while (voice.TryDequeue(out var v)) TextReceived?.Invoke(v.texto ?? "", v.final);
         while (commands.TryDequeue(out var cmd))
         {
             Debug.Log($"[UDP] Mensaje recibido: {cmd}");

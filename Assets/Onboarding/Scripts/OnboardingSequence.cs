@@ -49,6 +49,8 @@ public class OnboardingSequence : MonoBehaviour
     [Header("1. En el libro")]
     public ProjectedCard cardBook;
     public ProjectedCard markerFrame;
+    [Tooltip("Muestra el contorno brillante alrededor del ArUco durante la regla 1")]
+    public bool mostrarMarcoMarcador = true;
 
     [Header("2. Lee en voz alta")]
     public ProjectedCard cardRead;
@@ -164,9 +166,8 @@ public class OnboardingSequence : MonoBehaviour
 
         // 2. Tarjeta 1: bordes del área del marcador
         Show(cardBook);
-        Show(markerFrame);
+        if (mostrarMarcoMarcador && markerFrame) { markerFrame.Show(); markerFrame.SetGlow(true); }
         Anim(animBook);
-        if (markerFrame) markerFrame.SetGlow(true);
         yield return Say(bookLine);
         Hide(markerFrame);
         Anim(animRest);

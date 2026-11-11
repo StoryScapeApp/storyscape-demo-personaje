@@ -25,9 +25,8 @@ public static class LecturaSetup
     };
 
     public const string FraseVuelo = "animaciones inspiradas en escenas del libro El Principito";
-    // Final de la página 1 (dos alternativas: el final del párrafo o la línea de créditos)
-    public const string FraseFinPagina1 =
-        "estimula su imaginación, creatividad y conexión con el relato|Desarrollado por los alumnos de la carrera de Ingeniería de Software";
+    // Final de la página 1: el quiz empieza recién con la línea de créditos
+    public const string FraseFinPagina1 = "carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas";
 
     static Color Hex(string h) { ColorUtility.TryParseHtmlString(h, out var c); return c; }
 
@@ -228,13 +227,26 @@ public static class LecturaSetup
         session.doubtAgent = doubtAgent;
         session.doubts = doubts;
         session.tracker = tracker;
+        session.receptorVoz = Object.FindFirstObjectByType<ArucoUdpReceiver>(FindObjectsInactive.Include);
+        session.dictadoWindows = false;   // el dictado de Unity no recibe audio en Windows 11: se usa Vosk (Python)
+        // Transcripción en tiempo real con ElevenLabs Scribe v2 Realtime (texto parcial mientras el niño lee)
+        var scribeGo = new GameObject("Scribe");
+        scribeGo.transform.SetParent(root.transform, false);
+        var scribe = scribeGo.AddComponent<ScribeRealtimeClient>();
+        scribe.microphoneDevice = doubtAgent.microphoneDevice;
+        scribe.micGain = doubtAgent.micGain;
+        session.scribe = scribe;
+        session.usarScribe = true;
+        session.conectarAgente = false;   // Scribe ya detecta las frases; el agente lector quedaría compitiendo por el micrófono
         var anim = new ReadingSession.SceneAnimation
         {
             id = "principito_volando",
             pagina = 1,
-            frase = FraseVuelo,
+            frase = FraseVuelo + "|animaciones inspiradas en escenas|escenas del libro El Principito",
             coincidencia = 0.7f,
             soloUnaVez = true,
+            frasesRapidas = new[] { "animaciones inspiradas", "inspiradas en escenas", "escenas del libro El Principito",
+                                    "proyecciones y animaciones", "animaciones inspiradas en escenas", "en escenas del libro" },
         };
         UnityEventTools.AddPersistentListener(anim.alActivar, fly.Play);
         session.animaciones.Add(anim);
@@ -242,13 +254,15 @@ public static class LecturaSetup
         // Mini quiz al terminar la página 1
         var quiz = CreateQuiz(root.transform, doubtAgent, doubts, fly);
         session.quiz = quiz;
+        quiz.readingAgent = agent;
         var finPagina = new ReadingSession.SceneAnimation
         {
             id = "quiz_pagina_1",
             pagina = 1,
-            frase = FraseFinPagina1,
+            frase = FraseFinPagina1 + "|Universidad Peruana de Ciencias Aplicadas",
             coincidencia = 0.7f,
             soloUnaVez = true,
+            frasesRapidas = new[] { "Universidad Peruana de Ciencias Aplicadas", "Peruana de Ciencias Aplicadas", "Ingeniería de Software de la Universidad" },
         };
         UnityEventTools.AddStringPersistentListener(finPagina.alActivar, quiz.IniciarQuiz, "pagina_1");
         session.animaciones.Add(finPagina);

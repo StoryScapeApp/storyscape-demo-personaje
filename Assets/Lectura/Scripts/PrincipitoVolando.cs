@@ -27,8 +27,10 @@ public class PrincipitoVolando : MonoBehaviour
     public float salida = -9.8f;
 
     [Header("Tiempos (s)")]
-    public float aparecer = 0.6f;
-    public float espera = 0.6f;
+    [Tooltip("Multiplica la velocidad de toda la animación (1 = normal, 2 = el doble de rápido)")]
+    [Range(0.5f, 3f)] public float velocidad = 1.6f;
+    public float aparecer = 0.35f;
+    public float espera = 0.15f;
     public float despegar = 1.4f;
     public float planear = 5.5f;
     public float salir = 1.3f;
@@ -75,22 +77,22 @@ public class PrincipitoVolando : MonoBehaviour
         a.sprite = pose01; SetAlpha(a, 0f); SetAlpha(b, 0f);
         ast.sprite = asteroide; ast.transform.position = asteroidePos; SetAlpha(ast, 0f);
         Place();
-        for (float t = 0f; t < aparecer; t += Time.deltaTime)
+        for (float t = 0f; t < D(aparecer); t += Time.deltaTime)
         {
-            float k = t / aparecer;
+            float k = t / D(aparecer);
             SetAlpha(a, k); SetAlpha(ast, k);
             yield return null;
         }
         SetAlpha(a, 1f); SetAlpha(ast, 1f);
-        yield return new WaitForSeconds(espera);
+        yield return new WaitForSeconds(D(espera));
 
         // 01 · despega hacia la parte superior de la mesa
         Vector2 from = head, to = new Vector2(inicioPlaneo, alturaVuelo);
-        for (float t = 0f; t < despegar; t += Time.deltaTime)
+        for (float t = 0f; t < D(despegar); t += Time.deltaTime)
         {
-            float k = Smooth(t / despegar);
+            float k = Smooth(t / D(despegar));
             head = Vector2.Lerp(from, to, k) + Vector2.up * Mathf.Sin(k * Mathf.PI) * 0.35f;
-            SetAlpha(ast, 1f - Mathf.Clamp01((t / despegar - 0.3f) / 0.7f));
+            SetAlpha(ast, 1f - Mathf.Clamp01((t / D(despegar) - 0.3f) / 0.7f));
             Place();
             yield return null;
         }
@@ -99,10 +101,10 @@ public class PrincipitoVolando : MonoBehaviour
         // 02 · planea con las aves sobre el libro
         StartCoroutine(SwapPose(pose02));
         from = head;
-        for (float t = 0f; t < planear; t += Time.deltaTime)
+        for (float t = 0f; t < D(planear); t += Time.deltaTime)
         {
-            float k = t / planear;
-            head = new Vector2(Mathf.Lerp(from.x, finPlaneo, k), alturaVuelo + Mathf.Sin(t * Mathf.PI * 1.4f) * ondulacion);
+            float k = t / D(planear);
+            head = new Vector2(Mathf.Lerp(from.x, finPlaneo, k), alturaVuelo + Mathf.Sin(t * velocidad * Mathf.PI * 1.4f) * ondulacion);
             Place();
             yield return null;
         }
@@ -110,9 +112,9 @@ public class PrincipitoVolando : MonoBehaviour
         // 03 · sale por la izquierda
         StartCoroutine(SwapPose(pose03));
         from = head;
-        for (float t = 0f; t < salir; t += Time.deltaTime)
+        for (float t = 0f; t < D(salir); t += Time.deltaTime)
         {
-            float k = t / salir;
+            float k = t / D(salir);
             head = new Vector2(Mathf.Lerp(from.x, salida, k * k), Mathf.Lerp(from.y, alturaVuelo + 0.25f, k));
             Place();
             yield return null;
@@ -126,9 +128,9 @@ public class PrincipitoVolando : MonoBehaviour
     IEnumerator SwapPose(Sprite next)
     {
         b.sprite = next;
-        for (float t = 0f; t < cambioPose; t += Time.deltaTime)
+        for (float t = 0f; t < D(cambioPose); t += Time.deltaTime)
         {
-            float k = t / cambioPose;
+            float k = t / D(cambioPose);
             SetAlpha(a, 1f - k); SetAlpha(b, k);
             yield return null;
         }
@@ -151,6 +153,9 @@ public class PrincipitoVolando : MonoBehaviour
         if (!sr) return;
         var c = sr.color; c.a = v; sr.color = c;
     }
+
+    /// Duración ajustada a la velocidad.
+    float D(float seconds) => seconds / Mathf.Max(0.1f, velocidad);
 
     static float Smooth(float x) => x * x * (3f - 2f * x);
 }

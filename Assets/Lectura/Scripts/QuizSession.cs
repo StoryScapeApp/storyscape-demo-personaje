@@ -49,6 +49,8 @@ public class QuizSession : MonoBehaviour
     public string toolName = "elegir_opcion";
     [Tooltip("Mientras conversa el agente de dudas, el quiz espera")]
     public ElevenLabsAgentClient doubtAgent;
+    [Tooltip("Agente de lectura: el quiz espera a que se cierre antes de conectarse (evita dos conversaciones a la vez)")]
+    public ElevenLabsAgentClient readingAgent;
     public DoubtSession doubts;
 
     [Header("Proyección")]
@@ -69,6 +71,8 @@ public class QuizSession : MonoBehaviour
     public string animThink = "Pensando";
     public string animRight = "Correcto";
     public float fadeTime = 0.6f;
+    [Tooltip("Segundos que el Principito celebra una respuesta correcta antes de volver a hablar")]
+    public float celebrar = 2.5f;
 
     [Header("Resultados")]
     public bool guardarResultados = true;
@@ -125,8 +129,11 @@ public class QuizSession : MonoBehaviour
         quizActual = q;
         if (doubts) doubts.bloqueada = true;
 
-        // Espera a que termine una animación o una duda en curso
+        // Espera a que termine una animación o una duda en curso, y a que se cierre la lectura
         while (Busy()) yield return null;
+        for (float t = 0f; t < 4f && readingAgent && readingAgent.IsRunning; t += Time.deltaTime) yield return null;
+        if (agent && !agent.HasAgentId())
+            Debug.LogWarning("[Quiz] Falta el Agent ID del quiz (agentIdQuiz) en " + System.IO.Path.Combine(Application.streamingAssetsPath, "elevenlabs.local.json"));
         Debug.Log($"[Quiz] Empieza el quiz \"{q.id}\" ({q.preguntas.Count} preguntas).");
 
         StartCoroutine(Fade(1f));
@@ -138,6 +145,7 @@ public class QuizSession : MonoBehaviour
         {
             numeroPregunta = i + 1;
             PrepararPregunta(q.preguntas[i]);
+            if (i > 0) Anim(animQuiz);   // nueva pregunta: vuelve al cartel "?"
             if (titulo && titulo.label) titulo.label.text = $"<b>Mini quiz</b>\n<size=70%>Pregunta {numeroPregunta} de {q.preguntas.Count}</size>";
             yield return new WaitForSeconds(0.6f);
 
@@ -231,7 +239,9 @@ public class QuizSession : MonoBehaviour
             resuelta = true;
             acierto = true;
             StartCoroutine(MostrarCorrecta(pos));
-            return "correcta. Felicítalo con una frase corta y alegre, y luego termina la conversación con end_call.";
+            return Ultima()
+                ? "correcta, y era la última pregunta del quiz. Felicítalo con alegría, dile que terminó el mini quiz, anímalo a seguir leyendo y termina la conversación con end_call."
+                : "correcta. Felicítalo con UNA frase corta y alegre. No te despidas ni hables de seguir leyendo: todavía falta otra pregunta. Luego termina la conversación con end_call.";
         }
 
         descartadas.Add(pos);
@@ -241,12 +251,16 @@ public class QuizSession : MonoBehaviour
             StartCoroutine(MostrarIncorrecta(pos, true));
             string ok = preguntaActual.opciones[orden[posCorrecta]];
             return $"incorrecta, y ya no quedan intentos. Dile con cariño que la respuesta correcta era la {Letras[posCorrecta]}: {ok}. " +
-                   "Anímalo a seguir leyendo y termina la conversación con end_call.";
+                   (Ultima()
+                       ? "Era la última pregunta: dile que terminó el mini quiz, anímalo a seguir leyendo y termina la conversación con end_call."
+                       : "No te despidas ni hables de seguir leyendo: todavía falta otra pregunta. Luego termina la conversación con end_call.");
         }
         StartCoroutine(MostrarIncorrecta(pos, false));
         return "incorrecta. Dile con cariño que no es esa y que lo intente otra vez. No des pistas. " +
                "Puedes repetir las alternativas que quedan.";
     }
+
+    bool Ultima() => quizActual != null && numeroPregunta >= quizActual.preguntas.Count;
 
     IEnumerator MostrarCorrecta(int pos)
     {
@@ -258,6 +272,10 @@ public class QuizSession : MonoBehaviour
         for (int i = 0; i < opciones.Length; i++) if (i != pos && opciones[i]) opciones[i].Dim();
         if (estrellas) estrellas.Burst(opciones[pos].transform.position);
         Anim(animRight);
+        // Celebra un momento y vuelve a hablar/reposo (Correcto está en bucle)
+        yield return new WaitForSeconds(celebrar);
+        if (principito && principito.CurrentClip == animRight)
+            Anim(agent && agent.IsAgentTalking ? animTalk : animRest);
     }
 
     IEnumerator MostrarIncorrecta(int pos, bool revelar)

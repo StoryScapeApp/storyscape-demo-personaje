@@ -1,6 +1,6 @@
 # Agente "Principito lector": escucha la lectura y activa animaciones
 
-Es un agente **nuevo** en ElevenLabs, distinto del agente de dudas. Se conecta al terminar el onboarding y escucha en silencio mientras el niño lee en voz alta. Cuando el niño lee una frase resaltada del libro, Unity muestra su animación.
+Es un agente **nuevo** en ElevenLabs, distinto del agente de dudas. Se conecta al terminar el onboarding y escucha en silencio mientras el niño lee en voz alta. Cuando el niño lee una frase activadora del libro, Unity muestra su animación.
 
 - Pega su Agent ID en `Assets/StreamingAssets/elevenlabs.local.json`, en el campo `agentIdLectura`.
 - Unity silencia su voz, aunque el agente igual debe estar configurado para no hablar.
@@ -86,6 +86,7 @@ Parámetro (**Add property**):
 | Advanced | Max conversation duration | 1800–3600 s (rango permitido: 60–7200 s). Unity reconecta solo si se corta. |
 | Advanced | Turn timeout | 30 s (el máximo), para que no le hable al niño cuando hay silencio |
 | Advanced | Soft timeout | Desactivado (-1) |
+| Advanced | Turn eagerness (prontitud del turno) | **High / Eager**: cierra el turno con pausas más cortas y la transcripción llega antes |
 | Advanced | Keywords del reconocimiento de voz (si aparece) | Principito, animaciones, inspiradas, escenas |
 
 > **Costo:** este agente consume minutos **todo el tiempo que está conectado**, aunque no hable. Una sesión de lectura de 10 minutos gasta unos 10 minutos de ElevenLabs.
@@ -94,6 +95,7 @@ Parámetro (**Add property**):
 
 ## Cómo se detecta la frase
 
+0. **Detección rápida (Windows):** el reconocedor de voz de Windows escucha en tiempo real partes cortas de cada frase (*Frases Rápidas*), como "animaciones inspiradas" o "escenas del libro El Principito", y activa la animación apenas el niño las dice. No necesita internet ni esperar al agente.
 1. **En Unity:** cada vez que el agente transcribe lo que leyó el niño, Unity lo compara con las frases de la lista. Junta los últimos 20 segundos, por si el niño hace pausas. Si coincide al menos el 70 % de las palabras, activa la animación. Esto funciona aunque el agente no llame a la herramienta.
 2. **El agente:** llama a `activar_animacion`. Sirve de respaldo si el niño lee distinto.
 
@@ -101,11 +103,12 @@ Cada animación se muestra una sola vez por sesión.
 
 ---
 
-## Frases resaltadas del libro (para las próximas animaciones)
+## Frases activadoras del libro (para las próximas animaciones)
 
 | Página (marker) | Frase | Animación |
 |---|---|---|
 | 1 (marker_0) | animaciones inspiradas en escenas del libro "El Principito" | `principito_volando` ✅ |
+| 1 (marker_0) | final de la página: "…estimula su imaginación, creatividad y conexión con el relato" o "Desarrollado por los alumnos…" | `quiz_pagina_1` ✅ (abre el mini quiz) |
 | 2 (marker_1) | En el libro se decía: "Las serpientes boas | pendiente |
 | 2 (marker_1) | Representaba una serpiente boa que digería un elefante. | pendiente |
 | 3 (marker_2) | aprendí a pilotar aviones. He volado un poco por todo el mundo. | pendiente |
