@@ -17,12 +17,27 @@ public class MeteorFlight : MonoBehaviour
     public float trailInterval = 0.035f;
     public float trailLife = 0.7f;
     public float trailSize = 0.18f;
+    [Tooltip("Contorno detrás de la estrella para que se distinga sobre fondos claros (alfa 0 = sin contorno)")]
+    public Color outlineColor = new Color(0.12f, 0.16f, 0.38f, 0.75f);
+    public float outlineScale = 1.3f;
+
+    SpriteRenderer outline;
 
     public bool IsPlaying { get; private set; }
 
     void Awake()
     {
-        if (head) head.color = new Color(headColor.r, headColor.g, headColor.b, 0f);
+        if (!head) return;
+        head.color = new Color(headColor.r, headColor.g, headColor.b, 0f);
+        if (outlineColor.a > 0f)
+        {
+            outline = new GameObject("Contorno").AddComponent<SpriteRenderer>();
+            outline.transform.SetParent(head.transform, false);
+            outline.transform.localScale = Vector3.one * outlineScale;
+            outline.sprite = head.sprite;
+            outline.sortingOrder = head.sortingOrder - 1;
+            outline.color = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0f);
+        }
     }
 
     public IEnumerator Play()
@@ -41,6 +56,7 @@ public class MeteorFlight : MonoBehaviour
             head.transform.rotation = Quaternion.Euler(0f, 0f, t * 240f);
             float a = Mathf.Min(1f, k * 6f) * Mathf.Min(1f, (1f - k) * 6f);
             head.color = new Color(headColor.r, headColor.g, headColor.b, a);
+            if (outline) outline.color = new Color(outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a * a);
 
             spawn += Time.deltaTime;
             while (spawn >= trailInterval && a > 0.05f)
@@ -51,6 +67,7 @@ public class MeteorFlight : MonoBehaviour
             yield return null;
         }
         head.color = new Color(headColor.r, headColor.g, headColor.b, 0f);
+        if (outline) outline.color = new Color(outlineColor.r, outlineColor.g, outlineColor.b, 0f);
         yield return new WaitForSeconds(trailLife);
         IsPlaying = false;
     }
@@ -63,7 +80,7 @@ public class MeteorFlight : MonoBehaviour
         go.transform.position = pos + (Vector3)(Random.insideUnitCircle * 0.06f);
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = trailSprite;
-        sr.sortingOrder = head.sortingOrder - 1;
+        sr.sortingOrder = head.sortingOrder - 2;
         float size = trailSize * Random.Range(0.7f, 1.2f);
         for (float t = 0f; t < trailLife; t += Time.deltaTime)
         {

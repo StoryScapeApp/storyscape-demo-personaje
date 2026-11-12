@@ -52,10 +52,7 @@ Alternativas, en el mismo componente:
 | Vía | Cuándo usarla |
 |---|---|
 | **Scribe v2 Realtime** (*Usar Scribe*) | **Principal.** Texto parcial con ~1 s de retraso. Necesita `apiKey`. |
-| **Vosk** (*Receptor Voz*, script `python/voz_vosk.py`) | Sin internet y sin costo. Envía el texto parcial por UDP al puerto 5005. |
 | **Agente "Principito lector"** (*Conectar Agente*) | **Desactivado.** Su transcripción llega recién cuando el niño hace una pausa y gasta minutos toda la lectura. Si se activa junto con Scribe, compiten por el micrófono. |
-| Dictado de Windows (*Dictado Windows*) | **Desactivado.** El dictado de Unity no recibe audio en Windows 11. |
-| Frases Rápidas (palabras clave de Windows) | Respaldo automático. Solo detecta frases dichas con pausa. |
 
 | Página | Frase activadora | Animación |
 |---|---|---|

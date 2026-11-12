@@ -46,6 +46,25 @@ public class OnboardingSequence : MonoBehaviour
     public ProjectedCard title;
     public ProjectedCard subtitle;
 
+    [Header("Arte acuarela")]
+    public ProjectedCard fondo;
+    [Tooltip("Rectángulo negro sobre el libro: evita proyectar el fondo encima del libro real")]
+    public ProjectedCard mascaraLibro;
+
+    [Header("Aterrizaje del Principito (al inicio)")]
+    public SpriteRenderer aterrizaje;
+    public Sprite[] framesAterrizaje;
+    public float alturaCaida = 5.5f;
+    public float duracionCaida = 1.1f;
+    public float fpsAterrizaje = 9f;
+
+    [Header("Zorro (a la derecha del libro)")]
+    public SpriteAnimator2D zorro;
+    public Vector3 zorroInicio = new Vector3(8.6f, -1.45f, 0f);
+    public Vector3 zorroDestino = new Vector3(5.1f, -1.45f, 0f);
+    public float zorroEspera = 1.2f;
+    public float zorroCaminar = 2.6f;
+
     [Header("1. En el libro")]
     public ProjectedCard cardBook;
     public ProjectedCard markerFrame;
@@ -139,6 +158,8 @@ public class OnboardingSequence : MonoBehaviour
         }
         HideAll(true);
         SetPrincipitoAlpha(0f);
+        SetSrAlpha(aterrizaje, 0f);
+        if (zorro) SetSrAlpha(zorro.GetComponent<SpriteRenderer>(), 0f);
         if (startOnPlay) Invoke(nameof(IniciarOnboarding), startDelay);
     }
 
@@ -156,9 +177,13 @@ public class OnboardingSequence : MonoBehaviour
         onStarted?.Invoke();
         HideAll(true);
 
-        // 1. Bienvenida
+        // 1. Bienvenida: fondo y título; el zorro entra caminando y el Principito aterriza en su colina
+        Show(fondo);
+        Show(mascaraLibro);
         Show(title);
         Show(subtitle);
+        if (zorro) StartCoroutine(ZorroEntra());
+        if (aterrizaje && framesAterrizaje != null && framesAterrizaje.Length >= 4) yield return Aterrizar();
         Anim(animGreet);
         yield return FadePrincipito(1f);
         yield return Say(intro);
@@ -247,6 +272,7 @@ public class OnboardingSequence : MonoBehaviour
 
         Anim(animRest);
         HideAll(false);
+        if (zorro) StartCoroutine(FadeSr(zorro.GetComponent<SpriteRenderer>(), 0f, cleanupFade));
         yield return FadePrincipito(0f, cleanupFade);
 
         IsRunning = false;
@@ -267,6 +293,61 @@ public class OnboardingSequence : MonoBehaviour
         else delay = Mathf.Clamp(seconds, 0f, line.clip.length);
         yield return new WaitForSeconds(delay);
         action?.Invoke();
+    }
+
+    /// El Principito cae desde arriba con los brazos abiertos, aterriza agachado y se pone de pie.
+    IEnumerator Aterrizar()
+    {
+        Vector3 end = principito ? principito.transform.position : aterrizaje.transform.position;
+        Vector3 start = end + Vector3.up * alturaCaida;
+        aterrizaje.transform.position = start;
+        SetSrAlpha(aterrizaje, 1f);
+        for (float t = 0f; t < duracionCaida; t += Time.deltaTime)
+        {
+            float k = t / duracionCaida;
+            aterrizaje.transform.position = Vector3.Lerp(start, end, k * k);          // acelera al caer
+            aterrizaje.sprite = framesAterrizaje[Mathf.Min(2, (int)(k * 3f))];       // cuadros 1–3: en el aire
+            yield return null;
+        }
+        aterrizaje.transform.position = end;
+        for (int i = 3; i < framesAterrizaje.Length; i++)                           // cuadros 4–8: aterriza y se levanta
+        {
+            aterrizaje.sprite = framesAterrizaje[i];
+            yield return new WaitForSeconds(1f / Mathf.Max(1f, fpsAterrizaje));
+        }
+        SetPrincipitoAlpha(1f);
+        SetSrAlpha(aterrizaje, 0f);
+    }
+
+    /// El zorro entra caminando por la derecha y se sienta junto al libro.
+    IEnumerator ZorroEntra()
+    {
+        var sr = zorro.GetComponent<SpriteRenderer>();
+        zorro.transform.position = zorroInicio;
+        yield return new WaitForSeconds(zorroEspera);
+        zorro.Play("Caminar", true);
+        SetSrAlpha(sr, 1f);
+        for (float t = 0f; t < zorroCaminar; t += Time.deltaTime)
+        {
+            zorro.transform.position = Vector3.Lerp(zorroInicio, zorroDestino, t / zorroCaminar);
+            yield return null;
+        }
+        zorro.transform.position = zorroDestino;
+        zorro.Play("Sentarse", true);
+    }
+
+    IEnumerator FadeSr(SpriteRenderer sr, float to, float duration)
+    {
+        if (!sr) yield break;
+        float from = sr.color.a;
+        for (float t = 0f; t < duration; t += Time.deltaTime) { SetSrAlpha(sr, Mathf.Lerp(from, to, t / duration)); yield return null; }
+        SetSrAlpha(sr, to);
+    }
+
+    static void SetSrAlpha(SpriteRenderer sr, float a)
+    {
+        if (!sr) return;
+        var c = sr.color; c.a = a; sr.color = c;
     }
 
     IEnumerator PlayMeteor(Action done)
@@ -345,7 +426,7 @@ public class OnboardingSequence : MonoBehaviour
 
     void HideAll(bool instant)
     {
-        foreach (var c in new[] { title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+        foreach (var c in new[] { fondo, mascaraLibro, title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
             if (c) { c.ResetState(); c.Hide(instant); }
         if (options != null) foreach (var o in options) if (o) { o.ResetState(); o.Hide(instant); }
     }

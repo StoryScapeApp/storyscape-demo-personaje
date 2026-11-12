@@ -279,6 +279,9 @@ public static class OnboardingSceneBuilder
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene, ScenePath);
 
+        // Arte acuarela (fondo, título, tarjetas ilustradas, zorro y aterrizaje)
+        OnboardingArtSetup.Apply();
+
         // Lectura en vivo (agente que escucha y animaciones de las frases resaltadas)
         LecturaSetup.ConfigureSprites();
         LecturaSetup.AddToOpenScene();
