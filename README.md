@@ -11,7 +11,7 @@ ArUco 0 (página 1) ──► Onboarding ──► "¿Estás listo?" ──► n
                                                                                │
                                        ┌───────────────────────────────────────┘
                                        ▼
-                         Lectura en vivo (agente "Principito lector" escucha en silencio)
+                  Lectura en vivo (Scribe v2 Realtime transcribe mientras el niño lee)
                            │                                   │
              el niño lee una frase activadora       el niño dice "Principito, tengo una duda"
                            │                                   │
@@ -30,7 +30,7 @@ Empieza al detectar **marker_0**. Lo controla el componente `OnboardingSequence`
 | Audio | Lo que se proyecta |
 |---|---|
 | `01_intro` | Título "¡Bienvenido a la mesa de la lectura!". El Principito aparece a la izquierda del libro y saluda. |
-| `02_libro` | Tarjeta **1. No tapes el cuadrado** y se ilumina el marco del marcador. |
+| `02_libro` | Tarjeta **1. No tapes el cuadrado**. El marco brillante del marcador está desactivado por ahora (*Mostrar Marco Marcador*). |
 | `03_voz_alta` | Tarjeta **2. Lee en voz alta**. Un meteoro cruza hacia un planeta. |
 | `04_quiz` | Tarjeta **3. Responde el mini quiz** con los círculos **A** y **B**. La A brilla y se apaga (demo de respuesta incorrecta). |
 | `05_final` | La B brilla, crece y salen estrellas. "¿Estás listo?" |
@@ -42,30 +42,33 @@ Los momentos de cada animación están sincronizados con la voz. Los segundos se
 
 Componente `ReadingSession`, en el objeto **Lectura**:
 
-- Al terminar el onboarding se conecta el agente **"Principito lector"**, que solo escucha. Unity silencia su voz.
-- Cuando el niño lee una **frase activadora** del libro, se reproduce su animación. Se detecta de tres formas:
-  1. **Detección rápida:** el reconocedor de voz de Windows escucha partes cortas de la frase (*Frases Rápidas*) y la activa al instante. Es la vía más rápida.
-  2. **Unity** compara lo que transcribe el agente con la frase. Junta los últimos 20 s y la activa si coincide al menos el 70 % de las palabras.
-  3. **El agente** llama a la herramienta de cliente `activar_animacion`, como respaldo.
+- Al terminar el onboarding, **ElevenLabs Scribe v2 Realtime** (componente `ScribeRealtimeClient`) empieza a transcribir la voz del niño. Entrega **texto parcial mientras lee**, sin esperar a que haga una pausa.
+- Unity compara ese texto con las **frases activadoras** de la página actual: junta los últimos 20 s y activa la animación si coincide al menos el 70 % de las palabras. También busca "Principito, tengo una duda".
+- En las dudas y el quiz, Scribe se desconecta y libera el micrófono. Al volver a la lectura se reconecta solo. Solo se cobra mientras está conectado.
+- Con *Mostrar Dictado* activo, la consola muestra el texto parcial (`[Lectura] Scribe … `). Desmárcalo para las sesiones con niños.
 
-  ElevenLabs solo envía la transcripción cuando el niño hace una pausa. Por eso la detección rápida es la que reduce la demora.
-- Al cambiar de página (ArUco), Unity le envía al agente el texto de la nueva página.
-- Si la conexión se corta (por ejemplo, por el límite de duración), se reconecta sola.
+Alternativas, en el mismo componente:
 
-| Página | Frase | Animación |
+| Vía | Cuándo usarla |
+|---|---|
+| **Scribe v2 Realtime** (*Usar Scribe*) | **Principal.** Texto parcial con ~1 s de retraso. Necesita `apiKey`. |
+| **Vosk** (*Receptor Voz*, script `python/voz_vosk.py`) | Sin internet y sin costo. Envía el texto parcial por UDP al puerto 5005. |
+| **Agente "Principito lector"** (*Conectar Agente*) | **Desactivado.** Su transcripción llega recién cuando el niño hace una pausa y gasta minutos toda la lectura. Si se activa junto con Scribe, compiten por el micrófono. |
+| Dictado de Windows (*Dictado Windows*) | **Desactivado.** El dictado de Unity no recibe audio en Windows 11. |
+| Frases Rápidas (palabras clave de Windows) | Respaldo automático. Solo detecta frases dichas con pausa. |
+
+| Página | Frase activadora | Animación |
 |---|---|---|
-| 1 (marker_0) | "animaciones inspiradas en escenas del libro El Principito" | `principito_volando`: despega de su asteroide, planea con las aves sobre el libro y sale por la izquierda |
-| 1 (marker_0) | "estimula su imaginación, creatividad y conexión con el relato" **o** "Desarrollado por los alumnos de la carrera de Ingeniería de Software" (final de la página) | `quiz_pagina_1`: abre el mini quiz |
+| 1 (marker_0) | "animaciones inspiradas en escenas del libro El Principito" | `principito_volando`: despega de su asteroide, planea con las aves sobre el libro y sale por la izquierda (~5 s, campo *Velocidad*) |
+| 1 (marker_0) | "carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas" (última línea de la página) | `quiz_pagina_1`: abre el mini quiz |
 
-En el campo *Frase* se pueden poner alternativas separadas por `|`. Basta con que coincida una.
-
-> ⚠️ Mientras está conectado, el agente lector consume minutos de ElevenLabs durante toda la lectura.
+En el campo *Frase* se pueden poner alternativas separadas por `|`. Basta con que coincida una. Las frases están en la escena (*Reading Session → Animaciones*) y sus valores iniciales en `Assets/Lectura/Editor/LecturaSetup.cs`.
 
 ### 3. Mini quiz al terminar la página
 
 Componente `QuizSession`, en el objeto **Lectura**:
 
-- Se activa cuando el niño lee el final de la página 1. Si el vuelo del Principito todavía se está reproduciendo, espera a que termine.
+- Se activa cuando el niño lee la última línea de la página 1: "…carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas". Si el vuelo del Principito todavía se está reproduciendo, espera a que termine.
 - Pausa la lectura en vivo y bloquea las dudas mientras dura.
 - Muestra las preguntas **una por una** en un panel a la derecha del libro, con las alternativas A, B y C.
 - **Mezcla las alternativas** en cada sesión, para que la correcta no esté siempre en la misma letra.
@@ -73,6 +76,8 @@ Componente `QuizSession`, en el objeto **Lectura**:
   - Unity ilumina la opción y le devuelve al agente si es correcta.
   - Si es correcta, crece y salen estrellas. El Principito celebra.
   - Si es incorrecta, se atenúa y el niño lo intenta otra vez (2 intentos; después el Principito dice cuál era la correcta).
+  - Solo se despide y anima a seguir leyendo al terminar la **última** pregunta. Unity se lo indica en la respuesta de la herramienta.
+  - Si el niño dice algo que no es A, B o C, o dice que tiene una duda, el Principito lo devuelve al quiz.
 - El agente no conoce la respuesta correcta, así que no puede dar pistas.
 - Guarda los resultados, sin datos personales, en `resultados_quiz.csv` (en `AppData/LocalLow/StoryScape Onboarding/Prueba Personaje/`).
 
@@ -81,11 +86,11 @@ Componente `QuizSession`, en el objeto **Lectura**:
 | ¿Cómo vas a leer el cuento? (En silencio · En voz alta · Cantando) | En voz alta |
 | ¿Para qué sirve leer este libro de forma interactiva? (Para entender mejor la historia · Para leer más rápido · Para no tener que leer) | Para entender mejor la historia |
 
-### 4. Dudas: "Principito, tengo una duda"
+### 4. Dudas: "Principito, tengo una duda" (No se implementará por el momento)
 
 Componente `DoubtSession`, en el objeto **Dudas**:
 
-- La frase se detecta con el **reconocedor de voz de Windows** (`TriggerPhraseListener`, gratis y sin internet) o en la transcripción del agente lector.
+- La frase se detecta en el texto en tiempo real de **Scribe** (o de Vosk) y, como respaldo, con el **reconocedor de palabras clave de Windows** (`TriggerPhraseListener`).
 - Recién en ese momento se conecta el **agente de dudas**. La lectura se pausa.
 - El Principito aparece y el niño pregunta por una palabra o frase. El agente llama a `resaltar_palabra(palabra, significado)` y Unity:
   - **resalta la palabra sobre el libro**, usando las posiciones extraídas del PDF;
@@ -98,17 +103,16 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 - Windows 10/11 con micrófono. El reconocedor de la frase usa el **micrófono predeterminado** y el **idioma de voz en español** de Windows.
 - Cámara (C920 o webcam) y **Python** con OpenCV para detectar los ArUco
 - Proyector por HDMI como segunda pantalla, en 16:9
-- Cuenta de **ElevenLabs** con dos agentes (ver abajo)
+- Cuenta de **ElevenLabs** con dos agentes (dudas y quiz) y una **API key** para Scribe v2 Realtime (ver abajo)
 
 ## Instalación
 
 1. Clona el repositorio y ábrelo desde **Unity Hub → Add project from disk**.
-2. Copia `Assets/StreamingAssets/elevenlabs.example.json` como `elevenlabs.local.json` y pega los Agent ID:
+2. Copia `Assets/StreamingAssets/elevenlabs.example.json` como `elevenlabs.local.json` y pega los Agent ID y la API key:
    ```json
    {
      "agentId": "agent_… (agente de dudas)",
-     "agentIdLectura": "agent_… (Principito lector)",
-     "agentIdQuiz": "agent_… (Principito quiz)"
+     "apiKey": "sk_… (solo permiso Speech to Text, para Scribe)"
    }
    ```
    > `elevenlabs.local.json` está en el `.gitignore` y **no se sube** al repositorio. Revisa siempre `git status` antes de hacer un commit.
@@ -122,28 +126,32 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 
 ## Agentes de ElevenLabs
 
-| Agente | Campo en `elevenlabs.local.json` | Prompt y configuración | Herramienta de cliente |
-|---|---|---|---|
-| Dudas | `agentId` | [`docs/prompt_principito_dudas.md`](docs/prompt_principito_dudas.md) | `resaltar_palabra` (`palabra`, `significado`) |
-| Principito lector | `agentIdLectura` | [`docs/prompt_principito_lector.md`](docs/prompt_principito_lector.md) | `activar_animacion` (`animacion`) |
-| Principito quiz | `agentIdQuiz` | [`docs/prompt_principito_quiz.md`](docs/prompt_principito_quiz.md) | `elegir_opcion` (`letra`) |
+| Servicio | Cuándo se conecta | Campo en `elevenlabs.local.json` | Prompt y configuración | Herramienta de cliente |
+|---|---|---|---|---|
+| **Agente "Principito quiz"** | Una conversación por pregunta del quiz | `agentIdQuiz` | [`docs/prompt_principito_quiz.md`](docs/prompt_principito_quiz.md) | `elegir_opcion` (`letra`) |
+| **Scribe v2 Realtime** (no es un agente) | Durante la lectura | `apiKey` | Sin prompt | — |
 
-Ajustes comunes:
-- Idioma español.
-- **PCM 16000 Hz** de entrada y salida.
-- El agente de dudas con la System tool **End call**.
-- El lector con el **First message vacío**, **Skip turn** activado y **End call** desactivado.
+**Ajustes comunes de los agentes**
+- Idioma español y **PCM 16000 Hz** de entrada y salida.
+- System tool **End call** activada en dudas y quiz: Unity continúa cuando el agente termina la conversación.
+- En **Eventos del cliente**, incluir `user_transcript`, `audio`, `interruption` y **`client_tool_call`**. Sin este último no llegan las herramientas a Unity.
+- *Disposición* en **Normal** para dudas y quiz, así el niño puede pensar su respuesta.
+- Herramientas de cliente con **Esperar respuesta** activado en `resaltar_palabra` y `elegir_opcion`. En `elegir_opcion`, que no hable antes de la herramienta.
+- **Términos clave** del quiz: `A`, `B`, `C`, `la A`, `la B`, `la C` y el texto de las alternativas.
+- **Privacidad (niños):** desactiva *Guardar audio de llamadas* y pon un período de retención en días en lugar de ilimitado.
 
-Variables que envía Unity:
-- Al agente de dudas: `{{pagina_actual}}` y `{{texto_leido}}` (páginas 1 a la actual, nunca las siguientes).
-- Al agente lector: `{{pagina_actual}}`, `{{texto_pagina}}` y `{{animaciones}}`.
-- Al agente del quiz: `{{intro}}`, `{{numero_pregunta}}`, `{{total_preguntas}}`, `{{pregunta}}`, `{{opcion_a}}`, `{{opcion_b}}` y `{{opcion_c}}`.
+**Scribe v2 Realtime**
+- Usa una API key **restringida a Speech to Text** y, si es posible, con límite de créditos. Queda dentro del `.exe`, así que no compartas el build fuera del equipo del proyecto.
+- Se conecta a `wss://api.elevenlabs.io/v1/speech-to-text/realtime` con `scribe_v2_realtime`, en español, PCM 16 kHz y cierre de frase por silencio (*Vad Silence Secs*). Se cobra todo el audio enviado mientras está conectado.
+
+**Variables que envía Unity**
+- Agente del quiz: `{{intro}}`, `{{numero_pregunta}}`, `{{total_preguntas}}`, `{{pregunta}}`, `{{opcion_a}}`, `{{opcion_b}}` y `{{opcion_c}}`. Las alternativas van en el orden mezclado que se proyecta, y el agente no sabe cuál es la correcta.
 
 ## Escenas
 
 | Escena | Uso |
 |---|---|
-| `Scenes/Onboarding.unity` | **Escena principal** (primera del build): onboarding, lectura en vivo y dudas. |
+| `Scenes/Onboarding.unity` | **Escena principal** (primera del build): onboarding, lectura en vivo, quiz y dudas. Incluye **SimulacionLibro**, que muestra la página del libro en pantalla desde el inicio del onboarding para probar sin proyector. ⚠️ Desmarca *Simulación Activa* antes de proyectar sobre el libro real. |
 | `Scenes/PruebaDudas.unity` | Prueba **sin proyector**: dibuja la página en pantalla para revisar resaltados y animaciones. ⚠️ Desmarca *Show* en *Simulated Book Page* antes de proyectar. |
 | `Scenes/StoryScapeDemo.unity` | Demo anterior (personaje caminando + conversación por término). Su prompt está en [`PROMPTS_ELEVENLABS.md`](PROMPTS_ELEVENLABS.md). |
 
@@ -167,7 +175,7 @@ En `Assets/StreamingAssets/` (se generan desde el PDF del libro; los fuentes est
 |---|---|
 | `libro_paginas.json` | Texto de cada página. **marker_n = página n+1** (7 páginas: marker_0 a marker_6). |
 | `palabras_paginas.json` | Posición de cada palabra en la página (0–1 del PDF), para resaltar sobre el libro. |
-| `elevenlabs.local.json` | Agent IDs (no se sube). |
+| `elevenlabs.local.json` | Agent IDs y API key de Scribe (no se sube). |
 
 ## Menús de editor (StoryScape)
 
@@ -203,11 +211,12 @@ Assets/
 ├── Lectura/
 │   ├── Datos/                 # JSON del libro (fuente) y versión anterior
 │   ├── Editor/LecturaSetup.cs
-│   ├── Scripts/               # ReadingSession, PrincipitoVolando, QuizSession
+│   ├── Scripts/               # ReadingSession, ScribeRealtimeClient, PrincipitoVolando, QuizSession
 │   └── Sprites/Vuelo/         # Poses del vuelo con las aves y asteroide
 ├── Scenes/                    # Onboarding, PruebaDudas, StoryScapeDemo
 └── StreamingAssets/           # libro_paginas.json, palabras_paginas.json, elevenlabs.*.json
 docs/                          # Prompts de los agentes de ElevenLabs
+python/voz_vosk.py             # Alternativa sin costo: voz local (Vosk) → Unity por UDP
 ```
 
 ## Solución de problemas
@@ -216,9 +225,10 @@ docs/                          # Prompts de los agentes de ElevenLabs
 |---|---|
 | El Play no avanza o no escucha | Haz clic en la ventana de Unity: sin foco, el Play se detiene. |
 | No reconoce "Principito, tengo una duda" | Pon como predeterminado el micrófono USB en Windows y el idioma de voz en español. Baja *Min Confidence* a **Baja**. |
-| La animación tarda en aparecer | Revisa que *Detección Rápida* esté activa en *Reading Session* y que el idioma de voz de Windows sea español. En el agente lector, pon *Turn eagerness* en **High**. |
-| No se activa la animación al leer | Revisa en la consola las líneas `[ElevenLabs] Niño: …` (lo que transcribió el agente). Baja *Coincidencia* en *Reading Session* si hace falta. |
-| El agente lector no se conecta | Revisa que `agentIdLectura` esté en `elevenlabs.local.json` y no diga `PEGA_AQUI…`. |
+| La animación tarda en aparecer | Revisa que *Usar Scribe* esté marcado y que en la consola aparezca `[Scribe] Transcripción en tiempo real conectada.` Con *Mostrar Dictado* verás el texto parcial. |
+| `[Scribe] auth_error` u otro error de Scribe | Revisa `apiKey` en `elevenlabs.local.json` (y en la copia del build) y que la key tenga permiso de Speech to Text. |
+| No se activa la animación al leer | Revisa en la consola las líneas `[Lectura] Scribe …` (lo que se transcribió). Baja *Coincidencia* en *Reading Session* si hace falta. |
+| El Principito no habla en el quiz (otro equipo) | El build no tiene `agentIdQuiz`: revisa `<Nombre>_Data/StreamingAssets/elevenlabs.local.json` y el `Player.log`. |
 | El agente de dudas no resalta la palabra | Revisa que la Client tool se llame exactamente `resaltar_palabra` y que la palabra esté en la página actual. |
 | El quiz se queda esperando | Revisa que `agentIdQuiz` esté configurado y que el agente tenga **End call** activado: Unity pasa a la siguiente pregunta cuando el agente termina. |
 | No se oye la voz en el build | Revisa la salida de audio de Windows (puede estar yendo al HDMI del proyector). |
@@ -229,4 +239,4 @@ docs/                          # Prompts de los agentes de ElevenLabs
 
 - Animaciones para las otras 11 frases activadoras (lista en `docs/prompt_principito_lector.md`).
 - Calibración cámara-proyector (homografía), para que los resaltados sigan al libro aunque se mueva.
-- Agentes privados con URL firmada desde un servidor.
+- Agentes privados con URL firmada y **tokens de un solo uso para Scribe** emitidos desde un servidor, para no guardar la API key en el `.exe`.

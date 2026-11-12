@@ -172,6 +172,28 @@ public static class LecturaSetup
         return card;
     }
 
+    public static void AddSimulation(OnboardingSequence seq, BookPageTracker tracker)
+    {
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (t && t.name == "SimulacionLibro" && t.parent == null) Object.DestroyImmediate(t.gameObject);
+        for (int i = seq.onFinished.GetPersistentEventCount() - 1; i >= 0; i--)
+            if (seq.onFinished.GetPersistentTarget(i) == null) UnityEventTools.RemovePersistentListener(seq.onFinished, i);
+        for (int i = seq.onStarted.GetPersistentEventCount() - 1; i >= 0; i--)
+            if (seq.onStarted.GetPersistentTarget(i) == null) UnityEventTools.RemovePersistentListener(seq.onStarted, i);
+
+        WordHighlighter highlighter = null;
+        foreach (var h in Object.FindObjectsByType<WordHighlighter>(FindObjectsInactive.Include, FindObjectsSortMode.None)) { highlighter = h; break; }
+        if (!highlighter) { Debug.LogWarning("[Simulación] No hay WordHighlighter en la escena."); return; }
+        var go = new GameObject("SimulacionLibro");
+        var sim = go.AddComponent<SimulatedBookPage>();
+        sim.highlighter = highlighter;
+        sim.tracker = tracker;
+        sim.show = false;               // aparece recién al terminar el onboarding
+        sim.simulacionActiva = true;    // desmarcar al proyectar sobre el libro real
+        UnityEventTools.AddPersistentListener(seq.onStarted, sim.Mostrar);    // desde el inicio del onboarding
+        UnityEventTools.AddPersistentListener(seq.onFinished, sim.Mostrar);
+    }
+
     static Sprite Load(string n) => AssetDatabase.LoadAssetAtPath<Sprite>($"{SpriteDir}/{n}.png");
 
     /// Agrega (o vuelve a crear) el objeto "Lectura" en la escena abierta del onboarding.
@@ -268,6 +290,9 @@ public static class LecturaSetup
         session.animaciones.Add(finPagina);
 
         UnityEventTools.AddPersistentListener(seq.onFinished, session.Iniciar);
+
+        // Simulación sin proyector: al terminar el onboarding se muestra la página del libro en pantalla
+        AddSimulation(seq, tracker);
 
         EditorUtility.SetDirty(seq);
         EditorSceneManager.MarkSceneDirty(seq.gameObject.scene);
