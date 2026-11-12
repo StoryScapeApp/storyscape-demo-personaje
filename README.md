@@ -78,7 +78,7 @@ Componente `QuizSession`, en el objeto **Lectura**:
   - Unity ilumina la opción y le devuelve al agente si es correcta.
   - Si es correcta, crece y salen estrellas. El Principito celebra.
   - Si es incorrecta, se atenúa y el niño lo intenta otra vez (2 intentos; después el Principito dice cuál era la correcta).
-  - Solo se despide y anima a seguir leyendo al terminar la **última** pregunta. Unity se lo indica en la respuesta de la herramienta.
+  - Solo se despide y lo invita a pasar la página al terminar la **última** pregunta. Unity se lo indica en la respuesta de la herramienta.
   - Si el niño dice algo que no es A, B o C, o dice que tiene una duda, el Principito lo devuelve al quiz.
 - El agente no conoce la respuesta correcta, así que no puede dar pistas.
 - Guarda los resultados, sin datos personales, en `resultados_quiz.csv`. En Windows: `AppData/LocalLow/StoryScape Onboarding/Prueba Personaje/`. En Mac: `~/Library/Application Support/StoryScape Onboarding/Prueba Personaje/`.
