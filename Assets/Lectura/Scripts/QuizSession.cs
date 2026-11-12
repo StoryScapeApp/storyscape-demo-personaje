@@ -328,7 +328,7 @@ public class QuizSession : MonoBehaviour
             acierto = true;
             StartCoroutine(MostrarCorrecta(pos));
             return Ultima()
-                ? "correcta, y era la última pregunta del quiz. Felicítalo con alegría, dile que terminó el mini quiz, anímalo a seguir leyendo y termina la conversación con end_call."
+                ? "correcta, y era la última pregunta del quiz. Felicítalo con alegría, dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call."
                 : "correcta. Felicítalo con UNA frase corta y alegre. No te despidas ni hables de seguir leyendo: todavía falta otra pregunta. Luego termina la conversación con end_call.";
         }
 
@@ -340,7 +340,7 @@ public class QuizSession : MonoBehaviour
             string ok = preguntaActual.opciones[orden[posCorrecta]];
             return $"incorrecta, y ya no quedan intentos. Dile con cariño que la respuesta correcta era la {Letras[posCorrecta]}: {ok}. " +
                    (Ultima()
-                       ? "Era la última pregunta: dile que terminó el mini quiz, anímalo a seguir leyendo y termina la conversación con end_call."
+                       ? "Era la última pregunta: dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call."
                        : "No te despidas ni hables de seguir leyendo: todavía falta otra pregunta. Luego termina la conversación con end_call.");
         }
         StartCoroutine(MostrarIncorrecta(pos, false));
