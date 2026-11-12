@@ -13,7 +13,8 @@ using UnityEngine;
 ///   Unity ilumina la opción, dice si es correcta y el agente responde según el resultado.
 /// - Mientras dura el quiz, la lectura en vivo se pausa y no se abren dudas.
 /// - Guarda los resultados (sin datos personales) en resultados_quiz.csv (Application.persistentDataPath).
-/// Prueba sin ElevenLabs: tecla Q (inicia el quiz) y teclas A, B, C (responde).
+/// Quizzes por capítulo: banco en StreamingAssets/quiz_preguntas.json; se sortea 1 pregunta literal + 1 inferencial.
+/// Prueba sin ElevenLabs: Q (quiz de la página 1), 1 / 2 (quiz del capítulo 1 / 2) y A, B, C (responde).
 /// </summary>
 public class QuizSession : MonoBehaviour
 {
@@ -37,8 +38,26 @@ public class QuizSession : MonoBehaviour
         [NonSerialized] public bool hecho;
     }
 
+    // Banco de preguntas por capítulo (StreamingAssets/quiz_preguntas.json). En cada sesión se sortea
+    // 1 pregunta literal + 1 inferencial, en orden aleatorio, para que a cada niño le toque un par distinto.
+    [Serializable]
+    public class BancoQuiz
+    {
+        public string id;
+        public string intro;
+        public List<Pregunta> literales = new List<Pregunta>();
+        public List<Pregunta> inferenciales = new List<Pregunta>();
+    }
+
+    [Serializable]
+    class Banco { public List<BancoQuiz> quizzes = new List<BancoQuiz>(); }
+
     [Header("Preguntas")]
+    [Tooltip("Quizzes con preguntas fijas (p. ej. pagina_1). Si un id también existe en el banco, se usa el banco")]
     public List<Quiz> quizzes = new List<Quiz>();
+    [Tooltip("Banco de preguntas por capítulo, en StreamingAssets")]
+    public string bancoArchivo = "quiz_preguntas.json";
+    readonly HashSet<string> bancosHechos = new HashSet<string>();
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
     public int maxIntentos = 2;
@@ -113,14 +132,83 @@ public class QuizSession : MonoBehaviour
     /// Inicia el quiz con ese id (lo llama ReadingSession al detectar el final de la página).
     public void IniciarQuiz(string id)
     {
+        if (IsRunning) return;
+
+        // 1) ¿Hay un banco de preguntas para este id? Se sortean 2 preguntas (una literal y una inferencial)
+        var delBanco = ArmarDesdeBanco(id);
+        if (delBanco != null)
+        {
+            if (!bancosHechos.Add(id)) return;   // ya se hizo en esta sesión de juego
+            StartCoroutine(Run(delBanco));
+            return;
+        }
+
+        // 2) Si no, el quiz fijo de la escena
         var q = quizzes.Find(x => x.id == id);
         if (q == null) { Debug.LogWarning($"[Quiz] No existe el quiz \"{id}\"."); return; }
-        if (q.hecho || IsRunning) return;
+        if (q.hecho) return;
         StartCoroutine(Run(q));
     }
 
     [ContextMenu("Iniciar quiz de la página 1")]
     void IniciarPrimero() { if (quizzes.Count > 0) { quizzes[0].hecho = false; IniciarQuiz(quizzes[0].id); } }
+
+    [ContextMenu("Probar quiz del capítulo 1 (sorteo)")]
+    void ProbarCapitulo1() { IniciarCapituloPrueba("capitulo_1"); }
+
+    [ContextMenu("Probar quiz del capítulo 2 (sorteo)")]
+    void ProbarCapitulo2() { IniciarCapituloPrueba("capitulo_2"); }
+
+    void IniciarCapituloPrueba(string id) { bancosHechos.Remove(id); IniciarQuiz(id); }
+
+    // ───────────── Banco de preguntas ─────────────
+    Banco CargarBanco()
+    {
+        if (string.IsNullOrEmpty(bancoArchivo)) return null;
+        try
+        {
+            string path = Path.Combine(Application.streamingAssetsPath, bancoArchivo);
+            if (!File.Exists(path)) return null;
+            return JsonUtility.FromJson<Banco>(File.ReadAllText(path));
+        }
+        catch (Exception e) { Debug.LogWarning("[Quiz] No se pudo leer el banco de preguntas: " + e.Message); return null; }
+    }
+
+    static bool Valida(Pregunta p) =>
+        p != null && !string.IsNullOrWhiteSpace(p.texto) && p.opciones != null && p.opciones.Length == 3
+        && p.correcta >= 0 && p.correcta < 3;
+
+    static Pregunta Sortear(List<Pregunta> lista, Pregunta evitar = null)
+    {
+        var validas = lista?.FindAll(p => Valida(p) && p != evitar);
+        return validas == null || validas.Count == 0 ? null : validas[UnityEngine.Random.Range(0, validas.Count)];
+    }
+
+    /// Arma un quiz con 1 pregunta literal y 1 inferencial al azar (en orden aleatorio). Null si el id no tiene banco.
+    Quiz ArmarDesdeBanco(string id)
+    {
+        var b = CargarBanco()?.quizzes?.Find(x => x.id == id);
+        if (b == null) return null;
+
+        var lit = Sortear(b.literales);
+        var inf = Sortear(b.inferenciales);
+        var elegidas = new List<Pregunta>();
+        if (lit != null) elegidas.Add(lit);
+        if (inf != null) elegidas.Add(inf);
+        // Si falta un tipo, se completa con otra pregunta del que sí hay
+        if (elegidas.Count == 1)
+        {
+            var otra = Sortear(lit != null ? b.literales : b.inferenciales, elegidas[0]);
+            if (otra != null) elegidas.Add(otra);
+        }
+        if (elegidas.Count == 0) { Debug.LogWarning($"[Quiz] El banco \"{id}\" no tiene preguntas válidas."); return null; }
+        if (elegidas.Count == 2 && UnityEngine.Random.value < 0.5f) (elegidas[0], elegidas[1]) = (elegidas[1], elegidas[0]);
+
+        var q = new Quiz { id = id, preguntas = elegidas };
+        if (!string.IsNullOrWhiteSpace(b.intro)) q.intro = b.intro;
+        Debug.Log($"[Quiz] Sorteo \"{id}\": " + string.Join(" | ", elegidas.ConvertAll(p => p.texto)));
+        return q;
+    }
 
     IEnumerator Run(Quiz q)
     {
@@ -309,6 +397,8 @@ public class QuizSession : MonoBehaviour
         var k = UnityEngine.InputSystem.Keyboard.current;
         if (k == null) return;
         if (k.qKey.wasPressedThisFrame) IniciarPrimero();
+        if (k.digit1Key.wasPressedThisFrame) ProbarCapitulo1();
+        if (k.digit2Key.wasPressedThisFrame) ProbarCapitulo2();
         if (IsRunning && (agent == null || !agent.IsRunning))
         {
             if (k.aKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba A → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }));
@@ -317,6 +407,8 @@ public class QuizSession : MonoBehaviour
         }
 #else
         if (Input.GetKeyDown(KeyCode.Q)) IniciarPrimero();
+        if (Input.GetKeyDown(KeyCode.Alpha1)) ProbarCapitulo1();
+        if (Input.GetKeyDown(KeyCode.Alpha2)) ProbarCapitulo2();
         if (IsRunning && (agent == null || !agent.IsRunning))
         {
             if (Input.GetKeyDown(KeyCode.A)) Debug.Log("[Quiz] Prueba A → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }));

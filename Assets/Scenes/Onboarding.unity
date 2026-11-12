@@ -1922,6 +1922,54 @@ MonoBehaviour:
             m_StringArgument: pagina_1
             m_BoolArgument: 0
           m_CallState: 2
+  - id: quiz_capitulo_1
+    pagina: 3
+    frase: "la persona mayor se mostraba muy satisfecha de haber conocido a un hombre
+      tan razonable|muy satisfecha de haber conocido a un hombre tan razonable"
+    coincidencia: 0.7
+    soloUnaVez: 1
+    frasesRapidas:
+    - satisfecha de haber conocido
+    - haber conocido a un hombre tan razonable
+    - muy satisfecha de haber conocido
+    alActivar:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 617330565}
+          m_TargetAssemblyTypeName: QuizSession, Assembly-CSharp
+          m_MethodName: IniciarQuiz
+          m_Mode: 5
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName:
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: capitulo_1
+            m_BoolArgument: 0
+          m_CallState: 2
+  - id: quiz_capitulo_2
+    pagina: 7
+    frase: "Y fue as\xED como conoc\xED al principito|as\xED como conoc\xED al principito"
+    coincidencia: 0.7
+    soloUnaVez: 1
+    frasesRapidas:
+    - "as\xED como conoc\xED al principito"
+    - "fue as\xED como conoc\xED"
+    alActivar:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 617330565}
+          m_TargetAssemblyTypeName: QuizSession, Assembly-CSharp
+          m_MethodName: IniciarQuiz
+          m_Mode: 5
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName:
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: capitulo_2
+            m_BoolArgument: 0
+          m_CallState: 2
   toolName: activar_animacion
   soloPaginaActual: 1
   ventanaSegundos: 20
