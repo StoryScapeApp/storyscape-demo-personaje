@@ -9,6 +9,8 @@ public class SimulatedBookPage : MonoBehaviour
 {
     [Tooltip("Mostrar la página simulada (desmarcar al usar el proyector)")]
     public bool show = true;
+    [Tooltip("Permite que Mostrar() la encienda (p. ej. al terminar el onboarding). Desmarcar al proyectar sobre el libro real")]
+    public bool simulacionActiva = true;
     public WordHighlighter highlighter;
     public BookPageTracker tracker;
 
@@ -21,6 +23,18 @@ public class SimulatedBookPage : MonoBehaviour
     Transform root;
     int shownPage = -1;
     static Sprite white;
+
+    /// Enciende la página simulada (lo llama el onboarding al terminar, si la simulación está activa).
+    [ContextMenu("Mostrar página simulada")]
+    public void Mostrar()
+    {
+        if (!simulacionActiva) return;
+        show = true;
+        Debug.Log("[Simulación] Página del libro en pantalla: lee en voz alta para probar animaciones y quiz.");
+    }
+
+    [ContextMenu("Ocultar página simulada")]
+    public void Ocultar() => show = false;
 
     void Update()
     {

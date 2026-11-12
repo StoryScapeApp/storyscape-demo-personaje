@@ -4769,6 +4769,62 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &1138333379
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1138333381}
+  - component: {fileID: 1138333380}
+  m_Layer: 0
+  m_Name: SimulacionLibro
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1138333380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138333379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7178c89061c5af94598d2583533a6691, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimulatedBookPage
+  show: 0
+  simulacionActiva: 0
+  highlighter: {fileID: 688074015}
+  tracker: {fileID: 1499440573}
+  paper: {r: 0.96, g: 0.94, b: 0.88, a: 1}
+  ink: {r: 0.16, g: 0.16, b: 0.22, a: 1}
+  markerRect:
+    serializedVersion: 2
+    x: 0.1438
+    y: 0.0871
+    width: 0.23619999
+    height: 0.3267
+--- !u!4 &1138333381
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1138333379}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1142759599
 GameObject:
   m_ObjectHideFlags: 0
@@ -6725,7 +6781,19 @@ MonoBehaviour:
   cleanupFade: 1.2
   onStarted:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1138333380}
+        m_TargetAssemblyTypeName: SimulatedBookPage, Assembly-CSharp
+        m_MethodName: Mostrar
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onFinished:
     m_PersistentCalls:
       m_Calls:
@@ -6744,6 +6812,18 @@ MonoBehaviour:
       - m_Target: {fileID: 617330566}
         m_TargetAssemblyTypeName: ReadingSession, Assembly-CSharp
         m_MethodName: Iniciar
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1138333380}
+        m_TargetAssemblyTypeName: SimulatedBookPage, Assembly-CSharp
+        m_MethodName: Mostrar
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8102,3 +8182,4 @@ SceneRoots:
   - {fileID: 1499440574}
   - {fileID: 688074016}
   - {fileID: 617330567}
+  - {fileID: 1138333381}
