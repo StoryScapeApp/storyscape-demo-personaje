@@ -19,8 +19,8 @@ ArUco 0 (página 1) ──► Onboarding ──► "¿Estás listo?" ──► n
                  animación sobre la mesa           se pausa la lectura → agente de dudas
                (p. ej. Principito volando)         resalta la palabra en el libro + significado
                            │                                   │
-            al terminar la página: mini quiz       al terminar, la lectura se reconecta sola
-         (agente "Principito quiz", 2 preguntas)
+     al terminar la página o el capítulo: mini quiz    al terminar, la lectura se reconecta sola
+   (agente "Principito quiz", 2 preguntas al azar)
 ```
 
 ### 1. Onboarding
@@ -57,15 +57,20 @@ Alternativas, en el mismo componente:
 | Página | Frase activadora | Animación |
 |---|---|---|
 | 1 (marker_0) | "animaciones inspiradas en escenas del libro El Principito" | `principito_volando`: despega de su asteroide, planea con las aves sobre el libro y sale por la izquierda (~5 s, campo *Velocidad*) |
-| 1 (marker_0) | "carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas" (última línea de la página) | `quiz_pagina_1`: abre el mini quiz |
+| 1 (marker_0) | "carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas" (última línea de la página) | `quiz_pagina_1`: abre el mini quiz de la página 1 |
+| 3 (marker_2) | "…la persona mayor se mostraba muy satisfecha de haber conocido a un hombre tan razonable" (fin del capítulo I) | `quiz_capitulo_1`: abre el quiz del capítulo I |
+| 7 (marker_6) | "Y fue así como conocí al principito" (fin del capítulo II) | `quiz_capitulo_2`: abre el quiz del capítulo II |
 
 En el campo *Frase* se pueden poner alternativas separadas por `|`. Basta con que coincida una. Las frases están en la escena (*Reading Session → Animaciones*) y sus valores iniciales en `Assets/Lectura/Editor/LecturaSetup.cs`.
 
-### 3. Mini quiz al terminar la página
+### 3. Mini quiz al terminar la página o el capítulo
 
 Componente `QuizSession`, en el objeto **Lectura**:
 
-- Se activa cuando el niño lee la última línea de la página 1: "…carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas". Si el vuelo del Principito todavía se está reproduciendo, espera a que termine.
+- Hay tres quizzes: `pagina_1` (la introducción), `capitulo_1` y `capitulo_2`. Se activan cuando el niño lee la última frase de su página (ver la tabla de frases activadoras, arriba). Si el vuelo del Principito todavía se está reproduciendo, espera a que termine.
+- **`pagina_1`** tiene 2 preguntas fijas (en la escena). **`capitulo_1` y `capitulo_2`** sortean sus preguntas de un **banco** (`Assets/StreamingAssets/quiz_preguntas.json`): en cada sesión se elige **1 pregunta literal y 1 inferencial** al azar, en orden aleatorio. Así a cada niño le toca un par distinto y no se pasan las respuestas.
+- Cada banco tiene 4 preguntas literales y 4 inferenciales, con 3 alternativas cada una. Para cambiar o agregar preguntas, edita el JSON (no hace falta tocar código): `correcta` es el índice, desde 0, de la alternativa correcta en el orden en que están escritas. Cada pregunta debe tener exactamente 3 alternativas; si no, se ignora.
+- Cada quiz de capítulo se hace **una vez por sesión de juego**.
 - Pausa la lectura en vivo y bloquea las dudas mientras dura.
 - Muestra las preguntas **una por una** en un panel a la derecha del libro, con las alternativas A, B y C.
 - **Mezcla las alternativas** en cada sesión, para que la correcta no esté siempre en la misma letra.
@@ -76,7 +81,9 @@ Componente `QuizSession`, en el objeto **Lectura**:
   - Solo se despide y anima a seguir leyendo al terminar la **última** pregunta. Unity se lo indica en la respuesta de la herramienta.
   - Si el niño dice algo que no es A, B o C, o dice que tiene una duda, el Principito lo devuelve al quiz.
 - El agente no conoce la respuesta correcta, así que no puede dar pistas.
-- Guarda los resultados, sin datos personales, en `resultados_quiz.csv` (en `AppData/LocalLow/StoryScape Onboarding/Prueba Personaje/`).
+- Guarda los resultados, sin datos personales, en `resultados_quiz.csv`. En Windows: `AppData/LocalLow/StoryScape Onboarding/Prueba Personaje/`. En Mac: `~/Library/Application Support/StoryScape Onboarding/Prueba Personaje/`.
+
+Preguntas fijas de la página 1:
 
 | Pregunta | Correcta |
 |---|---|
@@ -130,6 +137,7 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 
 **Ajustes comunes de los agentes**
 - Idioma español y **PCM 16000 Hz** de entrada y salida.
+- Configuración usada en el agente del quiz: voz **Leo - Curious Character**, LLM **Claude Haiku 5.5** y duración máxima de **120 s** por conversación.
 - System tool **End call** activada en dudas y quiz: Unity continúa cuando el agente termina la conversación.
 - En **Eventos del cliente**, incluir `user_transcript`, `audio`, `interruption` y **`client_tool_call`**. Sin este último no llegan las herramientas a Unity.
 - *Disposición* en **Normal** para dudas y quiz, así el niño puede pensar su respuesta.
@@ -161,6 +169,9 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 | **T** | Prueba el resaltado y el significado **sin ElevenLabs** con la lista *Test Words* de `DoubtSession`. |
 | **V** | Reproduce la animación de la página actual **sin ElevenLabs**. |
 | **Q** | Inicia el mini quiz de la página 1. Sin el agente del quiz configurado, se responde con **A**, **B** o **C**. |
+| **1** / **2** | Inician el mini quiz del capítulo I / II (con sorteo de preguntas). Mismo comportamiento que **Q**. |
+
+**Cambiar de página sin cámara:** en `Onboarding` no hay teclas para pasar de página. Se simula un ArUco enviando varios paquetes UDP seguidos a `127.0.0.1:5005` (el receptor pide al menos 2 detecciones en 1,5 s). Por ejemplo, para la página 3 (`marker_2`): `{"tipo": "aruco", "id": 2, "x": 0.5, "y": 0.5}`. Después, lee en voz alta la última frase de esa página para que Scribe dispare el quiz. Para que la lectura en vivo empiece sin esperar el onboarding, usa el menú ⋮ de *Reading Session → Iniciar lectura en vivo* **con el Play activo**.
 
 También están en el menú contextual (⋮) de cada componente: *Iniciar onboarding*, *Abrir dudas*, *Iniciar lectura en vivo*, *Reiniciar animaciones* y *Reproducir*.
 
@@ -172,6 +183,7 @@ En `Assets/StreamingAssets/` (se generan desde el PDF del libro; los fuentes est
 |---|---|
 | `libro_paginas.json` | Texto de cada página. **marker_n = página n+1** (7 páginas: marker_0 a marker_6). |
 | `palabras_paginas.json` | Posición de cada palabra en la página (0–1 del PDF), para resaltar sobre el libro. |
+| `quiz_preguntas.json` | Banco de preguntas de los quizzes de capítulo (`capitulo_1` y `capitulo_2`): literales e inferenciales, con 3 alternativas y la correcta. |
 | `elevenlabs.local.json` | Agent IDs y API key de Scribe (no se sube). |
 
 ## Menús de editor (StoryScape)
@@ -227,6 +239,8 @@ python/voz_vosk.py             # Alternativa sin costo: voz local (Vosk) → Uni
 | No se activa la animación al leer | Revisa en la consola las líneas `[Lectura] Scribe …` (lo que se transcribió). Baja *Coincidencia* en *Reading Session* si hace falta. |
 | El Principito no habla en el quiz (otro equipo) | El build no tiene `agentIdQuiz`: revisa `<Nombre>_Data/StreamingAssets/elevenlabs.local.json` y el `Player.log`. |
 | El agente de dudas no resalta la palabra | Revisa que la Client tool se llame exactamente `resaltar_palabra` y que la palabra esté en la página actual. |
+| El quiz de capítulo no se abre al leer la última frase | Revisa que la página actual sea la correcta (`[Libro] Página actual: 3` o `7` en la consola): los disparadores solo valen en su página. Sin cámara, hay que enviar el ArUco varias veces seguidas (ver *Atajos de prueba*). Revisa también que Scribe esté conectado (`[Scribe] Transcripción en tiempo real conectada.`). |
+| El Principito cuenta respuestas que el niño no dijo | Eco: el micrófono capta la voz del agente. Usa audífonos y baja *Mic Gain* (con la ganancia x8 y parlantes, se mezcla). |
 | El quiz se queda esperando | Revisa que `agentIdQuiz` esté configurado y que el agente tenga **End call** activado: Unity pasa a la siguiente pregunta cuando el agente termina. |
 | No se oye la voz en el build | Revisa la salida de audio de Windows (puede estar yendo al HDMI del proyector). |
 | La barra del micrófono apenas se mueve | Sube *Mic Gain* y el volumen de entrada en Windows. |
