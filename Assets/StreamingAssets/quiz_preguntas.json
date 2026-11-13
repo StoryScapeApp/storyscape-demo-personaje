@@ -26,6 +26,7 @@
     },
     {
       "id": "capitulo_2",
+      "finDelLibro": true,
       "intro": "¡Muy bien! Terminaste el capítulo dos. Ahora, un mini quiz.",
       "literales": [
         { "texto": "¿Dónde se averió el avión del narrador?",

@@ -35,6 +35,8 @@ public class QuizSession : MonoBehaviour
         [Tooltip("Lo que dice el Principito antes de la primera pregunta")]
         [TextArea(1, 3)] public string intro = "¡Muy bien! Terminaste esta página. Ahora, un mini quiz.";
         public List<Pregunta> preguntas = new List<Pregunta>();
+        [Tooltip("Márcalo en el quiz del último capítulo: al terminar, el Principito felicita por acabar el libro en vez de invitar a pasar la página")]
+        public bool finDelLibro;
         [NonSerialized] public bool hecho;
     }
 
@@ -45,6 +47,7 @@ public class QuizSession : MonoBehaviour
     {
         public string id;
         public string intro;
+        public bool finDelLibro;
         public List<Pregunta> literales = new List<Pregunta>();
         public List<Pregunta> inferenciales = new List<Pregunta>();
     }
@@ -57,6 +60,8 @@ public class QuizSession : MonoBehaviour
     public List<Quiz> quizzes = new List<Quiz>();
     [Tooltip("Banco de preguntas por capítulo, en StreamingAssets")]
     public string bancoArchivo = "quiz_preguntas.json";
+    [Tooltip("Ids de quiz con los que termina el libro (no se invita a pasar la página)")]
+    public string[] idsFinDelLibro = { "capitulo_2" };
     readonly HashSet<string> bancosHechos = new HashSet<string>();
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
@@ -204,7 +209,7 @@ public class QuizSession : MonoBehaviour
         if (elegidas.Count == 0) { Debug.LogWarning($"[Quiz] El banco \"{id}\" no tiene preguntas válidas."); return null; }
         if (elegidas.Count == 2 && UnityEngine.Random.value < 0.5f) (elegidas[0], elegidas[1]) = (elegidas[1], elegidas[0]);
 
-        var q = new Quiz { id = id, preguntas = elegidas };
+        var q = new Quiz { id = id, preguntas = elegidas, finDelLibro = b.finDelLibro };
         if (!string.IsNullOrWhiteSpace(b.intro)) q.intro = b.intro;
         Debug.Log($"[Quiz] Sorteo \"{id}\": " + string.Join(" | ", elegidas.ConvertAll(p => p.texto)));
         return q;
@@ -271,10 +276,10 @@ public class QuizSession : MonoBehaviour
         Anim(animRest);
         yield return Fade(0f);
         if (doubts) doubts.bloqueada = false;
+        Debug.Log(FinDelLibro() ? "[Quiz] Terminado: fin del libro." : "[Quiz] Terminado: sigue la lectura.");
         quizActual = null;
         preguntaActual = null;
         IsRunning = false;
-        Debug.Log("[Quiz] Terminado: sigue la lectura.");
     }
 
     bool Busy()
@@ -328,7 +333,7 @@ public class QuizSession : MonoBehaviour
             acierto = true;
             StartCoroutine(MostrarCorrecta(pos));
             return Ultima()
-                ? "correcta, y era la última pregunta del quiz. Felicítalo con alegría, dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call."
+                ? "correcta, y era la última pregunta del quiz. Felicítalo con alegría. " + CierreFinal()
                 : "correcta. Felicítalo con UNA frase corta y alegre. No te despidas ni hables de seguir leyendo: todavía falta otra pregunta. Luego termina la conversación con end_call.";
         }
 
@@ -340,7 +345,7 @@ public class QuizSession : MonoBehaviour
             string ok = preguntaActual.opciones[orden[posCorrecta]];
             return $"incorrecta, y ya no quedan intentos. Dile con cariño que la respuesta correcta era la {Letras[posCorrecta]}: {ok}. " +
                    (Ultima()
-                       ? "Era la última pregunta: dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call."
+                       ? "Era la última pregunta. " + CierreFinal()
                        : "No te despidas ni hables de seguir leyendo: todavía falta otra pregunta. Luego termina la conversación con end_call.");
         }
         StartCoroutine(MostrarIncorrecta(pos, false));
@@ -349,6 +354,15 @@ public class QuizSession : MonoBehaviour
     }
 
     bool Ultima() => quizActual != null && numeroPregunta >= quizActual.preguntas.Count;
+
+    /// ¿Con este quiz termina el libro? (casilla Fin Del Libro, "finDelLibro" en el banco o id en idsFinDelLibro)
+    bool FinDelLibro() => quizActual != null &&
+        (quizActual.finDelLibro || (idsFinDelLibro != null && Array.IndexOf(idsFinDelLibro, quizActual.id) >= 0));
+
+    /// Lo que debe decir el agente al terminar la última pregunta.
+    string CierreFinal() => FinDelLibro()
+        ? "Con este quiz TERMINÓ EL LIBRO: NO lo invites a pasar la página ni a seguir leyendo. Dile que terminó el mini quiz y también todo el libro, y felicítalo con mucho cariño por haber leído toda la historia. Luego termina la conversación con end_call."
+        : "Dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call.";
 
     IEnumerator MostrarCorrecta(int pos)
     {
