@@ -1,0 +1,52 @@
+{
+  "quizzes": [
+    {
+      "id": "capitulo_1",
+      "intro": "¡Muy bien! Terminaste el capítulo uno. Ahora, un mini quiz.",
+      "literales": [
+        { "texto": "¿Qué representaba realmente el dibujo número 1 del narrador?",
+          "opciones": ["Un sombrero", "Una boa digiriendo un elefante", "Una montaña"], "correcta": 1 },
+        { "texto": "¿Qué le respondieron las personas mayores al ver su dibujo?",
+          "opciones": ["Que les daba miedo", "Que era un sombrero", "Que era muy bonito"], "correcta": 1 },
+        { "texto": "¿Qué oficio eligió el narrador al dejar la pintura?",
+          "opciones": ["Piloto de aviones", "Profesor de geografía", "Médico"], "correcta": 0 },
+        { "texto": "¿Qué hacían las boas según el libro \"Historias vividas\"?",
+          "opciones": ["Masticaban mucho su comida", "Tragaban su presa entera", "Cazaban solo de noche"], "correcta": 1 }
+      ],
+      "inferenciales": [
+        { "texto": "¿Por qué el narrador hablaba de golf y corbatas con las personas mayores?",
+          "opciones": ["Porque sabía que no entenderían sus dibujos", "Porque esos temas le gustaban mucho", "Porque quería aprender de ellas"], "correcta": 0 },
+        { "texto": "¿Cómo se sintió el narrador cuando nadie entendió su dibujo?",
+          "opciones": ["Feliz y orgulloso", "Indiferente", "Desanimado e incomprendido"], "correcta": 2 },
+        { "texto": "¿Qué nos quiere decir el cuento sobre las personas mayores?",
+          "opciones": ["Que entienden todo fácilmente", "Que les cuesta usar la imaginación", "Que dibujan mejor que los niños"], "correcta": 1 },
+        { "texto": "¿Por qué el narrador conservó siempre su dibujo número 1?",
+          "opciones": ["Para encontrar a alguien que lo entendiera", "Porque quería venderlo", "Porque olvidó tirarlo"], "correcta": 0 }
+      ]
+    },
+    {
+      "id": "capitulo_2",
+      "intro": "¡Muy bien! Terminaste el capítulo dos. Ahora, un mini quiz.",
+      "literales": [
+        { "texto": "¿Dónde se averió el avión del narrador?",
+          "opciones": ["En la selva virgen", "En medio del océano", "En el desierto del Sahara"], "correcta": 2 },
+        { "texto": "¿Qué le pidió el principito al narrador?",
+          "opciones": ["Que le dibujara un cordero", "Que le reparara su avión", "Que le diera agua"], "correcta": 0 },
+        { "texto": "¿Para cuántos días tenía agua el narrador?",
+          "opciones": ["Para tres días", "Para un mes", "Para ocho días"], "correcta": 2 },
+        { "texto": "¿Qué dibujo le hizo primero el narrador al principito?",
+          "opciones": ["Un cordero blanco", "Una caja de madera", "La boa cerrada"], "correcta": 2 }
+      ],
+      "inferenciales": [
+        { "texto": "¿Por qué al principito le gustó el dibujo de la caja?",
+          "opciones": ["Porque era el dibujo más bonito", "Porque podía imaginar al cordero dentro", "Porque quería guardar sus cosas"], "correcta": 1 },
+        { "texto": "¿Qué nos dice del principito que vea un elefante dentro de la boa?",
+          "opciones": ["Que se equivocó al mirar", "Que entiende como un niño", "Que ya conocía el dibujo"], "correcta": 1 },
+        { "texto": "¿Por qué el narrador aceptó dibujar aunque estaba en peligro?",
+          "opciones": ["Porque estaba aburrido", "Porque el principito lo amenazó", "Porque el misterio lo sorprendió"], "correcta": 2 },
+        { "texto": "¿Por qué el principito necesitaba un cordero pequeño?",
+          "opciones": ["Porque los corderos grandes son peligrosos", "Porque vive en un lugar muy pequeño", "Porque quería un cordero bebé"], "correcta": 1 }
+      ]
+    }
+  ]
+}
