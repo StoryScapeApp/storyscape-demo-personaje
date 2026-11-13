@@ -238,7 +238,7 @@ public static class OnboardingSceneBuilder
         var recGo = new GameObject("ReceptorArUco");
         var rec = recGo.AddComponent<ArucoUdpReceiver>();
         rec.port = 5005;
-        rec.showDebug = true;
+        rec.showDebug = false;   // true = muestra abajo el texto de depuración del ArUco
         var action = new ArucoUdpReceiver.MarkerAction { description = "Primera página → Onboarding", markerId = 0, onlyOnce = true };
         UnityEventTools.AddPersistentListener(action.onDetected, seq.IniciarOnboarding);
         rec.actions.Add(action);
