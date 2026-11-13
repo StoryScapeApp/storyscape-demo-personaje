@@ -8279,25 +8279,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb2cb2269ea15834091ad9b5919b588c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PrincipitoVolando
-  pose01: {fileID: 21300000, guid: 98394db13d010244a9b27fd8dac000ff, type: 3}
-  pose02: {fileID: 21300000, guid: 6b1f6fa4b1dcae141b83276a2319df2a, type: 3}
-  pose03: {fileID: 21300000, guid: cfc23eaba8e6511458f1e58f36a1ffdb, type: 3}
-  asteroide: {fileID: 21300000, guid: 338acb69e3b056f42a31faddde94bb0a, type: 3}
+  cuadros:
+  - {fileID: 21300000, guid: c110a3ba4d8f0684c81e3d92b917f9bb, type: 3}
+  - {fileID: 21300000, guid: 2a01dafd5c2082f45bc175bbd8dda6e2, type: 3}
+  - {fileID: 21300000, guid: 0fa95c1133a8fbe45bd2c7f63b60fb0f, type: 3}
+  - {fileID: 21300000, guid: 172f9b0691798f64080da5bfb6b58b27, type: 3}
+  - {fileID: 21300000, guid: 52db2907907db974eb6ef0f7fa6f4574, type: 3}
+  - {fileID: 21300000, guid: 0fd639d7d23455a49a4b9b9b2304a866, type: 3}
   sortingOrder: 20
-  despegue: {x: 5.75, y: 0.35}
-  asteroidePos: {x: 5.25, y: -1.25}
-  alturaVuelo: 2.75
-  inicioPlaneo: 4.4
-  finPlaneo: -6.4
-  salida: -9.8
-  velocidad: 2
+  entrada: {x: -5.9, y: 0.2}
+  impulso: {x: -5, y: 0.2}
+  despegue: {x: -3.9, y: 1}
+  curvaVuelo: {x: 1, y: 2.3}
+  salida: {x: 9.8, y: 2.1}
+  velocidad: 1.3
   aparecer: 0.35
-  espera: 0.15
-  despegar: 1.4
-  planear: 5.5
-  salir: 1.3
-  cambioPose: 0.3
-  ondulacion: 0.1
+  tomarImpulso: 1
+  despegar: 0.6
+  volar: 4.5
+  fpsVuelo: 4
+  ondulacion: 0.08
 --- !u!4 &1867592305
 Transform:
   m_ObjectHideFlags: 0

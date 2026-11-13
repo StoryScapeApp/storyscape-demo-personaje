@@ -234,14 +234,11 @@ public static class LecturaSetup
         agent.showMicLevel = false;
         agent.showSubtitles = false;
 
-        // Animación: Principito volando con las aves
+        // Animación: Principito volando con las aves (IN izquierda → 6 cuadros → OUT derecha)
         var flyGo = new GameObject("Anim_PrincipitoVolando");
         flyGo.transform.SetParent(root.transform, false);
         var fly = flyGo.AddComponent<PrincipitoVolando>();
-        fly.pose01 = Load("vuelo_01");
-        fly.pose02 = Load("vuelo_02");
-        fly.pose03 = Load("vuelo_03");
-        fly.asteroide = Load("asteroide");
+        fly.cuadros = PrincipitoVolandoSpriteProcessor.LoadFrames();   // hoja "Sprites Principito volando"
 
         // Sesión de lectura
         var session = root.AddComponent<ReadingSession>();
