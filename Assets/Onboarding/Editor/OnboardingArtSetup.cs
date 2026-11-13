@@ -15,6 +15,8 @@ using UnityEngine;
 public static class OnboardingArtSetup
 {
     const string Dir = "Assets/Onboarding/Sprites/Acuarela";
+    // false = el fondo acuarela cubre toda la mesa, sin el espacio negro del libro en el medio
+    const bool UsarMascaraLibro = false;
 
     // Escala de cada imagen (píxeles por unidad) calculada para la proyección 1920×1080
     const float PpuFondo = 97.625f, PpuTitulo = 165.556f, PpuTarjetas = 114.433f, PpuZorro = 75f, PpuAterrizaje = 130.841f;
@@ -104,6 +106,7 @@ public static class OnboardingArtSetup
             if (t.name == "LibroReferencia") { book = t; break; }
         // Negro sólido sobre el libro y bordes que se difuminan hacia el fondo (sin un corte marcado)
         var mask = Card("MascaraLibro", root, book ? book.position : Vector3.zero, S("mascara_suave"), Color.black, -50);
+        mask.gameObject.SetActive(UsarMascaraLibro);
 
         // Título y tarjetas
         var titulo = Card("Titulo", root, TituloPos, S("titulo_onboarding"), Color.white, 4);
@@ -156,7 +159,7 @@ public static class OnboardingArtSetup
 
         // Secuencia
         seq.fondo = fondo;
-        seq.mascaraLibro = mask;
+        seq.mascaraLibro = UsarMascaraLibro ? mask : null;
         seq.title = titulo;
         seq.subtitle = null;
         seq.cardBook = tarjetas[0];

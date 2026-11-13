@@ -1367,7 +1367,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &409007950
 Transform:
   m_ObjectHideFlags: 0
@@ -2482,6 +2482,9 @@ MonoBehaviour:
       - Para no tener que leer
       correcta: 0
     finDelLibro: 0
+  bancoArchivo: quiz_preguntas.json
+  idsFinDelLibro:
+  - capitulo_2
   mezclarOpciones: 1
   maxIntentos: 2
   agent: {fileID: 1375734805}
@@ -2584,8 +2587,8 @@ MonoBehaviour:
           m_CallState: 2
   - id: quiz_capitulo_1
     pagina: 3
-    frase: "la persona mayor se mostraba muy satisfecha de haber conocido a un hombre
-      tan razonable|muy satisfecha de haber conocido a un hombre tan razonable"
+    frase: la persona mayor se mostraba muy satisfecha de haber conocido a un hombre
+      tan razonable|muy satisfecha de haber conocido a un hombre tan razonable
     coincidencia: 0.9
     soloUnaVez: 1
     frasesRapidas:
@@ -2601,7 +2604,7 @@ MonoBehaviour:
           m_Mode: 5
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName:
+            m_ObjectArgumentAssemblyTypeName: 
             m_IntArgument: 0
             m_FloatArgument: 0
             m_StringArgument: capitulo_1
@@ -2624,7 +2627,7 @@ MonoBehaviour:
           m_Mode: 5
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName:
+            m_ObjectArgumentAssemblyTypeName: 
             m_IntArgument: 0
             m_FloatArgument: 0
             m_StringArgument: capitulo_2
@@ -7586,7 +7589,7 @@ MonoBehaviour:
   title: {fileID: 287290468}
   subtitle: {fileID: 0}
   fondo: {fileID: 1168411235}
-  mascaraLibro: {fileID: 409007951}
+  mascaraLibro: {fileID: 0}
   aterrizaje: {fileID: 1912303978}
   framesAterrizaje:
   - {fileID: 21300000, guid: 477a92c37de8803488659b3465846ec2, type: 3}
