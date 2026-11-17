@@ -27,6 +27,8 @@ public class BookPageTracker : MonoBehaviour
 
     public int CurrentPage { get; private set; }
     public int PageCount => libro?.paginas?.Length ?? 0;
+    /// <summary>Se dispara cuando cambia la página actual (por un ArUco confirmado).</summary>
+    public event Action<int> PageChanged;
 
     Libro libro;
     readonly Dictionary<int, Pagina> byMarker = new Dictionary<int, Pagina>();
@@ -56,6 +58,7 @@ public class BookPageTracker : MonoBehaviour
         if (p.pagina == CurrentPage) return;
         CurrentPage = p.pagina;
         Debug.Log($"[Libro] Página actual: {CurrentPage} ({p.titulo})");
+        PageChanged?.Invoke(CurrentPage);
     }
 
     /// Texto de una sola página.

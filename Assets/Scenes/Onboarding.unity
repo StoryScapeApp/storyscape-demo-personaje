@@ -6326,6 +6326,77 @@ MeshRenderer:
   m_SortingOrder: 7
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &1277183224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1277183226}
+  - component: {fileID: 1277183225}
+  m_Layer: 0
+  m_Name: PruebaDeteccion
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1277183225
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1277183224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6bed41233d1a04498396fb4c96be4b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PruebaDeteccionPaginas
+  receiver: {fileID: 2077469861}
+  tracker: {fileID: 1499440573}
+  proyectarContenido: 1
+  onboarding: {fileID: 1615534944}
+  incluirVuelo: 0
+  vuelo: {fileID: 1867592304}
+  pausaEntreRepeticiones: 0.3
+  desactivarDurantePrueba:
+  - {fileID: 617330566}
+  - {fileID: 617330565}
+  - {fileID: 688074014}
+  - {fileID: 688074013}
+  luces:
+  - luzBaja
+  - luzNormal
+  - luzAlta
+  posiciones:
+  - centrado
+  - rotado
+  - oclusion
+  repeticiones: 2
+  paginas: 7
+  usarGrabador: 1
+  puertoGrabador: 5007
+  esperaGrabador: 3
+  carpeta: 
+  mostrarPanel: 1
+--- !u!4 &1277183226
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1277183224}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1289419562
 GameObject:
   m_ObjectHideFlags: 0
@@ -9632,3 +9703,4 @@ SceneRoots:
   - {fileID: 617330567}
   - {fileID: 1138333381}
   - {fileID: 1705099280}
+  - {fileID: 1277183226}

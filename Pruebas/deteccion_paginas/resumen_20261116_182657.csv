@@ -1,0 +1,4 @@
+video,luz,posicion,rep,tramo,pagina_esperada,inicio_s,fin_s,duracion_s,detectada,latencia_s,pct_tiempo_pagina_correcta,mensajes_correctos,mensajes_otros,confirmaciones_incorrectas,cambios_de_pagina
+luzBaja_centrado_rep1.mp4,luzBaja,centrado,1,1,1,0.000,9.059,9.059,1,0.570,1.000,16,0,0,0
+luzBaja_centrado_rep1.mp4,luzBaja,centrado,1,2,2,9.059,23.427,14.368,0,,0.000,0,27,13,0
+luzBaja_centrado_rep1.mp4,luzBaja,centrado,1,3,3,23.427,39.549,16.121,0,,0.000,0,11,6,0

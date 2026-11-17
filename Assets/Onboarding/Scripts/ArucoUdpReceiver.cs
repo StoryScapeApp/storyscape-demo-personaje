@@ -55,13 +55,17 @@ public class ArucoUdpReceiver : MonoBehaviour
     public event Action<string> CommandReceived;
     /// <summary>Texto de voz del script de Python (Vosk): {"tipo":"voz","texto":"...","final":false}. final = false es texto parcial.</summary>
     public event Action<string, bool> TextReceived;
+    /// <summary>Cada mensaje de marcador tal como llega, sin el filtro de estabilidad: (id, posición normalizada; -1 si no se envió).</summary>
+    public event Action<int, Vector2> RawMarkerReceived;
+    /// <summary>JSON completo de los mensajes que no son marcadores ni voz (p. ej. los avisos del grabador de pruebas).</summary>
+    public event Action<string> MessageReceived;
 
     [Serializable] class Msg { public string tipo; public int id = -1; public float x = -1f; public float y = -1f; public string texto; public bool final; }
 
     struct Hit { public int id; public Vector2 pos; public float time; }
 
     readonly ConcurrentQueue<Msg> incoming = new ConcurrentQueue<Msg>();
-    readonly ConcurrentQueue<string> commands = new ConcurrentQueue<string>();
+    readonly ConcurrentQueue<KeyValuePair<string, string>> commands = new ConcurrentQueue<KeyValuePair<string, string>>();   // (tipo, json)
     readonly ConcurrentQueue<Msg> voice = new ConcurrentQueue<Msg>();
     readonly Dictionary<int, List<float>> recentHits = new Dictionary<int, List<float>>();
     readonly Dictionary<int, Vector2> lastPositions = new Dictionary<int, Vector2>();
@@ -98,12 +102,13 @@ public class ArucoUdpReceiver : MonoBehaviour
             try
             {
                 byte[] data = client.Receive(ref any);
-                var msg = JsonUtility.FromJson<Msg>(Encoding.UTF8.GetString(data));
+                string json = Encoding.UTF8.GetString(data);
+                var msg = JsonUtility.FromJson<Msg>(json);
                 if (msg == null) continue;
                 bool isMarker = string.IsNullOrEmpty(msg.tipo) || msg.tipo == "aruco";
                 if (isMarker && msg.id >= 0) incoming.Enqueue(msg);
                 else if (msg.tipo == "voz") voice.Enqueue(msg);
-                else if (!isMarker) commands.Enqueue(msg.tipo);
+                else if (!isMarker) commands.Enqueue(new KeyValuePair<string, string>(msg.tipo, json));
             }
             catch (SocketException) { if (!running) break; }
             catch (ObjectDisposedException) { break; }
@@ -117,14 +122,16 @@ public class ArucoUdpReceiver : MonoBehaviour
         while (voice.TryDequeue(out var v)) TextReceived?.Invoke(v.texto ?? "", v.final);
         while (commands.TryDequeue(out var cmd))
         {
-            Debug.Log($"[UDP] Mensaje recibido: {cmd}");
-            CommandReceived?.Invoke(cmd);
+            Debug.Log($"[UDP] Mensaje recibido: {cmd.Key}");
+            CommandReceived?.Invoke(cmd.Key);
+            MessageReceived?.Invoke(cmd.Value);
         }
         while (incoming.TryDequeue(out var msg))
         {
             if (msg.x >= 0f && msg.y >= 0f) lastPositions[msg.id] = new Vector2(msg.x, msg.y);
             lastInfo = $"ID {msg.id}" + (msg.x >= 0f ? $"  ({msg.x:0.00}, {msg.y:0.00})" : "");
             lastTime = now;
+            RawMarkerReceived?.Invoke(msg.id, msg.x >= 0f && msg.y >= 0f ? new Vector2(msg.x, msg.y) : new Vector2(-1f, -1f));
 
             if (!recentHits.TryGetValue(msg.id, out var list)) recentHits[msg.id] = list = new List<float>();
             list.Add(now);
