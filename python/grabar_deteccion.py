@@ -168,7 +168,9 @@ def grabar(a):
                     continue
                 ultimo_envio[i] = ahora
                 cx, cy = c[0].mean(axis=0)
-                tx.sendto(json.dumps({"tipo": "aruco", "id": i, "x": float(cx / w), "y": float(cy / h)}).encode("utf-8"), unity)
+                ax, ay = (c[0][1] + c[0][2]) / 2   # punto medio del borde derecho: Unity calcula el giro del libro
+                tx.sendto(json.dumps({"tipo": "aruco", "id": i, "x": float(cx / w), "y": float(cy / h),
+                                      "ax": float(ax / w), "ay": float(ay / h)}).encode("utf-8"), unity)
 
         # 3) Grabación (cuadro limpio, sin marcas)
         if grab:

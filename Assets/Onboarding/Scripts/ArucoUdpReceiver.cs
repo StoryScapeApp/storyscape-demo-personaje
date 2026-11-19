@@ -14,6 +14,7 @@ using UnityEngine.Events;
 ///
 /// Mensaje esperado (JSON): {"tipo": "aruco", "id": 0, "x": 0.5, "y": 0.5}
 ///   x, y = posición normalizada (0–1) del marcador en la imagen de la cámara (opcional).
+///   ax, ay = punto medio del borde derecho del marcador, 0–1 (opcional; da el giro del libro a BookPoseFollower).
 ///
 /// Un marcador se considera detectado cuando llegan al menos "Min Hits" mensajes
 /// en "Hit Window" segundos (evita falsos positivos de un solo cuadro).
@@ -57,10 +58,13 @@ public class ArucoUdpReceiver : MonoBehaviour
     public event Action<string, bool> TextReceived;
     /// <summary>Cada mensaje de marcador tal como llega, sin el filtro de estabilidad: (id, posición normalizada; -1 si no se envió).</summary>
     public event Action<int, Vector2> RawMarkerReceived;
+    /// <summary>Cada mensaje de marcador con su orientación: (id, centro 0–1, punto medio del borde derecho 0–1; -1 si no se envió).
+    /// Lo usa BookPoseFollower para que la proyección siga al libro.</summary>
+    public event Action<int, Vector2, Vector2> RawPoseReceived;
     /// <summary>JSON completo de los mensajes que no son marcadores ni voz (p. ej. los avisos del grabador de pruebas).</summary>
     public event Action<string> MessageReceived;
 
-    [Serializable] class Msg { public string tipo; public int id = -1; public float x = -1f; public float y = -1f; public string texto; public bool final; }
+    [Serializable] class Msg { public string tipo; public int id = -1; public float x = -1f; public float y = -1f; public float ax = -1f; public float ay = -1f; public string texto; public bool final; }
 
     struct Hit { public int id; public Vector2 pos; public float time; }
 
@@ -132,6 +136,9 @@ public class ArucoUdpReceiver : MonoBehaviour
             lastInfo = $"ID {msg.id}" + (msg.x >= 0f ? $"  ({msg.x:0.00}, {msg.y:0.00})" : "");
             lastTime = now;
             RawMarkerReceived?.Invoke(msg.id, msg.x >= 0f && msg.y >= 0f ? new Vector2(msg.x, msg.y) : new Vector2(-1f, -1f));
+            RawPoseReceived?.Invoke(msg.id,
+                msg.x >= 0f && msg.y >= 0f ? new Vector2(msg.x, msg.y) : new Vector2(-1f, -1f),
+                msg.ax >= 0f && msg.ay >= 0f ? new Vector2(msg.ax, msg.ay) : new Vector2(-1f, -1f));
 
             if (!recentHits.TryGetValue(msg.id, out var list)) recentHits[msg.id] = list = new List<float>();
             list.Add(now);

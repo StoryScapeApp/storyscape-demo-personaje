@@ -3765,6 +3765,96 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0.44, y: 0.44}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &807050052
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 807050054}
+  - component: {fileID: 807050053}
+  m_Layer: 0
+  m_Name: SeguimientoLibro
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &807050053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 807050052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06e00f372f804f34caf0b4c00426aaa7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BookPoseFollower
+  receiver: {fileID: 2077469861}
+  cam: {fileID: 519420031}
+  book: {fileID: 1102807168}
+  markerInBook: {fileID: 889692527}
+  bookSize: {x: 5.511, y: 3.733}
+  markerPositions:
+  - id: 0
+    pdfCenter: {x: 0.8133, y: 0.2387}
+  - id: 1
+    pdfCenter: {x: 0.8133, y: 0.2387}
+  - id: 2
+    pdfCenter: {x: 0.1859, y: 0.2387}
+  - id: 3
+    pdfCenter: {x: 0.8133, y: 0.2387}
+  - id: 4
+    pdfCenter: {x: 0.1859, y: 0.2387}
+  - id: 5
+    pdfCenter: {x: 0.8133, y: 0.2387}
+  - id: 6
+    pdfCenter: {x: 0.1859, y: 0.2387}
+  follow: 1
+  followRotation: 1
+  markerIds: 00000000010000000200000003000000040000000500000006000000
+  smoothTime: 0.3
+  medianSamples: 5
+  deadzone: 0.08
+  deadzoneAngle: 3
+  jumpThreshold: 0.6
+  jumpConfirm: 3
+  markerSwitchDelay: 0.6
+  quietSamples: 4
+  maxAngle: 60
+  calibrarAntesDelOnboarding: 1
+  omitirSiYaHayCalibracion: 0
+  onboarding: {fileID: 1615534944}
+  markerInicio: 0
+  calibrationViewport:
+  - {x: 0.2, y: 0.25}
+  - {x: 0.8, y: 0.25}
+  - {x: 0.8, y: 0.75}
+  - {x: 0.2, y: 0.75}
+  holdToCapture: 1
+  stillTolerance: 0.006
+  minSeparation: 0.08
+  calibrationFile: calibracion_libro.json
+  showDebug: 0
+--- !u!4 &807050054
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 807050052}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &831870191
 GameObject:
   m_ObjectHideFlags: 0
@@ -7811,6 +7901,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  calibracion: {fileID: 807050053}
 --- !u!4 &1615534945
 Transform:
   m_ObjectHideFlags: 0
@@ -9704,3 +9795,4 @@ SceneRoots:
   - {fileID: 1138333381}
   - {fileID: 1705099280}
   - {fileID: 1277183226}
+  - {fileID: 807050054}

@@ -145,6 +145,9 @@ public class OnboardingSequence : MonoBehaviour
     public UnityEvent onStarted = new UnityEvent();
     public UnityEvent onFinished = new UnityEvent();
 
+    [Tooltip("Seguimiento del libro: si tiene marcado 'Calibrar antes del onboarding', el onboarding espera a la calibración")]
+    public BookPoseFollower calibracion;
+
     public bool IsRunning { get; private set; }
 
     SpriteRenderer principitoSr;
@@ -168,6 +171,12 @@ public class OnboardingSequence : MonoBehaviour
     public void IniciarOnboarding()
     {
         if (IsRunning) return;
+        if (calibracion && calibracion.BloqueaOnboarding)
+        {
+            calibracion.SolicitarOnboarding();
+            Debug.Log("[Onboarding] Espera: primero se calibra la proyección.");
+            return;
+        }
         StartCoroutine(Run());
     }
 
