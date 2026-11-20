@@ -156,6 +156,18 @@ public class BookPoseFollower : MonoBehaviour
     /// Lo llama el onboarding si intentó empezar durante la calibración: empezará después.
     public void SolicitarOnboarding() => onboardingPendiente = true;
 
+    // ───────────── Estado (lo lee la prueba de detección) ─────────────
+    public bool Calibrado => calibrated;
+    public bool Calibrando => calibrating;
+    /// Centro del libro en el marco de la proyección de referencia (unidades de escena) y su giro.
+    public Vector2 PosicionLibro => curPos;
+    public float AnguloLibro => curAng;
+    public bool TienePose => hasPose;
+    public bool Moviendose => moving;
+    public int ArucoActivo => activeId;
+    /// (ArUco, desplazamiento, giro en grados) cada vez que la proyección empieza a moverse.
+    public event Action<int, float, float> MovimientoIniciado;
+
     SpriteRenderer mask;
 
     string FilePath => Path.Combine(Application.persistentDataPath, calibrationFile);
@@ -283,6 +295,7 @@ public class BookPoseFollower : MonoBehaviour
         {
             if (dPos <= deadzone && dAng <= deadzoneAngle) return;
             moving = true;
+            MovimientoIniciado?.Invoke(id, dPos, dAng);
             if (logMovimientos) Debug.Log($"[Libro] Se mueve la proyección: ArUco {id}, desplazamiento {dPos:0.000}, giro {dAng:0.0}° (cámara {c.x:0.000},{c.y:0.000})");
             quietAnchor = mp; quietAnchorAng = ma; quietCount = 0;
         }

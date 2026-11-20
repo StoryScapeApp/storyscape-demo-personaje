@@ -5,8 +5,9 @@ GRABAR (lo controla Unity con el objeto PruebaDeteccion):
     python grabar_deteccion.py grabar --cam 0
     python grabar_deteccion.py grabar --cam 1 --ancho 1280 --alto 720 --fps 30   # si el sistema usa otra resolución
 
-  Hace lo mismo que el script de ArUco del sistema (detecta con OpenCV y envía cada marcador a Unity por UDP,
-  máx. 1 mensaje cada 0,5 s por marcador) y, además, graba el video limpio de la cámara cuando Unity se lo pide.
+  Hace lo mismo que el script de ArUco del sistema, aruco_sender.py (detecta con OpenCV y envía cada marcador a Unity
+  por UDP con su posición y giro, máx. 1 mensaje cada 0,1 s por marcador) y, además, graba el video limpio de la cámara
+  cuando Unity se lo pide.
   Así el video es exactamente lo que vio el sistema y Unity registra en vivo qué página confirmó.
   Cierra antes aruco_sender.py: usan la misma cámara.
 
@@ -14,10 +15,11 @@ ANALIZAR (después de grabar, cuadro por cuadro):
     python grabar_deteccion.py analizar                      # usa el etiquetas_*.csv más reciente
     python grabar_deteccion.py analizar --etiquetas ruta.csv
 
-Archivos (en Pruebas/deteccion_paginas):
+Archivos (en Pruebas/deteccion_paginas_seguimiento; la versión sin seguimiento quedó en Pruebas/deteccion_paginas):
   videos/<video>.mp4          video de la cámara, sin marcas
   videos/<video>.cuadros.csv  tiempo real de cada cuadro (t_s desde el primer cuadro = t_s de Unity)
   analisis_<sesion>.csv       por tramo: % de cuadros con el marcador correcto, detección con el criterio del sistema
+  (Unity escribe resumen_<sesion>.csv y proyeccion_<sesion>.csv con la estabilidad de la proyección)
 
 Requisitos: pip install opencv-contrib-python
 """
@@ -32,11 +34,11 @@ from pathlib import Path
 import cv2
 
 DICCIONARIO = cv2.aruco.DICT_4X4_50
-THROTTLE_S = 0.5      # el script del sistema envía como máx. 1 mensaje cada 0,5 s por marcador
+THROTTLE_S = 0.1      # igual que ENVIO_MIN_S de aruco_sender.py (antes 0,5)
 MIN_HITS = 2          # ArucoUdpReceiver.minHits
 VENTANA_S = 1.5       # ArucoUdpReceiver.hitWindow
 RAIZ = Path(__file__).resolve().parent.parent
-CARPETA = RAIZ / "Pruebas" / "deteccion_paginas"
+CARPETA = RAIZ / "Pruebas" / "deteccion_paginas_seguimiento"
 
 
 def nuevo_detector():
@@ -71,7 +73,7 @@ def grabar(a):
           "Debe ser la misma resolución que usa el sistema.")
     videos = (Path(a.carpeta) if a.carpeta else CARPETA) / "videos"
     videos.mkdir(parents=True, exist_ok=True)
-    print(f"Los videos se guardan en {videos}")
+    print(f"Los videos se guardan en {videos} (o en la carpeta que indique Unity)")
 
     unity = ("127.0.0.1", a.unity_port)
     tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -139,7 +141,10 @@ def grabar(a):
                 if grab:
                     cerrar(grab)
                 nombre = Path(orden.get("video") or f"video_{int(ahora)}.mp4").name
-                ruta = videos / nombre
+                # Unity envía su carpeta de resultados: el video queda junto a las etiquetas (Editor o .exe)
+                destino = Path(orden["carpeta"]) / "videos" if orden.get("carpeta") and not a.carpeta else videos
+                destino.mkdir(parents=True, exist_ok=True)
+                ruta = destino / nombre
                 # fps medidos en la vista previa: así el video dura lo mismo que la realidad
                 medido = (len(tiempos) - 1) / (tiempos[-1] - tiempos[0]) if len(tiempos) > 10 else 0
                 fps = round(medido) if 5 <= medido <= 120 else (cap.get(cv2.CAP_PROP_FPS) or 30)
@@ -247,6 +252,8 @@ def analizar(a):
     base = Path(a.carpeta) if a.carpeta else CARPETA
     if a.etiquetas:
         ruta_et = Path(a.etiquetas)
+        if not a.carpeta:
+            base = ruta_et.resolve().parent   # los videos están junto a las etiquetas
     else:
         candidatos = sorted(base.glob("etiquetas_*.csv"))
         if not candidatos:
@@ -315,7 +322,28 @@ def analizar(a):
         print(f"  {luz:10s} {pos:10s} {sum(v)}/{len(v)}  ({100 * sum(v) / len(v):.0f} %)")
     falsas = sum(r["confirmaciones_incorrectas"] for r in resultados if r["pagina_esperada"] == "transicion")
     print(f"Confirmaciones incorrectas durante las transiciones: {falsas}")
+    estabilidad_proyeccion(base / ruta_et.name.replace("etiquetas_", "resumen_"))
     print("Resultados en", salida)
+
+
+def estabilidad_proyeccion(ruta_resumen):
+    """Con lo que midió Unity en vivo: ¿la proyección se queda quieta mientras una página está a la vista?"""
+    if not ruta_resumen.exists():
+        return
+    with open(ruta_resumen, encoding="utf-8-sig") as f:
+        filas = [r for r in csv.DictReader(f) if r.get("pagina_esperada") != "transicion" and r.get("desvio_max_proyeccion")]
+    if not filas:
+        return
+    print("\nEstabilidad de la proyección con una página a la vista (Unity, en vivo):")
+    print(f"  {'luz':10s} {'posicion':10s} {'tramos':>6s} {'movim./tramo':>13s} {'desvío máx (u)':>15s}")
+    grupos = defaultdict(list)
+    for r in filas:
+        grupos[(r["luz"], r["posicion"])].append(r)
+    for (luz, pos), v in sorted(grupos.items()):
+        mov = sum(int(r["movimientos_proyeccion"] or 0) for r in v) / len(v)
+        desvio = max(float(r["desvio_max_proyeccion"]) for r in v)
+        print(f"  {luz:10s} {pos:10s} {len(v):6d} {mov:13.2f} {desvio:15.3f}")
+    print("  (0–1 movimientos por tramo es normal: la proyección se acomoda al pasar la hoja. Más que eso = rebote)")
 
 
 def main():
@@ -330,7 +358,7 @@ def main():
     g.add_argument("--fps", type=int, default=0)
     g.add_argument("--unity-port", type=int, default=5005)
     g.add_argument("--control-port", type=int, default=5007)
-    g.add_argument("--carpeta", default="", help="por defecto Pruebas/deteccion_paginas del proyecto")
+    g.add_argument("--carpeta", default="", help="por defecto Pruebas/deteccion_paginas_seguimiento del proyecto")
     an = sub.add_parser("analizar")
     an.add_argument("--etiquetas", default="", help="etiquetas_<sesion>.csv (por defecto, el más reciente)")
     an.add_argument("--carpeta", default="")

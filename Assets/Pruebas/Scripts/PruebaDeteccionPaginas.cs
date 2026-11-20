@@ -14,19 +14,24 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Prueba "Detección de páginas": ¿el sistema reconoce la doble página correcta en condiciones de aula?
 ///
-/// Cómo se usa (detalle en Pruebas/deteccion_paginas/LEEME.md):
+/// Versión con seguimiento del libro: la proyección se mueve con el libro (BookPoseFollower), así que además de la
+/// página se mide si la proyección se queda quieta sobre el libro o "rebota".
+///
+/// Cómo se usa (detalle en Pruebas/deteccion_paginas_seguimiento/LEEME.md):
 ///  1. Cierra aruco_sender.py y abre python/grabar_deteccion.py (usa la cámara del sistema, envía los ArUco
 ///     a Unity igual que el sistema y graba el video cuando Unity se lo pide).
-///  2. Activa el objeto "PruebaDeteccion" y da Play. El proyector repite el onboarding y el vuelo del Principito
+///  2. Activa el objeto "PruebaDeteccion", da Play y calibra la proyección (K) si no está calibrada. El proyector repite el onboarding y el vuelo del Principito
 ///     (contenido real; el vuelo solo si "Incluir Vuelo" está marcado), sin lectura en vivo, quiz ni dudas.
 ///  3. Con el libro abierto en la página 1: N empieza el video. Espacio = nueva doble página a la vista,
 ///     P = empieza a pasar la hoja, F = fin del video (después de la página 7), R = repetir el video.
 ///     ←/→ eligen el video, H oculta el panel.
 ///
-/// Resultados en Pruebas/deteccion_paginas/:
+/// Resultados en Pruebas/deteccion_paginas_seguimiento/:
 ///   etiquetas_&lt;sesion&gt;.csv  video,inicio_s,fin_s,pagina_esperada (tramos de página y de "transicion")
 ///   eventos_&lt;sesion&gt;.csv    cada mensaje ArUco, cada confirmación (2 en 1,5 s) y cada cambio de página
 ///   resumen_&lt;sesion&gt;.csv    por tramo: detectada, latencia, % del tiempo con la página correcta, falsas detecciones
+///                              y estabilidad de la proyección (movimientos, recorrido, desvío máximo)
+///   proyeccion_&lt;sesion&gt;.csv  posición y giro de la proyección cada 0,1 s
 /// Los tiempos son segundos desde el primer cuadro del video (el grabador avisa cuándo empezó).
 /// </summary>
 public class PruebaDeteccionPaginas : MonoBehaviour
@@ -34,6 +39,12 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     [Header("Sistema")]
     public ArucoUdpReceiver receiver;
     public BookPageTracker tracker;
+    [Tooltip("Seguimiento del libro (SeguimientoLibro). Vacío = se busca solo")]
+    public BookPoseFollower seguimiento;
+    [Tooltip("No deja empezar un video (N) si el seguimiento está activo y la proyección no está calibrada")]
+    public bool exigirCalibracion = true;
+    [Tooltip("Cada cuánto se guarda la posición de la proyección (s)")]
+    public float muestreoProyeccion = 0.1f;
 
     [Header("Contenido proyectado durante la prueba")]
     [Tooltip("Repite el onboarding y el vuelo del Principito sin esperar el ArUco, para que el proyector ilumine el libro como en el aula")]
@@ -62,7 +73,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     public float esperaGrabador = 3f;
 
     [Header("Resultados")]
-    [Tooltip("Vacío = <carpeta del proyecto o del .exe>/Pruebas/deteccion_paginas")]
+    [Tooltip("Vacío = <carpeta del proyecto o del .exe>/Pruebas/deteccion_paginas_seguimiento")]
     public string carpeta = "";
     public bool mostrarPanel = true;
 
@@ -70,11 +81,13 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     class VideoDef { public string nombre, luz, posicion; public int rep; }
     class Tramo { public double inicio, fin = -1; public int pagina; public int desde; }   // pagina = 0 → transición (desde = página anterior)
     struct Ev { public double t; public string tipo; public int marcador; public int pagina; }
+    struct Muestra { public double t; public Vector2 pos; public float ang; }
     enum Estado { Libre, EsperandoGrabador, Grabando }
 
     readonly List<VideoDef> videos = new List<VideoDef>();
     readonly List<Tramo> tramos = new List<Tramo>();
     readonly List<Ev> eventos = new List<Ev>();
+    readonly List<Muestra> muestras = new List<Muestra>();
     readonly HashSet<string> hechos = new HashSet<string>();
     readonly List<KeyValuePair<Behaviour, bool>> desactivados = new List<KeyValuePair<Behaviour, bool>>();
     readonly List<(UnityEventBase ev, int i, UnityEventCallState antes)> eventosApagados = new List<(UnityEventBase, int, UnityEventCallState)>();
@@ -91,7 +104,8 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     double proximoPing;
     string aviso = "";
     double avisoHasta;
-    string dir, sesion, fEventos, fEtiquetas, fResumen;
+    string dir, sesion, fEventos, fEtiquetas, fResumen, fProyeccion;
+    double proximaMuestra;
     UdpClient udp;
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -126,6 +140,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         if (!tracker) tracker = FindFirstObjectByType<BookPageTracker>();
         if (!onboarding) onboarding = FindFirstObjectByType<OnboardingSequence>();
         if (!vuelo) vuelo = FindFirstObjectByType<PrincipitoVolando>();
+        if (!seguimiento) seguimiento = FindFirstObjectByType<BookPoseFollower>();
 
         foreach (var luz in luces)
             foreach (var pos in posiciones)
@@ -145,19 +160,23 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         }
 
         dir = string.IsNullOrWhiteSpace(carpeta)
-            ? Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Pruebas", "deteccion_paginas")
+            ? Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Pruebas", "deteccion_paginas_seguimiento")
             : carpeta;
         Directory.CreateDirectory(dir);
         sesion = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         fEventos = Path.Combine(dir, $"eventos_{sesion}.csv");
         fEtiquetas = Path.Combine(dir, $"etiquetas_{sesion}.csv");
         fResumen = Path.Combine(dir, $"resumen_{sesion}.csv");
+        fProyeccion = Path.Combine(dir, $"proyeccion_{sesion}.csv");
         File.WriteAllText(fEventos, "video,t_s,unix_ms,evento,marcador,pagina\n");
         File.WriteAllText(fEtiquetas, "video,inicio_s,fin_s,pagina_esperada\n");
         File.WriteAllText(fResumen, "video,luz,posicion,rep,tramo,pagina_esperada,inicio_s,fin_s,duracion_s,detectada,latencia_s," +
-                                    "pct_tiempo_pagina_correcta,mensajes_correctos,mensajes_otros,confirmaciones_incorrectas,cambios_de_pagina\n");
+                                    "pct_tiempo_pagina_correcta,mensajes_correctos,mensajes_otros,confirmaciones_incorrectas,cambios_de_pagina," +
+                                    "movimientos_proyeccion,recorrido_proyeccion,desvio_max_proyeccion\n");
+        File.WriteAllText(fProyeccion, "video,t_s,x,y,angulo,moviendose,aruco\n");
         Debug.Log($"[Prueba detección] {videos.Count} videos. Resultados en {dir} (sesión {sesion}). " +
-                  $"Criterio del sistema: {(receiver ? receiver.minHits : 2)} mensajes en {(receiver ? receiver.hitWindow : 1.5f)} s.");
+                  $"Criterio del sistema: {(receiver ? receiver.minHits : 2)} mensajes en {(receiver ? receiver.hitWindow : 1.5f)} s. " +
+                  (seguimiento ? "Seguimiento del libro: sí." : "Sin seguimiento del libro (no está SeguimientoLibro)."));
     }
 
     void OnEnable()
@@ -170,6 +189,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
             receiver.MessageReceived += OnMensaje;
         }
         if (tracker) tracker.PageChanged += OnPagina;
+        if (seguimiento) seguimiento.MovimientoIniciado += OnMovProyeccion;
     }
 
     void Start()
@@ -188,6 +208,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
             receiver.MessageReceived -= OnMensaje;
         }
         if (tracker) tracker.PageChanged -= OnPagina;
+        if (seguimiento) seguimiento.MovimientoIniciado -= OnMovProyeccion;
         StopAllCoroutines();
         foreach (var kv in desactivados) if (kv.Key) kv.Key.enabled = kv.Value;
         desactivados.Clear();
@@ -213,6 +234,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         while (true)
         {
+            while (seguimiento && (seguimiento.BloqueaOnboarding || seguimiento.Calibrando)) yield return null;
             if (onboarding)
             {
                 onboarding.IniciarOnboarding();
@@ -232,6 +254,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     void Update()
     {
         if (estado == Estado.Libre && usarGrabador && !grabadorListo && Ahora >= proximoPing) Ping();
+        if (estado == Estado.Grabando) MuestrearProyeccion();
         if (estado == Estado.EsperandoGrabador && Ahora >= esperaHasta)
         {
             Avisar("El grabador no respondió: este video NO se está grabando. Abre python/grabar_deteccion.py o graba aparte. " +
@@ -246,7 +269,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         switch (estado)
         {
             case Estado.Libre:
-                if (k.nKey.wasPressedThisFrame) IniciarVideo();
+                if (k.nKey.wasPressedThisFrame) { if (PuedeEmpezar(out var motivo)) IniciarVideo(); else Avisar(motivo, 6f); }
                 else if (k.rightArrowKey.wasPressedThisFrame) idx = Mathf.Min(idx + 1, videos.Count - 1);
                 else if (k.leftArrowKey.wasPressedThisFrame) idx = Mathf.Max(idx - 1, 0);
                 break;
@@ -263,12 +286,23 @@ public class PruebaDeteccionPaginas : MonoBehaviour
 #endif
     }
 
+    /// Con el seguimiento activo, la proyección debe estar calibrada (si no, no sigue al libro y la prueba no mide el sistema real).
+    bool PuedeEmpezar(out string motivo)
+    {
+        motivo = "";
+        if (!seguimiento || !exigirCalibracion || !seguimiento.follow) return true;
+        if (seguimiento.Calibrando) { motivo = "Termina la calibración de la proyección antes de grabar."; return false; }
+        if (!seguimiento.Calibrado) { motivo = "La proyección no está calibrada: presiona K y calibra antes de grabar (o L para probar sin seguimiento)."; return false; }
+        return true;
+    }
+
     void IniciarVideo()
     {
         if (videos.Count == 0) return;
         actual = videos[idx];
         tramos.Clear();
         eventos.Clear();
+        muestras.Clear();
         if (usarGrabador)
         {
             Enviar("grabar", actual.nombre);
@@ -284,6 +318,8 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         estado = Estado.Grabando;
         paginaVista = 1;
         paginaInicialSistema = tracker ? tracker.CurrentPage : 0;
+        muestras.Clear();
+        proximaMuestra = 0;
         tramos.Add(new Tramo { inicio = 0, pagina = 1 });
         Registrar("inicio_video", -1, 1);
         Registrar("pagina_sistema", -1, paginaInicialSistema);
@@ -333,14 +369,14 @@ public class PruebaDeteccionPaginas : MonoBehaviour
               .Append(tr.pagina > 0 ? tr.pagina.ToString(Inv) : "transicion").Append('\n');
         File.AppendAllText(fEtiquetas, et.ToString());
 
-        int detectadas = 0, nPag = 0, falsas = 0;
+        int detectadas = 0, nPag = 0, falsas = 0, movPag = 0;
         var rs = new StringBuilder();
         int n = 0;
         foreach (var tr in tramos)
         {
             n++;
             var r = Resumir(tr);
-            if (tr.pagina > 0) { nPag++; if (r.detectada) detectadas++; }
+            if (tr.pagina > 0) { nPag++; if (r.detectada) detectadas++; movPag += r.movimientos; }
             falsas += r.incorrectas;
             rs.Append(actual.nombre).Append(',').Append(actual.luz).Append(',').Append(actual.posicion).Append(',').Append(actual.rep).Append(',')
               .Append(n).Append(',').Append(tr.pagina > 0 ? tr.pagina.ToString(Inv) : "transicion").Append(',')
@@ -348,13 +384,17 @@ public class PruebaDeteccionPaginas : MonoBehaviour
               .Append(tr.pagina > 0 ? (r.detectada ? "1" : "0") : "").Append(',')
               .Append(r.latencia >= 0 ? F(r.latencia) : "").Append(',')
               .Append(tr.pagina > 0 ? r.pctCorrecta.ToString("0.000", Inv) : "").Append(',')
-              .Append(r.mensajesOk).Append(',').Append(r.mensajesOtros).Append(',').Append(r.incorrectas).Append(',').Append(r.cambios).Append('\n');
+              .Append(r.mensajesOk).Append(',').Append(r.mensajesOtros).Append(',').Append(r.incorrectas).Append(',').Append(r.cambios).Append(',')
+              .Append(seguimiento ? r.movimientos.ToString(Inv) : "").Append(',')
+              .Append(r.nMuestras > 0 ? F(r.recorrido) : "").Append(',')
+              .Append(r.nMuestras > 0 ? F(r.desvioMax) : "").Append('\n');
         }
         File.AppendAllText(fResumen, rs.ToString());
 
         hechos.Add(actual.nombre);
-        Avisar($"{actual.nombre}: {detectadas}/{nPag} páginas detectadas · {falsas} confirmaciones incorrectas. Guardado.", 10f);
-        Debug.Log($"[Prueba detección] {actual.nombre}: {detectadas}/{nPag} páginas detectadas, {falsas} confirmaciones incorrectas.");
+        string mov = seguimiento ? $" · la proyección se movió {movPag} vez/veces con una página a la vista" : "";
+        Avisar($"{actual.nombre}: {detectadas}/{nPag} páginas detectadas · {falsas} confirmaciones incorrectas{mov}. Guardado.", 10f);
+        Debug.Log($"[Prueba detección] {actual.nombre}: {detectadas}/{nPag} páginas detectadas, {falsas} confirmaciones incorrectas{mov}.");
         estado = Estado.Libre;
         if (idx < videos.Count - 1) idx++;
         actual = null;
@@ -371,7 +411,11 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     }
 
     // ───────────── Resumen por tramo ─────────────
-    struct Res { public bool detectada; public double latencia; public double pctCorrecta; public int mensajesOk, mensajesOtros, incorrectas, cambios; }
+    struct Res
+    {
+        public bool detectada; public double latencia; public double pctCorrecta; public int mensajesOk, mensajesOtros, incorrectas, cambios;
+        public int movimientos, nMuestras; public double recorrido, desvioMax;
+    }
 
     Res Resumir(Tramo tr)
     {
@@ -393,7 +437,9 @@ public class PruebaDeteccionPaginas : MonoBehaviour
                 if (!ok) r.incorrectas++;
             }
             else if (e.tipo == "cambio_pagina") r.cambios++;
+            else if (e.tipo == "mov_proyeccion") r.movimientos++;
         }
+        EstabilidadProyeccion(tr, ref r);
         if (tr.pagina > 0 && tr.fin > tr.inicio)
         {
             // Página del sistema a lo largo del tramo
@@ -414,6 +460,47 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         return r;
     }
 
+    /// Recorrido de la proyección dentro del tramo y su mayor distancia a la posición mediana del tramo.
+    /// Con el libro quieto (página a la vista, posición "centrado") ambos deberían ser casi 0: si no, la proyección rebota.
+    void EstabilidadProyeccion(Tramo tr, ref Res r)
+    {
+        var xs = new List<float>(); var ys = new List<float>();
+        Vector2? prev = null;
+        foreach (var m in muestras)
+        {
+            if (m.t < tr.inicio || m.t > tr.fin) continue;
+            if (prev.HasValue) r.recorrido += (m.pos - prev.Value).magnitude;
+            prev = m.pos; xs.Add(m.pos.x); ys.Add(m.pos.y);
+        }
+        r.nMuestras = xs.Count;
+        if (xs.Count == 0) return;
+        var med = new Vector2(Mediana(xs), Mediana(ys));
+        foreach (var m in muestras)
+            if (m.t >= tr.inicio && m.t <= tr.fin) r.desvioMax = Math.Max(r.desvioMax, (m.pos - med).magnitude);
+    }
+
+    static float Mediana(List<float> v)
+    {
+        v.Sort();
+        int k = v.Count / 2;
+        return v.Count % 2 == 1 ? v[k] : 0.5f * (v[k - 1] + v[k]);
+    }
+
+    void MuestrearProyeccion()
+    {
+        if (!seguimiento || !seguimiento.TienePose || Ahora < proximaMuestra) return;
+        proximaMuestra = Ahora + Mathf.Max(0.02f, muestreoProyeccion);
+        double t = T;
+        var m = new Muestra { t = t, pos = seguimiento.PosicionLibro, ang = seguimiento.AnguloLibro };
+        muestras.Add(m);
+        try
+        {
+            File.AppendAllText(fProyeccion, $"{actual?.nombre},{F(t)},{m.pos.x.ToString("0.0000", Inv)},{m.pos.y.ToString("0.0000", Inv)}," +
+                                            $"{m.ang.ToString("0.00", Inv)},{(seguimiento.Moviendose ? 1 : 0)},{seguimiento.ArucoActivo}\n");
+        }
+        catch (Exception e) { Debug.LogWarning("[Prueba detección] No se pudo escribir la proyección: " + e.Message); }
+    }
+
     // ───────────── Eventos del sistema ─────────────
     void OnRaw(int id, Vector2 pos)
     {
@@ -429,6 +516,11 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     void OnPagina(int pagina)
     {
         if (estado == Estado.Grabando) Registrar("cambio_pagina", -1, pagina);
+    }
+
+    void OnMovProyeccion(int id, float desplazamiento, float giro)
+    {
+        if (estado == Estado.Grabando) Registrar("mov_proyeccion", id, id + 1);
     }
 
     void OnMensaje(string json)
@@ -512,6 +604,11 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         }
         sb.Append($"Grabador: {(usarGrabador ? infoGrabador : "desactivado")}   ·   hechos: {hechos.Count}/{videos.Count}\n");
         sb.Append($"<size=12>Resultados: {dir}</size>\n");
+        if (seguimiento)
+            sb.Append("Proyección: " + (!seguimiento.follow ? "<color=#ffd166>seguimiento apagado (L)</color>"
+                : seguimiento.Calibrando ? "calibrando…"
+                : seguimiento.Calibrado ? $"calibrada · sigue al libro{(seguimiento.Moviendose ? " · <b>moviéndose</b>" : "")}"
+                : "<color=#ff6666>SIN calibrar: presiona K antes de grabar</color>") + "\n");
         switch (estado)
         {
             case Estado.Libre:
@@ -532,7 +629,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         sb.Append($"Sistema: página {(tracker ? tracker.CurrentPage : 0)} · último ArUco {(ultimoMarcador >= 0 ? ultimoMarcador.ToString() : "—")}");
         if (Ahora < avisoHasta && !string.IsNullOrEmpty(aviso)) sb.Append("\n<color=#ffd166>").Append(aviso).Append("</color>");
 
-        var rect = new Rect(12, 12, 640, 190);
+        var rect = new Rect(12, 12, 660, 215);
         GUI.color = new Color(0f, 0f, 0f, 0.75f);
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = Color.white;

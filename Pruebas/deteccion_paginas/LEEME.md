@@ -1,5 +1,7 @@
 # Prueba · Detección de páginas
 
+> **Versión anterior** (sin seguimiento del libro, ArUco enviados cada 0,5 s). La prueba actual está en [`../deteccion_paginas_seguimiento/LEEME.md`](../deteccion_paginas_seguimiento/LEEME.md). Los resultados de esta carpeta (sesión del 16/11) se conservan como referencia.
+
 Mide si el sistema reconoce la doble página correcta en condiciones de aula. Diseño: 3 luces × 3 posiciones × 2 repeticiones = **18 videos**, pasando las 7 dobles páginas en orden (unos 5 s cada una).
 
 ## Antes de empezar

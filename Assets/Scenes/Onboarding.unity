@@ -3814,6 +3814,9 @@ MonoBehaviour:
     pdfCenter: {x: 0.8133, y: 0.2387}
   - id: 6
     pdfCenter: {x: 0.1859, y: 0.2387}
+  taparArUco: 1
+  markerPdfSize: {x: 0.1086, y: 0.1501}
+  maskScale: 1.5
   follow: 1
   followRotation: 1
   markerIds: 00000000010000000200000003000000040000000500000006000000
@@ -3840,6 +3843,7 @@ MonoBehaviour:
   minSeparation: 0.08
   calibrationFile: calibracion_libro.json
   showDebug: 0
+  logMovimientos: 1
 --- !u!4 &807050054
 Transform:
   m_ObjectHideFlags: 0
@@ -6447,6 +6451,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PruebaDeteccionPaginas
   receiver: {fileID: 2077469861}
   tracker: {fileID: 1499440573}
+  seguimiento: {fileID: 807050053}
+  exigirCalibracion: 1
+  muestreoProyeccion: 0.1
   proyectarContenido: 1
   onboarding: {fileID: 1615534944}
   incluirVuelo: 0
