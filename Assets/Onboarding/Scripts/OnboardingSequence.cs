@@ -50,6 +50,8 @@ public class OnboardingSequence : MonoBehaviour
     public ProjectedCard fondo;
     [Tooltip("Rectángulo negro sobre el libro: evita proyectar el fondo encima del libro real")]
     public ProjectedCard mascaraLibro;
+    [Tooltip("Fondo que queda proyectado al terminar el onboarding (prólogo / lectura). Vacío = mesa en negro")]
+    public ProjectedCard fondoFinal;
 
     [Header("Aterrizaje del Principito (al inicio)")]
     public SpriteRenderer aterrizaje;
@@ -281,12 +283,13 @@ public class OnboardingSequence : MonoBehaviour
 
         Anim(animRest);
         HideAll(false);
+        Show(fondoFinal);   // el fondo del prólogo aparece mientras se desvanece el de acuarela
         if (zorro) StartCoroutine(FadeSr(zorro.GetComponent<SpriteRenderer>(), 0f, cleanupFade));
         yield return FadePrincipito(0f, cleanupFade);
 
         IsRunning = false;
         onFinished?.Invoke();
-        Debug.Log("[Onboarding] Terminado: mesa limpia.");
+        Debug.Log(fondoFinal ? "[Onboarding] Terminado: queda el fondo del prólogo." : "[Onboarding] Terminado: mesa limpia.");
     }
 
     /// Ejecuta una acción en el segundo indicado de una línea que empieza ahora.
@@ -435,7 +438,7 @@ public class OnboardingSequence : MonoBehaviour
 
     void HideAll(bool instant)
     {
-        foreach (var c in new[] { fondo, mascaraLibro, title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+        foreach (var c in new[] { fondo, fondoFinal, mascaraLibro, title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
             if (c) { c.ResetState(); c.Hide(instant); }
         if (options != null) foreach (var o in options) if (o) { o.ResetState(); o.Hide(instant); }
     }

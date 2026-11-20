@@ -8,6 +8,7 @@ using UnityEngine;
 /// Usa los sprites de Assets/Onboarding/Sprites/Acuarela (recortados de Assets/Demo2D/Onboarding/Sprites/raw):
 /// fondo acuarela, título, las 3 tarjetas de "Cómo funciona", el zorro y el aterrizaje del Principito.
 /// - El fondo cubre toda la proyección; un rectángulo negro sobre el libro evita proyectar luz encima de él.
+/// - Al terminar el onboarding queda el fondo del prólogo (fondo_prologo, de raw/prologue_background.png).
 /// - Las tarjetas aparecen una por una (regla 1, 2 y 3), igual que antes.
 /// - En la tarjeta 3, las píldoras A y B se iluminan en la demo del quiz.
 /// Coordenadas: cámara ortográfica de tamaño 4 (x de -7.1 a 7.1, y de -4 a 4); libro de 5.51 × 3.73 centrado.
@@ -19,6 +20,8 @@ public static class OnboardingArtSetup
     const bool UsarMascaraLibro = false;
 
     // Escala de cada imagen (píxeles por unidad) calculada para la proyección 1920×1080
+    // fondo_prologo: 1382×779 px cubriendo los 14,22 × 8 de la cámara
+    const float PpuPrologo = 97.2f;
     const float PpuFondo = 97.625f, PpuTitulo = 165.556f, PpuTarjetas = 114.433f, PpuZorro = 75f, PpuAterrizaje = 130.841f;
 
     static readonly Vector3 TituloPos = new Vector3(0f, 2.98f, 0f);
@@ -52,6 +55,7 @@ public static class OnboardingArtSetup
     public static void ImportSprites()
     {
         Import("fondo_acuarela", PpuFondo, new Vector2(.5f, .5f));
+        Import("fondo_prologo", PpuPrologo, new Vector2(.5f, .5f));
         Import("titulo_onboarding", PpuTitulo, new Vector2(.5f, .5f));
         for (int i = 1; i <= 3; i++) Import("tarjeta_" + i, PpuTarjetas, new Vector2(.5f, .5f));
         Import("blanco", 8f, new Vector2(.5f, .5f));
@@ -101,6 +105,8 @@ public static class OnboardingArtSetup
 
         // Fondo (toda la proyección) y máscara negra sobre el libro
         var fondo = Card("Fondo", root, Vector3.zero, S("fondo_acuarela"), Color.white, -100);
+        // Fondo del prólogo: debajo del de acuarela, aparece cuando este se desvanece al final del onboarding
+        var fondoPrologo = S("fondo_prologo") ? Card("FondoPrologo", root, Vector3.zero, S("fondo_prologo"), Color.white, -101) : null;
         Transform book = null;
         foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             if (t.name == "LibroReferencia") { book = t; break; }
@@ -159,6 +165,7 @@ public static class OnboardingArtSetup
 
         // Secuencia
         seq.fondo = fondo;
+        seq.fondoFinal = fondoPrologo;
         seq.mascaraLibro = UsarMascaraLibro ? mask : null;
         seq.title = titulo;
         seq.subtitle = null;
