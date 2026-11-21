@@ -8570,15 +8570,17 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 52db2907907db974eb6ef0f7fa6f4574, type: 3}
   - {fileID: 21300000, guid: 0fd639d7d23455a49a4b9b9b2304a866, type: 3}
   sortingOrder: 20
-  entrada: {x: -5.9, y: 0.2}
-  impulso: {x: -5, y: 0.2}
-  despegue: {x: -3.9, y: 1}
-  curvaVuelo: {x: 1, y: 2.3}
-  salida: {x: 9.8, y: 2.1}
+  entrada: {x: -5.84, y: -3.7}
+  impulso: {x: -5.4, y: -3.7}
+  despegue: {x: -4.4, y: -0.08}
+  puntosVuelo:
+  - {x: -0.63, y: 1.19}
+  - {x: 3.71, y: 1.26}
+  salida: {x: 9.8, y: 1.5}
   velocidad: 1.3
   aparecer: 0.35
   tomarImpulso: 1
-  despegar: 0.6
+  despegar: 1
   volar: 4.5
   fpsVuelo: 4
   ondulacion: 0.08

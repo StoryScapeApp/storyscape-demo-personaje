@@ -1,10 +1,25 @@
 fileFormatVersion: 2
-guid: f9d19cc9e7cb0bf4dadf8d2dedc21c84
+guid: 0f145dacf3be20a489e94aa274238a69
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -813894063983862870
-    second: Sprites Principito volando_0
+      213: -8707630717308963539
+    second: Sprites Principito volando 1_0
+  - first:
+      213: 6360075614362324113
+    second: Sprites Principito volando 1_1
+  - first:
+      213: -7164200822273289620
+    second: Sprites Principito volando 1_2
+  - first:
+      213: 1388562314156103350
+    second: Sprites Principito volando 1_3
+  - first:
+      213: 291554829987619838
+    second: Sprites Principito volando 1_4
+  - first:
+      213: -5073288992570394379
+    second: Sprites Principito volando 1_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +128,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Sprites Principito volando_0
+      name: Sprites Principito volando 1_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 640
-        height: 480
+        x: 21
+        y: 268
+        width: 180
+        height: 201
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +143,118 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: aab517739a774b4f0800000000000000
-      internalID: -813894063983862870
+      spriteID: d25f4836ff7482780800000000000000
+      internalID: -8707630717308963539
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprites Principito volando 1_1
+      rect:
+        serializedVersion: 2
+        x: 224
+        y: 271
+        width: 195
+        height: 197
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 19cc0baf217834850800000000000000
+      internalID: 6360075614362324113
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprites Principito volando 1_2
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 269
+        width: 200
+        height: 203
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c62d6d84f45a39c90800000000000000
+      internalID: -7164200822273289620
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprites Principito volando 1_3
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 23
+        width: 191
+        height: 217
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b6d4cb511a254310800000000000000
+      internalID: 1388562314156103350
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprites Principito volando 1_4
+      rect:
+        serializedVersion: 2
+        x: 229
+        y: 45
+        width: 190
+        height: 200
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef326f9b29fcb0400800000000000000
+      internalID: 291554829987619838
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sprites Principito volando 1_5
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 27
+        width: 203
+        height: 224
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f831fa6a8e0899b0800000000000000
+      internalID: -5073288992570394379
       vertices: []
       indices: 
       edges: []
@@ -148,7 +273,12 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Sprites Principito volando_0: -813894063983862870
+      Sprites Principito volando 1_0: -8707630717308963539
+      Sprites Principito volando 1_1: 6360075614362324113
+      Sprites Principito volando 1_2: -7164200822273289620
+      Sprites Principito volando 1_3: 1388562314156103350
+      Sprites Principito volando 1_4: 291554829987619838
+      Sprites Principito volando 1_5: -5073288992570394379
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

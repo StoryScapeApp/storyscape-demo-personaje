@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Recorta "Sprites Principito volando.png" (hoja 3x2, fondo blanco) en 6 PNG transparentes:
+/// Recorta "Sprites Principito volando.png" (hoja 3x2, fondo blanco o transparente) en 6 PNG transparentes:
 /// 01-02 de pie / impulso, 03 despegue, 04-06 vuelo con las aves.
 /// Cada cuadro conserva su posición dentro de la celda y todos comparten la línea de suelo de su fila,
 /// así la altura del salto dibujada en la hoja se mantiene. Pivote: en el suelo, centro de la celda.
@@ -15,7 +15,7 @@ public static class PrincipitoVolandoSpriteProcessor
     const string Source = "Assets/Demo2D/Onboarding/Sprites/raw/Sprites Principito volando.png";
     public const string OutDir = "Assets/Lectura/Sprites/Vuelo";
     public const string Prefix = "volando_";
-    const float PixelsPerUnit = 115f;   // ~2.1 unidades de alto en escena
+    const float PixelsPerUnit = 98f;    // la figura mide ~2 unidades de alto en escena (como en la referencia del recorrido)
     const int Pad = 4;
     const int Cols = 3, Rows = 2;
 
@@ -40,6 +40,20 @@ public static class PrincipitoVolandoSpriteProcessor
         int W = tex.width, H = tex.height;
         var px = tex.GetPixels32();
         Object.DestroyImmediate(tex);
+
+        // Hoja con fondo transparente: se apoya sobre blanco y se procesa igual que una hoja de fondo blanco
+        int transparentes = 0;
+        for (int i = 0; i < px.Length; i++) if (px[i].a < 250) transparentes++;
+        if (transparentes > px.Length / 10)
+        {
+            for (int i = 0; i < px.Length; i++)
+            {
+                var c = px[i]; float a = c.a / 255f;
+                px[i] = new Color32((byte)Mathf.RoundToInt(c.r * a + 255 * (1 - a)), (byte)Mathf.RoundToInt(c.g * a + 255 * (1 - a)),
+                                   (byte)Mathf.RoundToInt(c.b * a + 255 * (1 - a)), 255);
+            }
+            Debug.Log("[Volando] Hoja con fondo transparente: se procesa sobre blanco.");
+        }
 
         // Cortes por los huecos vacíos entre cuadros (la hoja no está dividida en partes iguales)
         var colInk = new int[W]; var rowInk = new int[H];
