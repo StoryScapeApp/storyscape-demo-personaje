@@ -179,6 +179,18 @@ public static class OnboardingArtSetup
         seq.framesAterrizaje = landFrames;
         seq.zorro = fox;
         seq.zorroInicio = ZorroInicio;
+        // El zorro aparece desde detrás del planeta derecho: máscara con el borde del planeta (mascara_zorro_planeta)
+        var mascaraSprite = S("mascara_zorro_planeta");
+        if (mascaraSprite)
+        {
+            var mGo = new GameObject("MascaraZorro");
+            mGo.transform.SetParent(root, false);
+            mGo.transform.position = new Vector3(5.4f, -1.5f, 0f);
+            var mascaraZorro = mGo.AddComponent<SpriteMask>();
+            mascaraZorro.sprite = mascaraSprite;
+            seq.mascaraPlaneta = mascaraZorro;
+            seq.zorroDesdePlaneta = true;
+        }
         seq.zorroDestino = ZorroDestino;
         // Estrella fugaz (regla 2): del planeta anillado al planeta azul del fondo, pasando entre el título y el libro
         seq.mostrarMeteoro = true;

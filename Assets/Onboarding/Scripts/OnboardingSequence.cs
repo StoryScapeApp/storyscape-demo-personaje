@@ -80,6 +80,16 @@ public class OnboardingSequence : MonoBehaviour
     public Vector3 zorroDestino = new Vector3(5.1f, -1.45f, 0f);
     public float zorroEspera = 1.2f;
     public float zorroCaminar = 2.6f;
+    [Tooltip("El zorro aparece desde detrás del planeta de la derecha (sube por su borde) en vez de entrar caminando desde fuera de la proyección")]
+    public bool zorroDesdePlaneta = true;
+    [Tooltip("Esconde la parte del zorro que todavía está detrás del planeta (MascaraZorro)")]
+    public SpriteMask mascaraPlaneta;
+    [Tooltip("Donde empieza, escondido detrás del planeta")]
+    public Vector3 zorroEscondido = new Vector3(6.05f, -3.1f, 0f);
+    [Tooltip("Donde termina de asomarse, sobre el borde del planeta")]
+    public Vector3 zorroBorde = new Vector3(5.6f, -1.28f, 0f);
+    [Tooltip("Segundos que tarda en subir desde detrás del planeta (el resto de Zorro Caminar camina hasta su lugar)")]
+    public float zorroSubir = 1.4f;
 
     [Header("1. En el libro")]
     public ProjectedCard cardBook;
@@ -486,10 +496,12 @@ public class OnboardingSequence : MonoBehaviour
         SetSrAlpha(aterrizaje, 0f);
     }
 
-    /// El zorro entra caminando por la derecha y se sienta junto al libro.
+    /// El zorro aparece desde detrás del planeta de la derecha (o, si está desactivado, entra caminando por la derecha)
+    /// y se sienta junto al libro.
     IEnumerator ZorroEntra()
     {
         var sr = zorro.GetComponent<SpriteRenderer>();
+        if (zorroDesdePlaneta && mascaraPlaneta) { yield return ZorroDesdePlaneta(sr); yield break; }
         zorro.transform.position = zorroInicio;
         yield return new WaitForSeconds(zorroEspera);
         zorro.Play("Caminar", true);
@@ -497,6 +509,37 @@ public class OnboardingSequence : MonoBehaviour
         for (float t = 0f; t < zorroCaminar; t += Time.deltaTime)
         {
             zorro.transform.position = Vector3.Lerp(zorroInicio, zorroDestino, t / zorroCaminar);
+            yield return null;
+        }
+        zorro.transform.position = zorroDestino;
+        zorro.Play("Sentarse", true);
+    }
+
+    /// Sube caminando por el otro lado del planeta: la máscara oculta lo que todavía está detrás del borde.
+    IEnumerator ZorroDesdePlaneta(SpriteRenderer sr)
+    {
+        mascaraPlaneta.enabled = true;
+        sr.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+        zorro.transform.position = zorroEscondido;
+        yield return new WaitForSeconds(zorroEspera);
+        zorro.Play("Caminar", true);
+        SetSrAlpha(sr, 1f);
+        // Curva: sube casi vertical y al final avanza hacia el libro, como si subiera la ladera del planeta
+        Vector3 control = new Vector3(zorroEscondido.x - 0.05f, zorroBorde.y + 0.1f, 0f);
+        float subir = Mathf.Max(0.2f, zorroSubir);
+        for (float t = 0f; t < subir; t += Time.deltaTime)
+        {
+            float k = t / subir; float u = k * (2f - k);   // frena al llegar arriba
+            float m = 1f - u;
+            zorro.transform.position = m * m * zorroEscondido + 2f * m * u * control + u * u * zorroBorde;
+            yield return null;
+        }
+        zorro.transform.position = zorroBorde;
+        sr.maskInteraction = SpriteMaskInteraction.None;   // ya está entero sobre el planeta
+        float caminar = Mathf.Max(0.4f, zorroCaminar - subir);
+        for (float t = 0f; t < caminar; t += Time.deltaTime)
+        {
+            zorro.transform.position = Vector3.Lerp(zorroBorde, zorroDestino, t / caminar);
             yield return null;
         }
         zorro.transform.position = zorroDestino;
