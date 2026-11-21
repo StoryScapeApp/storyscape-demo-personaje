@@ -125,6 +125,11 @@ public class QuizSession : MonoBehaviour
     public bool tecladoPrueba = true;
 
     public bool IsRunning { get; private set; }
+    /// Pausa por comando de voz: el agente se cuelga y, al continuar, se vuelve a leer la misma pregunta.
+    public bool Pausado { get; private set; }
+    /// Id del último quiz que se inició (para "repite el quiz").
+    public string UltimoId { get; private set; }
+    bool repetirPregunta, esRepeticion;
     /// ¿El agente habló en el último quiz? (si no, se respondió con el teclado de prueba)
     public bool UsoAgente { get; private set; }
 
@@ -195,6 +200,63 @@ public class QuizSession : MonoBehaviour
         IniciarQuiz(id);
     }
 
+    // ───────────── Comandos de voz ─────────────
+    /// Vuelve a permitir todos los quizzes (nuevo sorteo): los chapters se disparan otra vez al leer su frase.
+    public void RearmarQuizzes()
+    {
+        bancosHechos.Clear();
+        foreach (var q in quizzes) q.hecho = false;
+    }
+
+    /// Corta el quiz en curso sin guardar nada y deja la mesa limpia.
+    public void Cancelar(bool desvanecer = true)
+    {
+        bool estaba = IsRunning;
+        StopAllCoroutines();
+        if (agent && agent.IsRunning) agent.EndConversation();
+        Pausado = false;
+        repetirPregunta = esRepeticion = false;
+        IsRunning = false;
+        quizActual = null;
+        preguntaActual = null;
+        if (doubts) doubts.bloqueada = false;
+        HideAll(true);
+        if (estaba)
+        {
+            Anim(animRest);
+            if (desvanecer) StartCoroutine(Fade(0f));
+            Debug.Log("[Quiz] Cancelado por comando.");
+        }
+    }
+
+    /// "Repite el quiz": nuevo sorteo (si hay uno en curso, lo corta y empieza otro; si ya terminó, repite el último).
+    public bool ReiniciarQuiz()
+    {
+        string id = IsRunning && quizActual != null ? quizActual.id : UltimoId;
+        if (string.IsNullOrEmpty(id)) return false;
+        Cancelar(false);   // sin desvanecer: el quiz nuevo empieza enseguida
+        IniciarQuizDeNuevo(id);
+        return true;
+    }
+
+    /// "Repite la pregunta": el agente vuelve a leerla (mismas alternativas).
+    public bool RepetirPregunta()
+    {
+        if (!IsRunning || preguntaActual == null) return false;
+        repetirPregunta = true;
+        if (agent && agent.IsRunning) agent.EndConversation();
+        return true;
+    }
+
+    public void Pausar()
+    {
+        if (!IsRunning) return;
+        Pausado = true;
+        if (agent && agent.IsRunning) agent.EndConversation();   // el micrófono queda libre para oír "continúa"
+    }
+
+    public void Reanudar() { Pausado = false; }
+
     [ContextMenu("Iniciar quiz de la página 1")]
     void IniciarPrimero() { if (quizzes.Count > 0) { quizzes[0].hecho = false; IniciarQuiz(quizzes[0].id); } }
 
@@ -260,6 +322,7 @@ public class QuizSession : MonoBehaviour
         IsRunning = true;
         q.hecho = true;
         quizActual = q;
+        UltimoId = q.id;
         if (doubts) doubts.bloqueada = true;
 
         // Espera a que termine una animación o una duda en curso, y a que se cierre la lectura
@@ -277,16 +340,18 @@ public class QuizSession : MonoBehaviour
 
         for (int i = 0; i < q.preguntas.Count; i++)
         {
+            bool repite = esRepeticion;   // "repite la pregunta" / volvió de una pausa: misma pregunta, mismas alternativas
+            esRepeticion = false;
             numeroPregunta = i + 1;
-            PrepararPregunta(q.preguntas[i]);
-            if (i > 0) Anim(animQuiz);   // nueva pregunta: vuelve al cartel "?"
+            if (!repite) PrepararPregunta(q.preguntas[i]);
+            if (i > 0 || repite) Anim(animQuiz);   // nueva pregunta: vuelve al cartel "?"
             if (titulo && titulo.label) titulo.label.text = $"<b>Mini quiz</b>\n<size=70%>Pregunta {numeroPregunta} de {q.preguntas.Count}</size>";
             yield return new WaitForSeconds(0.6f);
 
             // El agente lee la pregunta y escucha la respuesta
             var vars = new Dictionary<string, string>
             {
-                { "intro", i == 0 ? IntroInicial(q.intro) : "¡Vamos con la siguiente!" },
+                { "intro", repite ? "Te la repito." : i == 0 ? IntroInicial(q.intro) : "¡Vamos con la siguiente!" },
                 { "numero_pregunta", numeroPregunta.ToString() },
                 { "total_preguntas", q.preguntas.Count.ToString() },
                 { "pregunta", preguntaActual.texto },
@@ -295,6 +360,7 @@ public class QuizSession : MonoBehaviour
                 { "opcion_c", preguntaActual.opciones[orden[2]] },
             };
             bool conectado = false;
+            while (Pausado) yield return null;
             if (agent)
             {
                 agent.StartConversation(vars);
@@ -302,6 +368,17 @@ public class QuizSession : MonoBehaviour
                 conectado = agent.IsRunning;
                 if (conectado) UsoAgente = true;
                 while (agent.IsRunning) yield return null;
+
+                // Comando de voz: se colgó el agente para repetir la pregunta o por una pausa
+                if (!resuelta && (repetirPregunta || Pausado))
+                {
+                    repetirPregunta = false;
+                    while (Pausado) yield return null;
+                    esRepeticion = true;
+                    i--;
+                    continue;
+                }
+                repetirPregunta = false;
             }
             if (!conectado)
             {

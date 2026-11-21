@@ -208,6 +208,22 @@ public class OnboardingSequence : MonoBehaviour
         StartCoroutine(Run());
     }
 
+    /// Nuevo alumno: corta el onboarding en curso y deja todo listo para empezar de nuevo con el ArUco de la página 1.
+    public void Cancelar()
+    {
+        StopAllCoroutines();
+        CancelInvoke();
+        if (voice) voice.Stop();
+        if (agenteNombre && agenteNombre.IsRunning) agenteNombre.EndConversation();
+        speaking = false;
+        IsRunning = false;
+        HideAll(true);
+        SetPrincipitoAlpha(0f);
+        SetSrAlpha(aterrizaje, 0f);
+        if (zorro) SetSrAlpha(zorro.GetComponent<SpriteRenderer>(), 0f);
+        Debug.Log("[Onboarding] Cancelado (nuevo alumno).");
+    }
+
     IEnumerator Run()
     {
         IsRunning = true;
@@ -523,7 +539,8 @@ public class OnboardingSequence : MonoBehaviour
             voice.Play();
             yield return null;
             float limit = line.clip.length + 1.5f, t = 0f;   // seguro: nunca esperar de más
-            while (voice.isPlaying && t < limit) { t += Time.unscaledDeltaTime; TalkIfResting(); yield return null; }
+            // Tiempo escalado: en pausa (timeScale 0) no se agota el límite de seguridad
+            while (voice.isPlaying && t < limit) { t += Time.deltaTime; TalkIfResting(); yield return null; }
         }
         else
         {

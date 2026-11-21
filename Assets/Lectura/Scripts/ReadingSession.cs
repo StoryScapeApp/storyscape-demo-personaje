@@ -89,6 +89,10 @@ public class ReadingSession : MonoBehaviour
     public bool tecladoPrueba = true;
 
     public bool Activa { get; private set; }
+    /// Pausa por comando de voz: no detecta frases, pero Scribe sigue escuchando para oír "continúa".
+    public bool Pausada { get; set; }
+    /// Todo lo que Scribe/Vosk oye, aunque la lectura esté en pausa (lo usa VoiceCommands).
+    public event Action<string, bool> TextoEnVivo;
 
     readonly List<KeyValuePair<float, string>> heard = new List<KeyValuePair<float, string>>();     // agente
     readonly List<KeyValuePair<float, string>> dictated = new List<KeyValuePair<float, string>>();  // dictado (frases completas)
@@ -145,6 +149,45 @@ public class ReadingSession : MonoBehaviour
     public void ReiniciarAnimaciones()
     {
         foreach (var a in animaciones) a.activada = false;
+        LimpiarEscuchado();
+    }
+
+    /// Olvida lo escuchado hasta ahora (para que una frase dicha antes no vuelva a contar).
+    public void LimpiarEscuchado()
+    {
+        heard.Clear();
+        dictated.Clear();
+        voskDone.Clear();
+        voskPartial = "";
+    }
+
+    /// Vuelve a armar las animaciones de las páginas desde..hasta (0,0 = todas): como si no se hubieran leído.
+    public void RearmarPaginas(int desde, int hasta)
+    {
+        int n = 0;
+        foreach (var a in animaciones)
+        {
+            bool todas = desde <= 0 && hasta <= 0;
+            if (todas || a.pagina <= 0 || (a.pagina >= desde && a.pagina <= hasta)) { if (a.activada) n++; a.activada = false; }
+        }
+        LimpiarEscuchado();
+        Debug.Log($"[Lectura] Rearmadas {n} animaciones ({(desde <= 0 && hasta <= 0 ? "todas" : $"páginas {desde} a {hasta}")}).");
+    }
+
+    /// Páginas del capítulo al que pertenece la página: cada capítulo termina en la página de su quiz ("quiz_capitulo_N").
+    public void RangoCapitulo(int pagina, out int desde, out int hasta)
+    {
+        var finales = new List<int>();
+        foreach (var a in animaciones)
+            if (a.id != null && a.id.StartsWith("quiz_capitulo_", StringComparison.OrdinalIgnoreCase) && a.pagina > 0) finales.Add(a.pagina);
+        finales.Sort();
+        desde = 1; hasta = pagina;
+        foreach (int f in finales)
+        {
+            if (pagina <= f) { hasta = f; return; }
+            desde = f + 1;
+        }
+        hasta = Mathf.Max(pagina, tracker ? tracker.PageCount : pagina);   // después del último quiz: hasta el final del libro
     }
 
     // ───────────── Dictado y palabras clave de Windows ─────────────
@@ -310,7 +353,7 @@ public class ReadingSession : MonoBehaviour
     void Update()
     {
         bool busy = (doubtAgent && doubtAgent.IsRunning) || (quiz && quiz.IsRunning);
-        listening = Activa && !busy;
+        listening = Activa && !busy && !Pausada;
         UpdateRealtime(listening);
         UpdateScribe();
 
@@ -385,7 +428,7 @@ public class ReadingSession : MonoBehaviour
     void UpdateScribe()
     {
         if (!scribe || !usarScribe) return;
-        if (listening)
+        if (listening || (Activa && Pausada))
         {
             if (conectarAgente && !warnedMicShare)
             {
@@ -406,12 +449,17 @@ public class ReadingSession : MonoBehaviour
         }
     }
 
-    void OnScribe(string texto, bool final) => OnLive(texto, final, "Scribe");
+    void OnScribe(string texto, bool final)
+    {
+        TextoEnVivo?.Invoke(texto, final);
+        OnLive(texto, final, "Scribe");
+    }
 
     /// Texto del script de Python con Vosk: llega parcial mientras el niño lee (final = frase terminada).
     void OnVosk(string texto, bool final)
     {
         if (!voskAnnounced) { voskAnnounced = true; Debug.Log("[Lectura] Recibiendo voz desde Python (Vosk)."); }
+        TextoEnVivo?.Invoke(texto, final);
         OnLive(texto, final, "Vosk");
     }
 
@@ -450,6 +498,7 @@ public class ReadingSession : MonoBehaviour
     /// Busca la frase de dudas (en lo último que dijo) y las frases activadoras (en lo leído recientemente).
     void Match(string windowText, string lastText, string origen)
     {
+        if (VoiceCommands.ContieneActivacion(lastText)) return;   // "Atención Principito, …" es un comando, no una duda
         var last = Tokens(lastText);
         if (last.Contains("principito") && Array.Exists(palabrasDuda, w => last.Contains(Norm(w))))
         {

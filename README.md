@@ -101,6 +101,35 @@ Componente `DoubtSession`, en el objeto **Dudas**:
   - muestra el **significado a la derecha del libro**.
 - Cuando el agente termina (`end_call`), todo se apaga y la lectura se reconecta.
 
+### 5. Comandos de voz: "Atención Principito, …"
+
+Para controlar la presentación sin cerrar Unity. Componente `VoiceCommands` (se crea solo al dar Play; no hace falta ponerlo en la escena). Solo cuenta si el texto empieza con **"Atención Principito"** seguido de una orden; así no se confunde con el texto del libro ni con "Principito, tengo una duda".
+
+| Di… | Qué hace |
+|---|---|
+| **"Atención Principito, pausa"** (o "espera") | Congela audio, animaciones y lectura en vivo. |
+| **"Atención Principito, continúa"** (o "sigue") | Reanuda donde quedó. |
+| **"Atención Principito, repite esta página"** | Vuelve a armar las animaciones y olvida lo leído de la página actual. El ArUco no cambia: sigue en la misma página. |
+| **"Atención Principito, repite el capítulo"** | Lo mismo para todas las páginas del capítulo actual (cap. I = páginas 1 a 3; cap. II = 4 a 7) y permite repetir su quiz. |
+| **"Atención Principito, repite el quiz"** | Nuevo sorteo de preguntas (corta el quiz en curso o repite el último). |
+| **"Atención Principito, repite la pregunta"** | El Principito vuelve a leer la pregunta actual, con las mismas alternativas. |
+| **"Atención Principito, ayuda"** | Dice qué comandos hay. |
+| **"Atención Principito, nuevo alumno"** | Pide confirmación ("sí, nuevo alumno"). Luego corta el onboarding, el quiz y la lectura, borra el nombre, vuelve a la página 1 y rearma todas las animaciones y quizzes. El **ArUco de la página 1** vuelve a iniciar el onboarding (¿Cómo te llamas?). |
+
+Después de cada comando, el Principito confirma con una frase corta ("Listo, hago una pausa.", "Muy bien, sigamos."…): audio en `Assets/Resources/Comandos/<clave>.mp3` y el texto en la parte baja de la pantalla. Si falta el audio, solo sale el texto. Las claves y frases están en `VoiceCommands.Frases`.
+
+**Teclas de respaldo** (si falla la voz): **P** pausa/continúa · **R** repite la página · **G** repite el capítulo · **U** repite el quiz · **Y** repite la pregunta · **H** ayuda · **N** nuevo alumno (pulsar dos veces para confirmar).
+
+Dónde se oye la voz:
+
+- **Durante la lectura y en pausa:** por **Scribe**.
+- **Durante el quiz:** por la transcripción del **agente del quiz**. Aquí "pausa" cuelga al agente y, al continuar, se vuelve a leer la misma pregunta.
+- **Durante el onboarding:** Scribe no escucha (solo unos segundos para el nombre), así que ahí solo valen las **teclas** (por ejemplo **P**).
+
+Otros datos: tras un comando se ignora lo que se oiga durante 3,5 s (*Enfriamiento*); la confirmación de "nuevo alumno" dura 8 s. "Nuevo alumno" no escribe nada en el CSV del quiz, que sigue siendo un solo archivo con todos los alumnos mezclados y sin nombres.
+
+**Audios de confirmación (pendientes de generar):** se crean una sola vez con ElevenLabs Text to Speech, con la voz del Principito (`ihKwLOjVUMG4lgUI6meZ`), modelo `eleven_multilingual_v2`, y se guardan como `Assets/Resources/Comandos/<clave>.mp3` con las claves: `pausa`, `continua`, `repite_pagina`, `repite_capitulo`, `repite_quiz`, `repite_pregunta`, `ayuda`, `nuevo_alumno_pide`, `nuevo_alumno`, `no_entendi`, `no_hay_quiz`. Por ahora **no hay audios**: los comandos funcionan igual y la confirmación sale solo escrita en pantalla. Para generarlos: por la API hace falta una key con el permiso *Text to Speech*, créditos y un **plan de pago** (las voces de la biblioteca no se pueden usar por API en el plan gratuito); sin plan de pago, se generan en la web de ElevenLabs (*Text to Speech*, con esa voz) y se guardan con esos nombres. La carpeta `Assets/Resources/Comandos/` se crea al agregarlos.
+
 ## Requisitos
 
 - **Unity 6000.3.23f1** (Unity 6.3 LTS), 2D URP
@@ -171,6 +200,7 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 | **V** | Reproduce la animación de la página actual **sin ElevenLabs**. |
 | **Q** | Inicia el mini quiz de la página 1. Sin el agente del quiz configurado, se responde con **A**, **B** o **C**. |
 | **1** / **2** | Inician el mini quiz del capítulo I / II (con sorteo de preguntas). Mismo comportamiento que **Q**. |
+| **P** · **R** · **G** · **U** · **Y** · **H** · **N** | Teclas de respaldo de los comandos de voz (ver *5. Comandos de voz*). |
 
 **Cambiar de página sin cámara:** en `Onboarding` no hay teclas para pasar de página. Se simula un ArUco enviando varios paquetes UDP seguidos a `127.0.0.1:5005` (el receptor pide al menos 2 detecciones en 1,5 s). Por ejemplo, para la página 3 (`marker_2`): `{"tipo": "aruco", "id": 2, "x": 0.5, "y": 0.5}`. Después, lee en voz alta la última frase de esa página para que Scribe dispare el quiz. Para que la lectura en vivo empiece sin esperar el onboarding, usa el menú ⋮ de *Reading Session → Iniciar lectura en vivo* **con el Play activo**.
 
@@ -221,8 +251,9 @@ Assets/
 ├── Lectura/
 │   ├── Datos/                 # JSON del libro (fuente) y versión anterior
 │   ├── Editor/LecturaSetup.cs
-│   ├── Scripts/               # ReadingSession, ScribeRealtimeClient, PrincipitoVolando, QuizSession
+│   ├── Scripts/               # ReadingSession, ScribeRealtimeClient, PrincipitoVolando, QuizSession, VoiceCommands
 │   └── Sprites/Vuelo/         # Poses del vuelo con las aves y asteroide
+├── Resources/Comandos/        # (pendiente) audios de confirmación de los comandos de voz: pausa.mp3, continua.mp3…
 ├── Scenes/                    # Onboarding, PruebaDudas, StoryScapeDemo
 └── StreamingAssets/           # libro_paginas.json, palabras_paginas.json, elevenlabs.*.json
 docs/                          # Prompts de los agentes de ElevenLabs
@@ -242,6 +273,9 @@ python/voz_vosk.py             # Alternativa sin costo: voz local (Vosk) → Uni
 | El agente de dudas no resalta la palabra | Revisa que la Client tool se llame exactamente `resaltar_palabra` y que la palabra esté en la página actual. |
 | El quiz de capítulo no se abre al leer la última frase | Revisa que la página actual sea la correcta (`[Libro] Página actual: 3` o `7` en la consola): los disparadores solo valen en su página. Sin cámara, hay que enviar el ArUco varias veces seguidas (ver *Atajos de prueba*). Revisa también que Scribe esté conectado (`[Scribe] Transcripción en tiempo real conectada.`). |
 | El Principito cuenta respuestas que el niño no dijo | Eco: el micrófono capta la voz del agente. Usa audífonos y baja *Mic Gain* (con la ganancia x8 y parlantes, se mezcla). |
+| Un comando de voz no responde | Debe empezar con "Atención Principito" y estar en la lectura (Scribe conectado) o en el quiz. En el onboarding usa las teclas. Revisa en la consola las líneas `[Comandos] (Scribe) "…" → Pausa`. |
+| El Principito confirma solo con texto | Es lo esperado mientras no estén los audios de `Assets/Resources/Comandos/` (ver *5. Comandos de voz*). |
+| Quedó en pausa y no continúa | Di "Atención Principito, continúa" o pulsa **P**. La pausa usa `Time.timeScale = 0`. |
 | El quiz se queda esperando | Revisa que `agentIdQuiz` esté configurado y que el agente tenga **End call** activado: Unity pasa a la siguiente pregunta cuando el agente termina. |
 | No se oye la voz en el build | Revisa la salida de audio de Windows (puede estar yendo al HDMI del proyector). |
 | La barra del micrófono apenas se mueve | Sube *Mic Gain* y el volumen de entrada en Windows. |

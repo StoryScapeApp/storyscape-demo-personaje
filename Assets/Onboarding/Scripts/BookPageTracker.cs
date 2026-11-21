@@ -98,6 +98,9 @@ public class BookPageTracker : MonoBehaviour
         agent.StartConversation(BuildAgentVariables());
     }
 
+    /// Nuevo alumno: vuelve a la página inicial.
+    public void ReiniciarPagina() => CurrentPage = startPage;
+
     /// Para probar sin cámara: fija la página manualmente.
     public void SetPage(int page) => CurrentPage = Mathf.Clamp(page, 1, Mathf.Max(1, PageCount));
 }
