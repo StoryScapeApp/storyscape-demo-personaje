@@ -154,6 +154,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         {
             onboarding.startOnPlay = false;
             onboarding.esperarRespuestaFinal = false;   // no espera la respuesta del niño (micrófono)
+            onboarding.pedirNombre = false;             // ni pregunta el nombre (Scribe)
             // Al empezar/terminar, el onboarding activa la lectura en vivo, las dudas y la página simulada: se apaga durante la prueba
             Apagar(onboarding.onStarted);
             Apagar(onboarding.onFinished);

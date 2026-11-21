@@ -62,6 +62,12 @@ public class QuizSession : MonoBehaviour
     public string bancoArchivo = "quiz_preguntas.json";
     [Tooltip("Ids de quiz con los que termina el libro (no se invita a pasar la página)")]
     public string[] idsFinDelLibro = { "capitulo_2" };
+
+    [Header("Nombre del niño (lo pregunta el onboarding)")]
+    [Tooltip("Si el onboarding guardó el nombre, el quiz empieza diciéndolo")]
+    public bool usarNombre = true;
+    [Tooltip("Inicio del quiz con nombre. {nombre} = nombre del niño; {intro} = intro del banco sin \"¡Muy bien!\" ni \"Ahora, un mini quiz.\"")]
+    public string introConNombre = "¡Muy bien, {nombre}! {intro} Ahora responde estas preguntas del mini quiz.";
     readonly HashSet<string> bancosHechos = new HashSet<string>();
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
@@ -245,7 +251,7 @@ public class QuizSession : MonoBehaviour
             // El agente lee la pregunta y escucha la respuesta
             var vars = new Dictionary<string, string>
             {
-                { "intro", i == 0 ? q.intro : "¡Vamos con la siguiente!" },
+                { "intro", i == 0 ? IntroInicial(q.intro) : "¡Vamos con la siguiente!" },
                 { "numero_pregunta", numeroPregunta.ToString() },
                 { "total_preguntas", q.preguntas.Count.ToString() },
                 { "pregunta", preguntaActual.texto },
@@ -354,6 +360,21 @@ public class QuizSession : MonoBehaviour
     }
 
     bool Ultima() => quizActual != null && numeroPregunta >= quizActual.preguntas.Count;
+
+    /// Intro de la primera pregunta: con el nombre del niño si el onboarding lo guardó.
+    /// "¡Muy bien! Terminaste el capítulo uno. Ahora, un mini quiz." →
+    /// "¡Muy bien, Camila! Terminaste el capítulo uno. Ahora responde estas preguntas del mini quiz."
+    string IntroInicial(string intro)
+    {
+        intro = intro ?? "";
+        if (!usarNombre || !SesionLector.TieneNombre || string.IsNullOrWhiteSpace(introConNombre)) return intro;
+        string medio = intro.Trim();
+        if (medio.StartsWith("¡Muy bien!")) medio = medio.Substring("¡Muy bien!".Length).Trim();
+        if (medio.EndsWith("Ahora, un mini quiz.")) medio = medio.Substring(0, medio.Length - "Ahora, un mini quiz.".Length).Trim();
+        string r = introConNombre.Replace("{nombre}", SesionLector.Nombre).Replace("{intro}", medio);
+        while (r.Contains("  ")) r = r.Replace("  ", " ");
+        return r.Trim();
+    }
 
     /// ¿Con este quiz termina el libro? (casilla Fin Del Libro, "finDelLibro" en el banco o id en idsFinDelLibro)
     bool FinDelLibro() => quizActual != null &&

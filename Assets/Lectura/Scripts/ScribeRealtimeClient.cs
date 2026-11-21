@@ -94,7 +94,14 @@ public class ScribeRealtimeClient : MonoBehaviour
             await ReceiveLoop();
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) { Debug.LogWarning("[Scribe] " + e.Message); }
+        catch (Exception e)
+        {
+            // Detalle completo: la causa real suele estar en la excepción interna (DNS, TLS, código HTTP del servidor…)
+            var sb = new StringBuilder("[Scribe] ").Append(e.Message);
+            for (var ie = e.InnerException; ie != null; ie = ie.InnerException) sb.Append(" → ").Append(ie.GetType().Name).Append(": ").Append(ie.Message);
+            sb.Append(" (estado del WebSocket: ").Append(ws != null ? ws.State.ToString() : "-").Append(')');
+            Debug.LogWarning(sb.ToString());
+        }
         finally
         {
             StopMic();

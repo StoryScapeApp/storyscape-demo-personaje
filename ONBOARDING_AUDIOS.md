@@ -12,7 +12,9 @@ El nombre del archivo debe ser **exactamente el id**. Luego, con la escena `Onbo
 
 | id | Estado | Momento | Texto |
 |---|---|---|---|
-| `01_intro` | ya existe | 1. Bienvenida | ¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles. |
+| `01_saludo_nombre` | recuperado (versión del 04/11) | 1. Bienvenida, con **Pedir Nombre** activo · luego escucha el nombre (Scribe) | ¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas? |
+| `02_nombre` | recuperado (versión del 04/11) | 1. Después de que el niño dice su nombre | ¡Qué lindo nombre! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles. |
+| `01_intro` | ya existe | 1. Bienvenida, con **Pedir Nombre** desactivado | ¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles. |
 | `02_libro` | **actualizado** | 2. Tarjeta 1 · bordes del marcador | Primero: no tapes el cuadrado de barras con tus manos. Así sé en qué página estás. |
 | `03_voz_alta` | **actualizado**  | 3. Tarjeta 2 · lee en voz alta | Segundo: lee en voz alta. Así podrás ver animaciones durante la historia.|
 | `04_quiz` | **actualizado**  | 4. Tarjeta 3 · panel del quiz | Tercero: al terminar cada capítulo, te haré dos preguntas sobre lo que leíste. Responde diciendo la letra de la opción. Si eliges una respuesta que no es, no pasa nada. ¡Puedes intentarlo otra vez! |

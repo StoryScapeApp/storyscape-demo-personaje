@@ -116,7 +116,7 @@ public class ReadingSession : MonoBehaviour
     void OnDisable()
     {
         if (receptorVoz) receptorVoz.TextReceived -= OnVosk;
-        if (scribe) { scribe.TextReceived -= OnScribe; if (scribe.IsRunning) scribe.StopStreaming(); }
+        if (scribe) { scribe.TextReceived -= OnScribe; if (scribePropio && scribe.IsRunning) scribe.StopStreaming(); scribePropio = false; }
         if (agent)
         {
             agent.UserTranscript -= OnTranscript;
@@ -378,6 +378,10 @@ public class ReadingSession : MonoBehaviour
 
     // ───────────── Detección ─────────────
     /// Scribe: se conecta mientras se escucha la lectura y se desconecta en dudas, quiz o fuera de la lectura.
+    /// true = la lectura encendió Scribe. Solo apaga el Scribe que encendió ella: el onboarding también lo usa
+    /// unos segundos para escuchar el nombre del niño, y no se le debe cortar.
+    bool scribePropio;
+
     void UpdateScribe()
     {
         if (!scribe || !usarScribe) return;
@@ -392,9 +396,14 @@ public class ReadingSession : MonoBehaviour
             {
                 scribeRetryAt = Time.unscaledTime + 3f;
                 scribe.StartStreaming();
+                scribePropio = true;
             }
         }
-        else if (scribe.IsRunning) scribe.StopStreaming();
+        else if (scribePropio)
+        {
+            if (scribe.IsRunning) scribe.StopStreaming();
+            scribePropio = false;
+        }
     }
 
     void OnScribe(string texto, bool final) => OnLive(texto, final, "Scribe");

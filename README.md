@@ -132,8 +132,9 @@ Componente `DoubtSession`, en el objeto **Dudas**:
 
 | Servicio | Cuándo se conecta | Campo en `elevenlabs.local.json` | Prompt y configuración | Herramienta de cliente |
 |---|---|---|---|---|
+| **Agente "Principito bienvenida"** | En el onboarding, después de "¿Cómo te llamas?": dice "¡Qué lindo nombre, {{nombre}}!" y Unity cuelga | `agentIdBienvenida` | [`docs/prompt_principito_bienvenida.md`](docs/prompt_principito_bienvenida.md) | — |
 | **Agente "Principito quiz"** | Una conversación por pregunta del quiz | `agentIdQuiz` | [`docs/prompt_principito_quiz.md`](docs/prompt_principito_quiz.md) | `elegir_opcion` (`letra`) |
-| **Scribe v2 Realtime** (no es un agente) | Durante la lectura | `apiKey` | Sin prompt | — |
+| **Scribe v2 Realtime** (no es un agente) | Durante la lectura y unos segundos en el onboarding, para escuchar el nombre | `apiKey` | Sin prompt | — |
 
 **Ajustes comunes de los agentes**
 - Idioma español y **PCM 16000 Hz** de entrada y salida.

@@ -35,6 +35,20 @@ public class OnboardingSequence : MonoBehaviour
     public bool startOnPlay = false;
     public float startDelay = 1f;
 
+    [Header("Nombre del niño")]
+    [Tooltip("Al inicio pregunta el nombre (01_saludo_nombre), lo escucha con Scribe y responde (02_nombre). " +
+             "Se guarda en SesionLector para que el quiz lo diga. Desmarcado = saludo de siempre (01_intro)")]
+    public bool pedirNombre = true;
+    [Tooltip("Transcripción en tiempo real (el mismo Scribe de la lectura en vivo)")]
+    public ScribeRealtimeClient scribe;
+    [Tooltip("Segundos que espera a que el niño diga su nombre")]
+    public float esperaNombre = 7f;
+    [Tooltip("Agente \"Principito bienvenida\" (agentIdBienvenida): dice \"¡Qué lindo nombre, {{nombre}}!…\" con la voz del Principito. " +
+             "Sin configurar, o si no se entendió el nombre, suena el audio grabado 02_nombre")]
+    public ElevenLabsAgentClient agenteNombre;
+    [Tooltip("Segundos máximos para que el agente empiece a hablar; si no, se usa el audio grabado")]
+    public float esperaAgenteNombre = 5f;
+
     [Header("Personaje y voz")]
     public SpriteAnimator2D principito;
     public AudioSource voice;
@@ -124,6 +138,11 @@ public class OnboardingSequence : MonoBehaviour
     public string animRight = "Correcto";
 
     [Header("Guion (audios en Assets/Onboarding/Audio con el mismo id)")]
+    [Tooltip("Saludo que pregunta el nombre (si Pedir Nombre está activo)")]
+    public Line saludoNombre = new Line { id = "01_saludo_nombre", text = "¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas?" };
+    [Tooltip("Respuesta después de que el niño dice su nombre (si Pedir Nombre está activo)")]
+    public Line nameReply = new Line { id = "02_nombre", text = "¡Qué lindo nombre! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles." };
+    [Tooltip("Saludo sin preguntar el nombre (si Pedir Nombre está desactivado)")]
     public Line intro = new Line { id = "01_intro", text = "¡Hola! ¡Bienvenido al libro El Principito! Antes de empezar nuestra aventura, te voy a comentar unas reglas muy fáciles." };
     public Line bookLine = new Line { id = "02_libro", text = "Primero: no tapes el cuadrado de barras con tus manos. Así sé en qué página estás." };
     public Line readLine = new Line { id = "03_voz_alta", text = "Segundo: lee en voz alta. Así podrás ver animaciones durante la historia." };
@@ -197,7 +216,19 @@ public class OnboardingSequence : MonoBehaviour
         if (aterrizaje && framesAterrizaje != null && framesAterrizaje.Length >= 4) yield return Aterrizar();
         Anim(animGreet);
         yield return FadePrincipito(1f);
-        yield return Say(intro);
+        SesionLector.Reiniciar();   // nuevo niño: se olvida el nombre anterior
+        if (pedirNombre)
+        {
+            yield return Say(saludoNombre);   // "…¿Cómo te llamas?"
+            Anim(animRest);
+            yield return EscucharNombre();
+            Anim(animGreet);
+            bool dichoEnVivo = false;
+            if (SesionLector.TieneNombre && agenteNombre && !agenteNombre.simulate && agenteNombre.HasAgentId())
+                yield return NombreEnVivo(ok => dichoEnVivo = ok);   // "¡Qué lindo nombre, Camila!…"
+            if (!dichoEnVivo) yield return Say(nameReply);           // "¡Qué lindo nombre!…" (grabado)
+        }
+        else yield return Say(intro);
         Anim(animRest);
 
         // 2. Tarjeta 1: bordes del área del marcador
@@ -290,6 +321,81 @@ public class OnboardingSequence : MonoBehaviour
         IsRunning = false;
         onFinished?.Invoke();
         Debug.Log(fondoFinal ? "[Onboarding] Terminado: queda el fondo del prólogo." : "[Onboarding] Terminado: mesa limpia.");
+    }
+
+    /// Escucha la respuesta a "¿Cómo te llamas?" con Scribe y guarda el nombre en SesionLector.
+    /// Se conecta solo estos segundos (Scribe cobra el audio enviado). Si no se entiende, sigue sin nombre.
+    IEnumerator EscucharNombre()
+    {
+        if (!scribe) scribe = FindFirstObjectByType<ScribeRealtimeClient>();
+        if (!scribe || !scribe.isActiveAndEnabled || !scribe.HasApiKey())
+        {
+            Debug.LogWarning("[Onboarding] No se puede escuchar el nombre (falta Scribe o su apiKey). Se sigue sin nombre.");
+            yield return new WaitForSeconds(2f);   // da tiempo a que el niño responda igual
+            yield break;
+        }
+        string final = null, parcial = null;
+        Action<string, bool> alTexto = (texto, esFinal) =>
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return;
+            if (esFinal) final = final == null ? texto : final + " " + texto; else parcial = texto;
+        };
+        bool yaCorria = scribe.IsRunning;
+        scribe.TextReceived += alTexto;
+        if (!yaCorria) scribe.StartStreaming();
+        bool reintento = false;
+        for (float t = 0f; t < esperaNombre && final == null; t += Time.deltaTime)
+        {
+            // Si la conexión con Scribe falló (red), se reintenta una vez en vez de esperar sin escuchar
+            if (!yaCorria && !reintento && t > 0.5f && !scribe.IsRunning && parcial == null)
+            {
+                reintento = true;
+                Debug.LogWarning("[Onboarding] Scribe no se conectó; se reintenta para escuchar el nombre.");
+                scribe.StartStreaming();
+            }
+            yield return null;
+        }
+        // Empezó a hablar justo al final: un poco más para la frase completa
+        if (final == null && parcial != null) for (float t = 0f; t < 1.5f && final == null; t += Time.deltaTime) yield return null;
+        scribe.TextReceived -= alTexto;
+        if (!yaCorria) scribe.StopStreaming();
+
+        string escuchado = final ?? parcial ?? "";
+        string nombre = SesionLector.ExtraerNombre(escuchado);
+        Debug.Log($"[Onboarding] Respuesta al nombre: \"{escuchado}\" → {(nombre.Length > 0 ? nombre : "(no se reconoció un nombre)")}");
+        if (nombre.Length > 0) SesionLector.SetNombre(nombre);
+    }
+
+    /// El agente de bienvenida dice la respuesta con el nombre (su first message usa {{nombre}}).
+    /// Unity cuelga en cuanto termina de hablar, para que no se quede escuchando ni responda otra cosa.
+    IEnumerator NombreEnVivo(Action<bool> listo)
+    {
+        var a = agenteNombre;
+        a.StartConversation(new System.Collections.Generic.Dictionary<string, string> { { "nombre", SesionLector.Nombre } });
+        float t = 0f;
+        while (a.IsRunning && !a.AgentSpeaking && t < esperaAgenteNombre) { t += Time.deltaTime; yield return null; }
+        if (!a.AgentSpeaking)
+        {
+            if (a.IsRunning) a.EndConversation();
+            while (a.IsRunning) yield return null;
+            Debug.LogWarning("[Onboarding] El agente de bienvenida no respondió a tiempo: se usa el audio grabado 02_nombre.");
+            listo(false);
+            yield break;
+        }
+        speaking = true;
+        float silencio = 0f;
+        for (float total = 0f; a.IsRunning && total < 20f; total += Time.deltaTime)
+        {
+            if (a.AgentSpeaking) { silencio = 0f; TalkIfResting(); }
+            else if ((silencio += Time.deltaTime) > 0.9f) break;   // terminó la frase
+            yield return null;
+        }
+        speaking = false;
+        StopTalking();
+        if (a.IsRunning) a.EndConversation();
+        while (a.IsRunning) yield return null;
+        yield return new WaitForSeconds(pauseBetweenLines);
+        listo(true);
     }
 
     /// Ejecuta una acción en el segundo indicado de una línea que empieza ahora.
@@ -444,5 +550,5 @@ public class OnboardingSequence : MonoBehaviour
     }
 
     /// Lista de líneas (para asignar audios desde el editor).
-    public Line[] AllLines() => new[] { intro, bookLine, readLine, quizLine, finalLine, readyLine, doubtLine, doubtExample };
+    public Line[] AllLines() => new[] { saludoNombre, nameReply, intro, bookLine, readLine, quizLine, finalLine, readyLine, doubtLine, doubtExample };
 }

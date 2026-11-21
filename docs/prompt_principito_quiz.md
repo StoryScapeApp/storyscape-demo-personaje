@@ -11,7 +11,7 @@ Variables que envía Unity en cada pregunta:
 
 | Variable | Ejemplo |
 |---|---|
-| `{{intro}}` | "¡Muy bien! Terminaste la primera página. Ahora, un mini quiz." (en la segunda pregunta: "¡Vamos con la siguiente!") |
+| `{{intro}}` | "¡Muy bien! Terminaste la primera página. Ahora, un mini quiz." Si el onboarding guardó el nombre del niño: "¡Muy bien, Camila! Terminaste la primera página. Ahora responde estas preguntas del mini quiz." (en la segunda pregunta: "¡Vamos con la siguiente!") |
 | `{{numero_pregunta}}` / `{{total_preguntas}}` | 1 / 2 |
 | `{{pregunta}}` | ¿Cómo vas a leer el cuento? |
 | `{{opcion_a}}`, `{{opcion_b}}`, `{{opcion_c}}` | Las alternativas en el orden en que aparecen proyectadas |
