@@ -420,8 +420,10 @@ MonoBehaviour:
   border: {fileID: 0}
   label: {fileID: 934311130}
   color: {r: 1, g: 1, b: 1, a: 1}
-  fillAlpha: 0.22
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  fillAlpha: 0
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
+  textColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   fadeSpeed: 3
   startVisible: 0
 --- !u!1 &60680372
@@ -830,8 +832,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4284361246
+  m_fontColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -996,6 +998,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 0.96862745, g: 0.28235292, b: 0.30406994, a: 1}
   fillAlpha: 0.15
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -1234,6 +1238,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -1330,6 +1336,8 @@ MonoBehaviour:
   label: {fileID: 1346541825}
   color: {r: 0.60784316, g: 0.42352942, b: 0.9490196, a: 1}
   fillAlpha: 0.22
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -1401,6 +1409,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 0, g: 0, b: 0, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -1573,7 +1583,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 6
+  m_SortingOrder: 4
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 6c54672bf1bec4c4fa724dda1bb63f12, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1635,6 +1645,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -1748,6 +1760,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 0.3098039, g: 0.9098039, b: 0.44874433, a: 1}
   fillAlpha: 0.15
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -2135,6 +2149,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 0.96862745, g: 0.7882353, b: 0.28235295, a: 1}
   fillAlpha: 0.5
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -2311,8 +2327,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4284361246
+  m_fontColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2629,8 +2645,9 @@ MonoBehaviour:
         width: 0.8081
         height: 0.1208
     finDelLibro: 0
-    cierre: "Dile que termin\xF3 el mini quiz y que ahora pase la p\xE1gina y empiece
-      a leer en voz alta."
+    cierre: "Desp\xEDdete diciendo solo esta frase, sin cambiarla: \"\xA1Terminaste
+      el mini quiz! Ahora empieza a leer en voz alta.\" NO digas \"pasa la p\xE1gina\"
+      ni \"sigamos leyendo\": el ni\xF1o todav\xEDa no empez\xF3 a leer el libro."
   bancoArchivo: quiz_preguntas.json
   idsFinDelLibro:
   - capitulo_2
@@ -3021,6 +3038,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -3710,6 +3729,8 @@ MonoBehaviour:
   label: {fileID: 1266890556}
   color: {r: 0.30980393, g: 0.7019608, b: 0.9098039, a: 1}
   fillAlpha: 0.45
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -4370,6 +4391,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 0.96862745, g: 0.7882353, b: 0.28235295, a: 1}
   fillAlpha: 0.22
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 1.5
   startVisible: 0
@@ -4440,7 +4463,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -4663,6 +4686,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -4823,8 +4848,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4284361246
+  m_fontColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -5244,6 +5269,8 @@ MonoBehaviour:
   label: {fileID: 791451778}
   color: {r: 0.96862745, g: 0.7882353, b: 0.28235295, a: 1}
   fillAlpha: 0.45
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -5530,9 +5557,11 @@ MonoBehaviour:
   fill: {fileID: 625039740}
   border: {fileID: 1130748213}
   label: {fileID: 980106863}
-  color: {r: 0.96862745, g: 0.7882353, b: 0.28235295, a: 1}
-  fillAlpha: 0.22
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  color: {r: 0.9137255, g: 0.6627451, b: 0.16470589, a: 1}
+  fillAlpha: 1
+  rellenoPropio: 1
+  colorRelleno: {r: 0.99215686, g: 0.89411765, b: 0.6039216, a: 1}
+  textColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   fadeSpeed: 3
   startVisible: 0
 --- !u!1 &1102807167
@@ -6130,6 +6159,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -6226,6 +6257,8 @@ MonoBehaviour:
   label: {fileID: 1009228766}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 0.22
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -6295,6 +6328,8 @@ MonoBehaviour:
   label: {fileID: 2008027573}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 0.22
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -7022,6 +7057,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 1.5
   startVisible: 0
@@ -7151,6 +7188,8 @@ MonoBehaviour:
   label: {fileID: 1056345493}
   color: {r: 0.60784316, g: 0.42352942, b: 0.9490196, a: 1}
   fillAlpha: 0.22
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -7234,8 +7273,10 @@ MonoBehaviour:
   border: {fileID: 0}
   label: {fileID: 131979387}
   color: {r: 1, g: 1, b: 1, a: 1}
-  fillAlpha: 0.22
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  fillAlpha: 0
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
+  textColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   fadeSpeed: 3
   startVisible: 0
 --- !u!1 &1346541824
@@ -7631,9 +7672,11 @@ MonoBehaviour:
   fill: {fileID: 607408232}
   border: {fileID: 940691325}
   label: {fileID: 590923233}
-  color: {r: 0.30980393, g: 0.7019608, b: 0.9098039, a: 1}
-  fillAlpha: 0.22
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  color: {r: 0.23137255, g: 0.70980394, b: 0.2901961, a: 1}
+  fillAlpha: 1
+  rellenoPropio: 1
+  colorRelleno: {r: 0.7058824, g: 0.92156863, b: 0.7411765, a: 1}
+  textColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   fadeSpeed: 3
   startVisible: 0
 --- !u!1 &1418074559
@@ -7777,9 +7820,11 @@ MonoBehaviour:
   fill: {fileID: 1944048958}
   border: {fileID: 438884370}
   label: {fileID: 2078268968}
-  color: {r: 0.8509804, g: 0.8235294, b: 0.8117647, a: 1}
-  fillAlpha: 0.12
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  color: {r: 0.9490196, g: 0.70980394, b: 0.26666668, a: 1}
+  fillAlpha: 0.96
+  rellenoPropio: 1
+  colorRelleno: {r: 1, g: 0.96862745, b: 0.8901961, a: 1}
+  textColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   fadeSpeed: 3
   startVisible: 0
 --- !u!1 &1478376964
@@ -7816,6 +7861,8 @@ MonoBehaviour:
   label: {fileID: 1171490130}
   color: {r: 0.8509804, g: 0.8235294, b: 0.8117647, a: 1}
   fillAlpha: 0.18
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -7935,9 +7982,11 @@ MonoBehaviour:
   fill: {fileID: 514867504}
   border: {fileID: 831870193}
   label: {fileID: 1549050393}
-  color: {r: 0.9490196, g: 0.44705883, b: 0.49803922, a: 1}
-  fillAlpha: 0.22
-  textColor: {r: 1, g: 1, b: 1, a: 1}
+  color: {r: 0.8980392, g: 0.3137255, b: 0.36078432, a: 1}
+  fillAlpha: 1
+  rellenoPropio: 1
+  colorRelleno: {r: 0.9843137, g: 0.7607843, b: 0.78039217, a: 1}
+  textColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   fadeSpeed: 3
   startVisible: 0
 --- !u!1 &1549050391
@@ -8006,8 +8055,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4284361246
+  m_fontColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -8464,6 +8513,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -9229,7 +9280,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 5
+  m_SortingOrder: 3
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 927dd46acce472c489489d8089cc9409, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -9382,6 +9433,8 @@ MonoBehaviour:
   label: {fileID: 0}
   color: {r: 1, g: 1, b: 1, a: 1}
   fillAlpha: 1
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 2
   startVisible: 0
@@ -9496,6 +9549,8 @@ MonoBehaviour:
   label: {fileID: 684459320}
   color: {r: 0.60784316, g: 0.42352942, b: 0.9490196, a: 1}
   fillAlpha: 0.22
+  rellenoPropio: 0
+  colorRelleno: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 1, g: 1, b: 1, a: 1}
   fadeSpeed: 3
   startVisible: 0
@@ -9905,7 +9960,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColor: {r: 0.11764706, g: 0.16470589, b: 0.36862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

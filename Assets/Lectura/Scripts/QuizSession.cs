@@ -142,7 +142,7 @@ public class QuizSession : MonoBehaviour
     readonly HashSet<int> descartadas = new HashSet<int>();
     SpriteRenderer principitoSr;
     bool modoImagen;
-    struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; }
+    struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; public bool rellenoPropio; }
     Original[] originales;
 
     void Awake()
@@ -157,7 +157,7 @@ public class QuizSession : MonoBehaviour
         {
             var c = opciones[i]; if (!c) continue;
             originales[i] = new Original { pos = c.transform.position, color = c.color, fillAlpha = c.fillAlpha,
-                fill = c.fill ? c.fill.size : Vector2.zero, border = c.border ? c.border.size : Vector2.zero };
+                fill = c.fill ? c.fill.size : Vector2.zero, border = c.border ? c.border.size : Vector2.zero, rellenoPropio = c.rellenoPropio };
         }
     }
 
@@ -382,6 +382,7 @@ public class QuizSession : MonoBehaviour
             c.transform.position = new Vector3(centro.x, centro.y, 0f);
             if (c.fill) c.fill.size = medida;
             if (c.border) c.border.size = medida;
+            c.rellenoPropio = false;
             c.color = Color.white;
             c.fillAlpha = 0f;   // solo el borde brillante; el relleno aparece al brillar
         }
@@ -391,7 +392,7 @@ public class QuizSession : MonoBehaviour
     {
         var c = opciones[i]; if (!c || originales == null || i >= originales.Length) return;
         var o = originales[i];
-        c.transform.position = o.pos; c.color = o.color; c.fillAlpha = o.fillAlpha;
+        c.transform.position = o.pos; c.color = o.color; c.fillAlpha = o.fillAlpha; c.rellenoPropio = o.rellenoPropio;
         if (c.fill) c.fill.size = o.fill;
         if (c.border) c.border.size = o.border;
     }

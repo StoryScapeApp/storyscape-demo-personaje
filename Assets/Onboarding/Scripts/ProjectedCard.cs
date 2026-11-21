@@ -15,6 +15,9 @@ public class ProjectedCard : MonoBehaviour
     [Header("Estilo")]
     public Color color = Color.white;
     [Range(0f, 1f)] public float fillAlpha = 0.22f;
+    [Tooltip("Relleno de otro color que el borde (p. ej. relleno claro con borde de color, para fondos claros)")]
+    public bool rellenoPropio;
+    public Color colorRelleno = Color.white;
     public Color textColor = Color.white;
     public float fadeSpeed = 3f;
 
@@ -70,7 +73,8 @@ public class ProjectedCard : MonoBehaviour
         if (fill)
         {
             float a = Mathf.Lerp(fillAlpha, Mathf.Min(1f, fillAlpha + 0.4f), glow) * alpha;
-            fill.color = new Color(color.r, color.g, color.b, a);
+            Color fc = rellenoPropio ? colorRelleno : color;
+            fill.color = new Color(fc.r, fc.g, fc.b, a);
         }
         if (border)
         {
