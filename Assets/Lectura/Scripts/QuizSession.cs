@@ -5,7 +5,10 @@ using System.IO;
 using UnityEngine;
 
 /// <summary>
-/// Mini quiz al terminar una página (lo activa ReadingSession al detectar el final de la página).
+/// Mini quiz: el de los capítulos lo activa ReadingSession al detectar el final de la página; el quiz "pagina_1"
+/// lo inicia el onboarding al terminar las reglas (con las imágenes onboarding_quiz_1 y _2).
+/// - Pregunta con imagen: se proyecta la imagen (pregunta y alternativas ya dibujadas) en vez del panel de texto,
+///   las alternativas no se mezclan y la elegida se ilumina encima de su píldora.
 /// - Muestra las preguntas una por una en un panel a la derecha del libro, con alternativas A, B y C.
 /// - Las alternativas se MEZCLAN en cada sesión, para que la correcta no esté siempre en el mismo lugar.
 /// - El agente "Principito quiz" de ElevenLabs lee la pregunta y sus alternativas (first message) y escucha la
@@ -26,6 +29,10 @@ public class QuizSession : MonoBehaviour
         public string[] opciones = new string[3];
         [Tooltip("Índice de la alternativa correcta en el orden original (0 = primera)")]
         public int correcta;
+        [Tooltip("Imagen con la pregunta y las alternativas ya dibujadas (opcional). Con imagen no se muestra el panel de texto ni se mezclan las alternativas")]
+        public Sprite imagen;
+        [Tooltip("Zonas de las píldoras A, B y C dentro de la imagen (0–1, origen arriba a la izquierda: x, y, ancho, alto)")]
+        public Rect[] zonas = new Rect[3];
     }
 
     [Serializable]
@@ -37,6 +44,8 @@ public class QuizSession : MonoBehaviour
         public List<Pregunta> preguntas = new List<Pregunta>();
         [Tooltip("Márcalo en el quiz del último capítulo: al terminar, el Principito felicita por acabar el libro en vez de invitar a pasar la página")]
         public bool finDelLibro;
+        [Tooltip("Lo que debe decir el Principito al terminar la última pregunta (vacío = invitar a pasar la página y seguir leyendo)")]
+        [TextArea(1, 3)] public string cierre;
         [NonSerialized] public bool hecho;
     }
 
@@ -91,6 +100,10 @@ public class QuizSession : MonoBehaviour
     [Tooltip("Tarjetas de las alternativas en pantalla: posición A, B y C")]
     public ProjectedCard[] opciones = new ProjectedCard[3];
     public StarBurst estrellas;
+    [Tooltip("Donde se proyecta la imagen de las preguntas con imagen (SpriteRenderer + ProjectedCard)")]
+    public ProjectedCard imagenPregunta;
+    [Tooltip("Centro de la imagen de la pregunta (a la derecha del libro)")]
+    public Vector2 posImagen = new Vector2(5.0f, 0.1f);
     [Tooltip("Animaciones que deben terminar antes de empezar el quiz (p. ej. el Principito volando)")]
     public PrincipitoVolando[] esperarAnimaciones;
 
@@ -112,6 +125,8 @@ public class QuizSession : MonoBehaviour
     public bool tecladoPrueba = true;
 
     public bool IsRunning { get; private set; }
+    /// ¿El agente habló en el último quiz? (si no, se respondió con el teclado de prueba)
+    public bool UsoAgente { get; private set; }
 
     static readonly string[] Letras = { "A", "B", "C" };
 
@@ -126,6 +141,9 @@ public class QuizSession : MonoBehaviour
     bool acierto;
     readonly HashSet<int> descartadas = new HashSet<int>();
     SpriteRenderer principitoSr;
+    bool modoImagen;
+    struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; }
+    Original[] originales;
 
     void Awake()
     {
@@ -133,6 +151,14 @@ public class QuizSession : MonoBehaviour
         foreach (var c in Cards()) if (c && c.label) { c.label.enableAutoSizing = true; c.label.fontSizeMin = c.label.fontSize * 0.55f; c.label.fontSizeMax = c.label.fontSize; }
         // Alternativas en una sola línea: se achica la letra si el texto es largo
         if (opciones != null) foreach (var c in opciones) if (c && c.label) c.label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        // Cómo están las alternativas en el panel de texto, para volver a él después de una pregunta con imagen
+        originales = new Original[opciones.Length];
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            var c = opciones[i]; if (!c) continue;
+            originales[i] = new Original { pos = c.transform.position, color = c.color, fillAlpha = c.fillAlpha,
+                fill = c.fill ? c.fill.size : Vector2.zero, border = c.border ? c.border.size : Vector2.zero };
+        }
     }
 
     void OnEnable() { if (agent) agent.RegisterTool(toolName, OnElegir); }
@@ -159,6 +185,14 @@ public class QuizSession : MonoBehaviour
         if (q == null) { Debug.LogWarning($"[Quiz] No existe el quiz \"{id}\"."); return; }
         if (q.hecho) return;
         StartCoroutine(Run(q));
+    }
+
+    /// Lo vuelve a hacer aunque ya se haya hecho en esta sesión (el onboarding lo usa con cada niño nuevo).
+    public void IniciarQuizDeNuevo(string id)
+    {
+        var q = quizzes.Find(x => x.id == id); if (q != null) q.hecho = false;
+        bancosHechos.Remove(id);
+        IniciarQuiz(id);
     }
 
     [ContextMenu("Iniciar quiz de la página 1")]
@@ -235,10 +269,11 @@ public class QuizSession : MonoBehaviour
             Debug.LogWarning("[Quiz] Falta el Agent ID del quiz (agentIdQuiz) en " + System.IO.Path.Combine(Application.streamingAssetsPath, "elevenlabs.local.json"));
         Debug.Log($"[Quiz] Empieza el quiz \"{q.id}\" ({q.preguntas.Count} preguntas).");
 
+        UsoAgente = false;
         StartCoroutine(Fade(1f));
         Anim(animQuiz);
-        Show(panel);
-        Show(titulo);
+        bool todasConImagen = imagenPregunta && q.preguntas.TrueForAll(x => x.imagen);
+        if (!todasConImagen) { Show(panel); Show(titulo); }
 
         for (int i = 0; i < q.preguntas.Count; i++)
         {
@@ -265,6 +300,7 @@ public class QuizSession : MonoBehaviour
                 agent.StartConversation(vars);
                 for (float t = 0f; t < 6f && !agent.IsRunning; t += Time.deltaTime) yield return null;
                 conectado = agent.IsRunning;
+                if (conectado) UsoAgente = true;
                 while (agent.IsRunning) yield return null;
             }
             if (!conectado)
@@ -303,9 +339,12 @@ public class QuizSession : MonoBehaviour
         acierto = false;
         descartadas.Clear();
         orden = new[] { 0, 1, 2 };
-        if (mezclarOpciones)
+        modoImagen = p.imagen && imagenPregunta;
+        if (mezclarOpciones && !modoImagen)   // con imagen, las letras ya están dibujadas
             for (int i = orden.Length - 1; i > 0; i--) { int j = UnityEngine.Random.Range(0, i + 1); (orden[i], orden[j]) = (orden[j], orden[i]); }
         posCorrecta = Array.IndexOf(orden, p.correcta);
+
+        if (modoImagen) { PrepararImagen(p); Debug.Log($"[Quiz] Pregunta {numeroPregunta} (imagen): correcta en la posición {Letras[posCorrecta]}."); return; }
 
         if (pregunta && pregunta.label) pregunta.label.text = $"<b>{p.texto}</b>";
         pregunta?.ResetState();
@@ -314,11 +353,55 @@ public class QuizSession : MonoBehaviour
         {
             var c = opciones[i];
             if (!c) continue;
+            RestaurarTarjeta(i);
             c.ResetState();
             if (c.label) c.label.text = $"<b>{Letras[i]}</b>   {p.opciones[orden[i]]}";
             c.Show();
         }
         Debug.Log($"[Quiz] Pregunta {numeroPregunta}: correcta en la posición {Letras[posCorrecta]}.");
+    }
+
+    /// Proyecta la imagen de la pregunta y coloca las tarjetas de las alternativas sobre sus píldoras (ocultas hasta que se elige una).
+    void PrepararImagen(Pregunta p)
+    {
+        var sr = imagenPregunta.fill ? imagenPregunta.fill : imagenPregunta.GetComponent<SpriteRenderer>();
+        if (sr) sr.sprite = p.imagen;
+        imagenPregunta.transform.position = new Vector3(posImagen.x, posImagen.y, 0f);
+        imagenPregunta.ResetState();
+        imagenPregunta.Show();
+        Vector2 tam = p.imagen.bounds.size;
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            var c = opciones[i]; if (!c) continue;
+            c.ResetState(); c.Hide(true);
+            if (c.label) c.label.text = "";
+            if (p.zonas == null || i >= p.zonas.Length) continue;
+            var z = p.zonas[i];
+            var centro = posImagen + new Vector2((z.center.x - 0.5f) * tam.x, (0.5f - z.center.y) * tam.y);
+            var medida = new Vector2(z.width * tam.x, z.height * tam.y) + new Vector2(0.08f, 0.08f);
+            c.transform.position = new Vector3(centro.x, centro.y, 0f);
+            if (c.fill) c.fill.size = medida;
+            if (c.border) c.border.size = medida;
+            c.color = Color.white;
+            c.fillAlpha = 0f;   // solo el borde brillante; el relleno aparece al brillar
+        }
+    }
+
+    void RestaurarTarjeta(int i)
+    {
+        var c = opciones[i]; if (!c || originales == null || i >= originales.Length) return;
+        var o = originales[i];
+        c.transform.position = o.pos; c.color = o.color; c.fillAlpha = o.fillAlpha;
+        if (c.fill) c.fill.size = o.fill;
+        if (c.border) c.border.size = o.border;
+    }
+
+    /// Alternativa descartada: en el panel de texto se atenúa; sobre la imagen se oscurece su píldora.
+    void Apagar(int i)
+    {
+        var c = (i >= 0 && i < opciones.Length) ? opciones[i] : null; if (!c) return;
+        if (!modoImagen) { c.Dim(); return; }
+        c.SetGlow(false); c.color = Color.black; c.fillAlpha = 0.55f; c.Show();
     }
 
     // ───────────── Herramienta del agente: elegir_opcion(letra) ─────────────
@@ -381,18 +464,21 @@ public class QuizSession : MonoBehaviour
         (quizActual.finDelLibro || (idsFinDelLibro != null && Array.IndexOf(idsFinDelLibro, quizActual.id) >= 0));
 
     /// Lo que debe decir el agente al terminar la última pregunta.
-    string CierreFinal() => FinDelLibro()
+    string CierreFinal() => quizActual != null && !string.IsNullOrWhiteSpace(quizActual.cierre)
+        ? quizActual.cierre.Trim() + " Luego termina la conversación con end_call."
+        : FinDelLibro()
         ? "Con este quiz TERMINÓ EL LIBRO: NO lo invites a pasar la página ni a seguir leyendo. Dile que terminó el mini quiz y también todo el libro, y felicítalo con mucho cariño por haber leído toda la historia. Luego termina la conversación con end_call."
         : "Dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call.";
 
     IEnumerator MostrarCorrecta(int pos)
     {
         Anim(animThink);
+        Show(opciones[pos]);
         Glow(pos, true);
         yield return new WaitForSeconds(0.8f);
         Glow(pos, false);
         opciones[pos].SetGrow(true);
-        for (int i = 0; i < opciones.Length; i++) if (i != pos && opciones[i]) opciones[i].Dim();
+        for (int i = 0; i < opciones.Length; i++) if (i != pos && opciones[i]) Apagar(i);
         if (estrellas) estrellas.Burst(opciones[pos].transform.position);
         Anim(animRight);
         // Celebra un momento y vuelve a hablar/reposo (Correcto está en bucle)
@@ -404,14 +490,16 @@ public class QuizSession : MonoBehaviour
     IEnumerator MostrarIncorrecta(int pos, bool revelar)
     {
         Anim(animThink);
+        Show(opciones[pos]);
         Glow(pos, true);
         yield return new WaitForSeconds(0.8f);
         Glow(pos, false);
-        opciones[pos].Dim();
+        Apagar(pos);
         if (revelar)
         {
+            Show(opciones[posCorrecta]);
             opciones[posCorrecta].SetGlow(true);
-            for (int i = 0; i < opciones.Length; i++) if (i != posCorrecta && opciones[i]) opciones[i].Dim();
+            for (int i = 0; i < opciones.Length; i++) if (i != posCorrecta && opciones[i]) Apagar(i);
         }
         Anim(animTalk);
     }
@@ -469,8 +557,11 @@ public class QuizSession : MonoBehaviour
     IEnumerator HidePregunta()
     {
         Hide(pregunta);
+        Hide(imagenPregunta);
         foreach (var c in opciones) Hide(c);
         yield return new WaitForSeconds(0.8f);
+        if (modoImagen) for (int i = 0; i < opciones.Length; i++) RestaurarTarjeta(i);
+        modoImagen = false;
     }
 
     void HideAll(bool instant)
@@ -483,6 +574,7 @@ public class QuizSession : MonoBehaviour
         yield return panel;
         yield return titulo;
         yield return pregunta;
+        yield return imagenPregunta;
         if (opciones != null) foreach (var c in opciones) yield return c;
     }
 

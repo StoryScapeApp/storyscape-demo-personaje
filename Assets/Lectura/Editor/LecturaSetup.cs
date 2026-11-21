@@ -270,21 +270,12 @@ public static class LecturaSetup
         UnityEventTools.AddPersistentListener(anim.alActivar, fly.Play);
         session.animaciones.Add(anim);
 
-        // Mini quiz al terminar la página 1
+        // Mini quiz (el de pagina_1 lo usa el onboarding; los de capítulo, la lectura)
         var quiz = CreateQuiz(root.transform, doubtAgent, doubts, fly);
         session.quiz = quiz;
         quiz.readingAgent = agent;
-        var finPagina = new ReadingSession.SceneAnimation
-        {
-            id = "quiz_pagina_1",
-            pagina = 1,
-            frase = FraseFinPagina1 + "|Universidad Peruana de Ciencias Aplicadas",
-            coincidencia = 0.7f,
-            soloUnaVez = true,
-            frasesRapidas = new[] { "Universidad Peruana de Ciencias Aplicadas", "Peruana de Ciencias Aplicadas", "Ingeniería de Software de la Universidad" },
-        };
-        UnityEventTools.AddStringPersistentListener(finPagina.alActivar, quiz.IniciarQuiz, "pagina_1");
-        session.animaciones.Add(finPagina);
+        // El quiz "pagina_1" ya no se activa al leer el final de la página 1: lo inicia el onboarding al terminar
+        // (OnboardingSequence > Quiz al terminar el onboarding).
 
         UnityEventTools.AddPersistentListener(seq.onFinished, session.Iniciar);
 

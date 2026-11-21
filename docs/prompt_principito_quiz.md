@@ -1,6 +1,6 @@
 # Agente "Principito quiz": preguntas al terminar una página
 
-Es un agente **nuevo** en ElevenLabs, con **la misma voz del Principito**. Unity lo conecta cuando el niño termina de leer la página 1 y abre **una conversación por pregunta**.
+Es un agente **nuevo** en ElevenLabs, con **la misma voz del Principito**. Unity lo conecta **al terminar el onboarding** (quiz `pagina_1`, con las imágenes `onboarding_quiz_1` y `onboarding_quiz_2`, antes de cambiar al fondo del prólogo) y **al terminar cada capítulo** (al leer su última frase), y abre **una conversación por pregunta**.
 
 - Pega su Agent ID en `Assets/StreamingAssets/elevenlabs.local.json`, en el campo `agentIdQuiz`.
 - Mientras dura el quiz, la lectura en vivo se pausa y no se abren dudas.

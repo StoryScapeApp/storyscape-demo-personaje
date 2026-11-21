@@ -1181,6 +1181,7 @@ Transform:
   - {fileID: 1510310035}
   - {fileID: 1068465114}
   - {fileID: 245533387}
+  - {fileID: 458299293}
   m_Father: {fileID: 617330567}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &287290466
@@ -1580,6 +1581,118 @@ SpriteRenderer:
   m_FlipY: 0
   m_DrawMode: 1
   m_Size: {x: 2.9, y: 3.6}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+--- !u!1 &458299292
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 458299293}
+  - component: {fileID: 458299295}
+  - component: {fileID: 458299294}
+  m_Layer: 0
+  m_Name: ImagenPregunta
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &458299293
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 458299292}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5, y: 0.1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 246720027}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &458299294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 458299292}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfee3e3835ecc054aa73dd5d4975de5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectedCard
+  fill: {fileID: 458299295}
+  border: {fileID: 0}
+  label: {fileID: 0}
+  color: {r: 1, g: 1, b: 1, a: 1}
+  fillAlpha: 1
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  fadeSpeed: 3
+  startVisible: 0
+--- !u!212 &458299295
+SpriteRenderer:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 458299292}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 4
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: 8c3f45bb651837b47bd09b17d67bfebe, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3.8999999, y: 5.2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -2467,7 +2580,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuizSession
   quizzes:
   - id: pagina_1
-    intro: "\xA1Muy bien! Terminaste la primera p\xE1gina. Ahora, un mini quiz."
+    intro: "\xA1Muy bien! Antes de leer, vamos a practicar. Ahora, un mini quiz."
     preguntas:
     - texto: "\xBFC\xF3mo vas a leer el cuento?"
       opciones:
@@ -2475,13 +2588,49 @@ MonoBehaviour:
       - En voz alta
       - Cantando
       correcta: 1
+      imagen: {fileID: 21300000, guid: 8c3f45bb651837b47bd09b17d67bfebe, type: 3}
+      zonas:
+      - serializedVersion: 2
+        x: 0.1194
+        y: 0.3667
+        width: 0.7584
+        height: 0.1187
+      - serializedVersion: 2
+        x: 0.1111
+        y: 0.5167
+        width: 0.7722
+        height: 0.1229
+      - serializedVersion: 2
+        x: 0.1167
+        y: 0.6708
+        width: 0.7639
+        height: 0.1292
     - texto: "\xBFPara qu\xE9 sirve leer este libro de forma interactiva?"
       opciones:
       - Para entender mejor la historia
       - "Para leer m\xE1s r\xE1pido"
       - Para no tener que leer
       correcta: 0
+      imagen: {fileID: 21300000, guid: e6c0ba63afcbd0d49aa8b91e03545c1a, type: 3}
+      zonas:
+      - serializedVersion: 2
+        x: 0.0886
+        y: 0.3875
+        width: 0.8081
+        height: 0.125
+      - serializedVersion: 2
+        x: 0.0812
+        y: 0.5333
+        width: 0.8192
+        height: 0.1209
+      - serializedVersion: 2
+        x: 0.0849
+        y: 0.6792
+        width: 0.8081
+        height: 0.1208
     finDelLibro: 0
+    cierre: "Dile que termin\xF3 el mini quiz y que ahora pase la p\xE1gina y empiece
+      a leer en voz alta."
   bancoArchivo: quiz_preguntas.json
   idsFinDelLibro:
   - capitulo_2
@@ -2504,6 +2653,8 @@ MonoBehaviour:
   - {fileID: 1510310036}
   - {fileID: 1068465115}
   estrellas: {fileID: 245533386}
+  imagenPregunta: {fileID: 458299294}
+  posImagen: {x: 5, y: 0.1}
   esperarAnimaciones:
   - {fileID: 1867592304}
   animQuiz: Quiz
@@ -2561,31 +2712,6 @@ MonoBehaviour:
             m_IntArgument: 0
             m_FloatArgument: 0
             m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - id: quiz_pagina_1
-    pagina: 1
-    frase: "carrera de Ingenier\xEDa de Software de la Universidad Peruana de Ciencias
-      Aplicadas|Universidad Peruana de Ciencias Aplicadas"
-    coincidencia: 0.7
-    soloUnaVez: 1
-    frasesRapidas:
-    - Universidad Peruana de Ciencias Aplicadas
-    - Peruana de Ciencias Aplicadas
-    - "Ingenier\xEDa de Software de la Universidad"
-    alActivar:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 617330565}
-          m_TargetAssemblyTypeName: QuizSession, Assembly-CSharp
-          m_MethodName: IniciarQuiz
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: 
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: pagina_1
             m_BoolArgument: 0
           m_CallState: 2
   - id: quiz_capitulo_1
@@ -8141,6 +8267,9 @@ MonoBehaviour:
     text: Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el
       libro y te cuento lo que significa.
     clip: {fileID: 8300000, guid: 4c421a6bf8d2cfa43b5ab881b256c56c, type: 3}
+  hacerQuizFinal: 1
+  quizFinal: {fileID: 617330565}
+  quizFinalId: pagina_1
   pauseBetweenLines: 0.35
   finalHold: 1.2
   esperarRespuestaFinal: 1

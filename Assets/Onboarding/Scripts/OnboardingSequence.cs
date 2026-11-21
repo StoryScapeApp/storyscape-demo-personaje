@@ -154,6 +154,13 @@ public class OnboardingSequence : MonoBehaviour
     public Line doubtLine = new Line { id = "04_duda", text = "Si tienes una duda, llámame diciendo: Principito, tengo una duda." };
     public Line doubtExample = new Line { id = "04b_duda_ejemplo", text = "Por ejemplo, si no entiendes la palabra dedicatoria, te la marco en el libro y te cuento lo que significa." };
 
+    [Header("Quiz al terminar el onboarding")]
+    [Tooltip("Después de \"¿Estás listo?\" empieza solo este quiz (con el fondo de acuarela todavía puesto); al terminar, se cambia al fondo del prólogo")]
+    public bool hacerQuizFinal = true;
+    public QuizSession quizFinal;
+    [Tooltip("Id del quiz (en Lectura > Quiz Session > Quizzes)")]
+    public string quizFinalId = "pagina_1";
+
     [Header("Tiempos")]
     public float pauseBetweenLines = 0.35f;
     [Tooltip("Espera tras \"¿Estás listo?\" antes de que todo se desvanezca")]
@@ -308,9 +315,12 @@ public class OnboardingSequence : MonoBehaviour
             Anim(animRest);
             yield return listener.WaitForResponse();
             Debug.Log(listener.LastResponded ? "[Onboarding] El niño respondió." : "[Onboarding] Sin respuesta: se continúa.");
-            yield return Say(readyLine);
+            if (!HayQuizFinal) yield return Say(readyLine);   // con quiz, invita a leer el Principito al cerrar el quiz
         }
         else yield return new WaitForSeconds(finalHold);
+
+        // Quiz automático, todavía con el fondo de acuarela
+        if (HayQuizFinal) yield return QuizFinal();
 
         Anim(animRest);
         HideAll(false);
@@ -364,6 +374,29 @@ public class OnboardingSequence : MonoBehaviour
         string nombre = SesionLector.ExtraerNombre(escuchado);
         Debug.Log($"[Onboarding] Respuesta al nombre: \"{escuchado}\" → {(nombre.Length > 0 ? nombre : "(no se reconoció un nombre)")}");
         if (nombre.Length > 0) SesionLector.SetNombre(nombre);
+    }
+
+    bool HayQuizFinal => hacerQuizFinal && quizFinal && quizFinal.isActiveAndEnabled && !string.IsNullOrEmpty(quizFinalId);
+
+    /// Deja solo el fondo de acuarela y al Principito (el quiz ocupa la derecha), hace el quiz y espera a que termine.
+    IEnumerator QuizFinal()
+    {
+        Anim(animRest);
+        foreach (var c in new[] { mascaraLibro, title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+            if (c) c.Hide();
+        if (options != null) foreach (var o in options) if (o) o.Hide();
+        if (zorro) StartCoroutine(FadeSr(zorro.GetComponent<SpriteRenderer>(), 0f, cleanupFade));
+        yield return new WaitForSeconds(cleanupFade);
+        Debug.Log($"[Onboarding] Empieza el quiz \"{quizFinalId}\".");
+        quizFinal.IniciarQuizDeNuevo(quizFinalId);
+        yield return null;
+        while (quizFinal.IsRunning) yield return null;
+        // Sin agente (respuestas con el teclado de prueba) nadie invitó a empezar a leer
+        if (!quizFinal.UsoAgente)
+        {
+            yield return FadePrincipito(1f);
+            yield return Say(readyLine);
+        }
     }
 
     /// El agente de bienvenida dice la respuesta con el nombre (su first message usa {{nombre}}).
