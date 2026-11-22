@@ -20,8 +20,10 @@ using UnityEngine.InputSystem;
 /// Cómo se usa (detalle en Pruebas/deteccion_paginas_seguimiento/LEEME.md):
 ///  1. Cierra aruco_sender.py y abre python/grabar_deteccion.py (usa la cámara del sistema, envía los ArUco
 ///     a Unity igual que el sistema y graba el video cuando Unity se lo pide).
-///  2. Activa el objeto "PruebaDeteccion", da Play y calibra la proyección (K) si no está calibrada. El proyector repite el onboarding y el vuelo del Principito
-///     (contenido real; el vuelo solo si "Incluir Vuelo" está marcado), sin lectura en vivo, quiz ni dudas.
+///  2. Activa el objeto "PruebaDeteccion", da Play y calibra la proyección (K) si no está calibrada. El proyector muestra el contenido
+///     real de la página que ve la cámara: su fondo (o el del prólogo si la página no tiene uno propio) y sus animaciones
+///     (las de Lectura > Animaciones de esa página, sin los quizzes), sin lectura en vivo, quiz ni dudas.
+///     Con "Modo Contenido = Onboarding" repite el onboarding como antes.
 ///  3. Con el libro abierto en la página 1: N empieza el video. Espacio = nueva doble página a la vista,
 ///     P = empieza a pasar la hoja, F = fin del video (después de la página 7), R = repetir el video.
 ///     ←/→ eligen el video, H oculta el panel.
@@ -46,9 +48,20 @@ public class PruebaDeteccionPaginas : MonoBehaviour
     [Tooltip("Cada cuánto se guarda la posición de la proyección (s)")]
     public float muestreoProyeccion = 0.1f;
 
+    public enum ModoContenido { PorPagina, Onboarding }
+
     [Header("Contenido proyectado durante la prueba")]
-    [Tooltip("Repite el onboarding y el vuelo del Principito sin esperar el ArUco, para que el proyector ilumine el libro como en el aula")]
+    [Tooltip("Proyecta contenido real durante la prueba, para que el proyector ilumine el libro como en el aula")]
     public bool proyectarContenido = true;
+    [Tooltip("Por Página: el fondo y las animaciones de la página que ve la cámara (páginas sin fondo propio: el del prólogo). " +
+             "Onboarding: repite el onboarding (y el vuelo, si Incluir Vuelo está marcado)")]
+    public ModoContenido modoContenido = ModoContenido.PorPagina;
+    [Tooltip("Lectura (ReadingSession): de su lista de Animaciones salen las de cada página")]
+    public ReadingSession lectura;
+    [Tooltip("Fondo de las páginas sin fondo propio (FondoPrologo). Los fondos por página los pone FondosPorPagina")]
+    public ProjectedCard fondoBase;
+    [Tooltip("Segundos entre una animación y la siguiente de la misma página")]
+    public float pausaEntreAnimaciones = 0.6f;
     public OnboardingSequence onboarding;
     [Tooltip("Agrega el vuelo del Principito (animación 1) entre onboardings. Desmarcado = solo onboarding")]
     public bool incluirVuelo = false;
@@ -141,6 +154,8 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         if (!onboarding) onboarding = FindFirstObjectByType<OnboardingSequence>();
         if (!vuelo) vuelo = FindFirstObjectByType<PrincipitoVolando>();
         if (!seguimiento) seguimiento = FindFirstObjectByType<BookPoseFollower>();
+        if (!lectura) lectura = FindFirstObjectByType<ReadingSession>(FindObjectsInactive.Include);
+        if (!fondoBase) { var fp = FindFirstObjectByType<FondosPorPagina>(FindObjectsInactive.Include); if (fp) fondoBase = fp.fondoBase; }
 
         foreach (var luz in luces)
             foreach (var pos in posiciones)
@@ -162,6 +177,9 @@ public class PruebaDeteccionPaginas : MonoBehaviour
             Apagar(onboarding.onStarted);
             Apagar(onboarding.onFinished);
         }
+        // Contenido por página: el ArUco de la página 1 no debe iniciar el onboarding
+        if (proyectarContenido && modoContenido == ModoContenido.PorPagina && receiver && receiver.actions != null)
+            foreach (var a in receiver.actions) if (a != null) Apagar(a.onDetected);
 
         dir = string.IsNullOrWhiteSpace(carpeta)
             ? Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Pruebas", "deteccion_paginas_seguimiento")
@@ -198,7 +216,8 @@ public class PruebaDeteccionPaginas : MonoBehaviour
 
     void Start()
     {
-        if (proyectarContenido && (onboarding || (vuelo && incluirVuelo))) StartCoroutine(Contenido());
+        if (proyectarContenido && modoContenido == ModoContenido.PorPagina) StartCoroutine(ContenidoPorPagina());
+        else if (proyectarContenido && (onboarding || (vuelo && incluirVuelo))) StartCoroutine(Contenido());
         Ping();
     }
 
@@ -229,6 +248,43 @@ public class PruebaDeteccionPaginas : MonoBehaviour
         {
             eventosApagados.Add((ev, i, ev.GetPersistentListenerState(i)));
             ev.SetPersistentListenerState(i, UnityEventCallState.Off);
+        }
+    }
+
+    bool hayArucoConfirmado;
+
+    /// Proyecta lo que se vería al leer la página que ve la cámara: el fondo de la página (FondosPorPagina; las páginas
+    /// sin fondo propio quedan con el del prólogo) y sus animaciones, una tras otra, cada vez que se llega a esa página.
+    IEnumerator ContenidoPorPagina()
+    {
+        yield return new WaitForSeconds(0.5f);
+        while (seguimiento && seguimiento.Calibrando) yield return null;
+        if (fondoBase) { fondoBase.ResetState(); fondoBase.Show(); }
+        int pagina = -1;
+        Coroutine anim = null;
+        while (true)
+        {
+            int p = tracker ? tracker.CurrentPage : 0;
+            if (hayArucoConfirmado && p != pagina)
+            {
+                pagina = p;
+                if (anim != null) StopCoroutine(anim);
+                anim = StartCoroutine(AnimacionesDePagina(p));
+            }
+            yield return null;
+        }
+    }
+
+    IEnumerator AnimacionesDePagina(int pagina)
+    {
+        if (!lectura || lectura.animaciones == null) yield break;
+        foreach (var a in lectura.animaciones)
+        {
+            if (a == null || a.pagina != pagina || a.alActivar == null) continue;
+            if (!string.IsNullOrEmpty(a.id) && a.id.StartsWith("quiz")) continue;   // los quizzes usan el agente: no en la prueba
+            yield return new WaitForSeconds(pausaEntreAnimaciones);
+            Debug.Log($"[Prueba detección] Página {pagina}: animación {a.id}");
+            a.alActivar.Invoke();
         }
     }
 
@@ -514,6 +570,7 @@ public class PruebaDeteccionPaginas : MonoBehaviour
 
     void OnConfirmado(int id, Vector2 pos)
     {
+        hayArucoConfirmado = true;
         if (estado == Estado.Grabando) Registrar("confirmado", id, id + 1);
     }
 

@@ -13,7 +13,8 @@ Diseño: 3 luces × 3 posiciones × 2 repeticiones = **18 videos**. Cada video p
 
 ## 1. Preparación
 - **Montaje definitivo:** cámara del sistema en su posición, resolución y FPS de siempre; proyector a la altura final.
-- **Proyector encendido con contenido real:** la prueba repite el onboarding (y, si marcas *Incluir Vuelo*, el vuelo del Principito). Con el proyector apagado los resultados salen más optimistas que en el aula.
+- **Proyector encendido con contenido real:** la prueba proyecta lo que se vería al leer la página que ve la cámara: su **fondo** (biblioteca en la página del ArUco 1, cuarto en la del ArUco 2; las demás, el fondo del prólogo) y sus **animaciones** (vuelo del Principito, piloto → niño, serpiente boa y elefante, avión y vuelta al mundo), cada vez que se llega a esa página. Los quizzes no se hacen. Con el proyector apagado los resultados salen más optimistas que en el aula.
+  - Para volver a la versión anterior (repetir el onboarding), en `PruebaDeteccion` cambia *Modo Contenido* a `Onboarding`.
 - **Libro:** la versión final impresa, con los 7 marcadores del mismo tamaño que se usará.
 - **Luz** (mídela con un luxómetro en el celular, sobre el libro):
   - `luzBaja`: unos 100–200 lux (persianas cerradas o luces apagadas)
