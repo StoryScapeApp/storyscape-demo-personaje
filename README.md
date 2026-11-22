@@ -31,7 +31,7 @@ Empieza al detectar **marker_0**. Lo controla el componente `OnboardingSequence`
 |---|---|
 | `01_intro` | Título "¡Bienvenido a la mesa de la lectura!". El Principito aparece a la izquierda del libro y saluda. |
 | `02_libro` | Tarjeta **1. No tapes el cuadrado**. El marco brillante del marcador está desactivado por ahora (*Mostrar Marco Marcador*). |
-| `03_voz_alta` | Tarjeta **2. Lee en voz alta**. Un meteoro cruza hacia un planeta. |
+| `03_voz_alta` | Tarjeta **2. Lee en voz alta**. Cruza una estrella fugaz. |
 | `04_quiz` | Tarjeta **3. Responde el quiz** con los círculos **A** y **B**. La A brilla y se apaga (demo de respuesta incorrecta). |
 | `05_final` | La B brilla, crece y salen estrellas. "¿Estás listo?" |
 | `06_listo` | Después de que el niño responde (o tras 7 s): "¡Genial!…". Todo se desvanece y empieza la lectura en vivo. |

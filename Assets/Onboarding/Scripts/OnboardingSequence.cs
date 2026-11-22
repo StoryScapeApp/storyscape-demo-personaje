@@ -9,8 +9,8 @@ using UnityEngine.Events;
 /// Guion: ONBOARDING_AUDIOS.md
 ///
 /// 1. 01_intro     Bienvenida: el Principito aparece, saluda y anuncia las reglas.
-/// 2. 02_libro     Tarjeta 1 "En el libro": se iluminan los bordes del área del marcador.
-/// 3. 03_voz_alta  Tarjeta 2 "Lee en voz alta": en "Así podrás ver animaciones…" un meteoro cruza hacia el planeta.
+/// 2. 02_libro     Tarjeta 1 "En el libro".
+/// 3. 03_voz_alta  Tarjeta 2 "Lee en voz alta": en "Así podrás ver animaciones…" cruza una estrella fugaz.
 /// 4. 04_quiz      Tarjeta 3 "Quiz": aparece el panel; en "Responde diciendo la letra…" el Principito elige
 ///                 una opción y en "Si eliges una respuesta que no es…" esa opción se apaga (sin rojo ni error).
 /// 5. 05_final     "Y cuando aciertes, ¡lo celebramos juntos!": la opción correcta brilla, crece, salen estrellas;
@@ -93,18 +93,14 @@ public class OnboardingSequence : MonoBehaviour
 
     [Header("1. En el libro")]
     public ProjectedCard cardBook;
-    public ProjectedCard markerFrame;
-    [Tooltip("Muestra el contorno brillante alrededor del ArUco durante la regla 1")]
-    public bool mostrarMarcoMarcador = true;
 
     [Header("2. Lee en voz alta")]
     public ProjectedCard cardRead;
-    public MeteorFlight meteor;
-    public ProjectedCard planet;
-    [Tooltip("Muestra el meteoro y el planeta durante la regla 2")]
-    public bool mostrarMeteoro = true;
-    [Tooltip("Segundo del audio 03_voz_alta en que sale el meteoro (\"Así podrás ver animaciones…\")")]
-    public float meteorStartTime = 2.94f;
+    [Tooltip("Estrella fugaz que cruza la proyección durante la regla 2 (objeto EstrellaFugaz)")]
+    [UnityEngine.Serialization.FormerlySerializedAs("meteor")] public MeteorFlight estrellaFugaz;
+    [UnityEngine.Serialization.FormerlySerializedAs("mostrarMeteoro")] public bool mostrarEstrellaFugaz = true;
+    [Tooltip("Segundo del audio 03_voz_alta en que sale la estrella fugaz (\"Así podrás ver animaciones…\")")]
+    [UnityEngine.Serialization.FormerlySerializedAs("meteorStartTime")] public float estrellaFugazInicio = 2.94f;
 
     [Header("3. Quiz (solo mirar)")]
     public ProjectedCard cardQuiz;
@@ -264,25 +260,21 @@ public class OnboardingSequence : MonoBehaviour
         else yield return Say(intro);
         Anim(animRest);
 
-        // 2. Tarjeta 1: bordes del área del marcador
+        // 2. Tarjeta 1: no tapar el ArUco
         Show(cardBook);
-        if (mostrarMarcoMarcador && markerFrame) { markerFrame.Show(); markerFrame.SetGlow(true); }
         Anim(animBook);
         yield return Say(bookLine);
-        Hide(markerFrame);
         Anim(animRest);
 
-        // 3. Tarjeta 2: lee en voz alta → meteoro en "Así podrás ver animaciones…"
+        // 3. Tarjeta 2: lee en voz alta → estrella fugaz en "Así podrás ver animaciones…"
         Show(cardRead);
-        if (mostrarMeteoro) Show(planet);
         Anim(animRead);
-        bool meteorRunning = mostrarMeteoro && meteor != null;
-        if (meteorRunning)
-            StartCoroutine(At(readLine, meteorStartTime, () => StartCoroutine(PlayMeteor(() => meteorRunning = false))));
+        bool estrellaEnVuelo = mostrarEstrellaFugaz && estrellaFugaz != null;
+        if (estrellaEnVuelo)
+            StartCoroutine(At(readLine, estrellaFugazInicio, () => StartCoroutine(VolarEstrella(() => estrellaEnVuelo = false))));
         yield return Say(readLine);
-        while (meteorRunning) yield return null;
+        while (estrellaEnVuelo) yield return null;
         Anim(animRest);
-        Hide(planet);
 
         // (Opcional, desactivado) ¿Una duda?
         if (incluirDudas)
@@ -408,7 +400,7 @@ public class OnboardingSequence : MonoBehaviour
     IEnumerator QuizFinal()
     {
         Anim(animRest);
-        foreach (var c in new[] { mascaraLibro, title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+        foreach (var c in new[] { mascaraLibro, title, subtitle, cardBook, cardRead, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
             if (c) c.Hide();
         if (options != null) foreach (var o in options) if (o) o.Hide();
         if (zorro) StartCoroutine(FadeSr(zorro.GetComponent<SpriteRenderer>(), 0f, cleanupFade));
@@ -560,9 +552,9 @@ public class OnboardingSequence : MonoBehaviour
         var c = sr.color; c.a = a; sr.color = c;
     }
 
-    IEnumerator PlayMeteor(Action done)
+    IEnumerator VolarEstrella(Action done)
     {
-        yield return meteor.Play();
+        yield return estrellaFugaz.Play();
         done?.Invoke();
     }
 
@@ -637,7 +629,7 @@ public class OnboardingSequence : MonoBehaviour
 
     void HideAll(bool instant)
     {
-        foreach (var c in new[] { fondo, fondoFinal, mascaraLibro, title, subtitle, cardBook, markerFrame, cardRead, planet, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
+        foreach (var c in new[] { fondo, fondoFinal, mascaraLibro, title, subtitle, cardBook, cardRead, cardQuiz, cardDoubt, wordHighlight, definition, quizPanel, quizTitle, question })
             if (c) { c.ResetState(); c.Hide(instant); }
         if (options != null) foreach (var o in options) if (o) { o.ResetState(); o.Hide(instant); }
     }

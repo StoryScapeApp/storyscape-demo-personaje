@@ -12,7 +12,7 @@ using UnityEngine.InputSystem;
 /// (LibroReferencia, resaltados, Principito, tarjetas…) caiga sobre el libro donde sea que lo pongan.
 ///
 /// Se mueve la cámara (y no los objetos) porque varios scripts colocan cosas en coordenadas de mundo
-/// (vuelo del Principito, meteoro, zorro, estrellas): así todo se desplaza junto sin tocar esos scripts.
+/// (vuelo del Principito, zorro, estrellas): así todo se desplaza junto sin tocar esos scripts.
 ///
 /// 1) CALIBRAR (una vez por montaje cámara + proyector, tecla K):
 ///    se proyectan 4 cruces, una por una. Pon el centro del ArUco sobre la cruz y quédate quieto ~1 s
@@ -34,8 +34,6 @@ public class BookPoseFollower : MonoBehaviour
     public Camera cam;
     [Tooltip("LibroReferencia: posición del libro en la escena cuando la proyección está alineada")]
     public Transform book;
-    [Tooltip("Solo se usa para IDs que no están en 'Marker Positions'")]
-    public Transform markerInBook;
 
     [Header("Dónde está cada ArUco en el libro")]
     [Tooltip("Tamaño del libro en unidades de escena (se toma de WordHighlighter si existe)")]
@@ -339,9 +337,8 @@ public class BookPoseFollower : MonoBehaviour
         foreach (var mp in markerPositions)
             if (mp.id == id)
                 return new MarkerRef { id = id, offset = new Vector2((mp.pdfCenter.x - 0.5f) * bookSize.x, (0.5f - mp.pdfCenter.y) * bookSize.y), angle = 0f };
-        // Último recurso: donde está MarcoMarcador
-        Vector2 off = markerInBook && book ? (Vector2)(markerInBook.position - book.position) : Vector2.zero;
-        return new MarkerRef { id = id, offset = off, angle = 0f };
+        // ID sin posición conocida: se asume en el centro del libro
+        return new MarkerRef { id = id, offset = Vector2.zero, angle = 0f };
     }
 
     // ───────────── Cada cuadro ─────────────
