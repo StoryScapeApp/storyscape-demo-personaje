@@ -126,6 +126,18 @@ public class QuizSession : MonoBehaviour
     [Tooltip("Animaciones que deben terminar antes de empezar el quiz (p. ej. el Principito volando)")]
     public PrincipitoVolando[] esperarAnimaciones;
 
+    [Serializable]
+    public class PosicionPrincipito
+    {
+        [Tooltip("Id del quiz (p. ej. capitulo_1)")]
+        public string quiz = "capitulo_1";
+        [Tooltip("Dónde se para el Principito (sus pies) durante ese quiz, p. ej. sobre el piso del fondo de esa página")]
+        public Vector3 posicion = new Vector3(-4.6f, -3.7f, 0f);
+    }
+    [Tooltip("Quizzes en los que el Principito se para en otro lugar (al terminar vuelve al de siempre)")]
+    public List<PosicionPrincipito> posicionesPrincipito = new List<PosicionPrincipito>();
+    Vector3? posicionOriginal;
+
     [Header("Animaciones del Principito")]
     public string animQuiz = "Quiz";
     public string animRest = "Reposo";
@@ -270,7 +282,8 @@ public class QuizSession : MonoBehaviour
         if (estaba)
         {
             Anim(animRest);
-            if (desvanecer) StartCoroutine(Fade(0f));
+            if (desvanecer) StartCoroutine(FadeYRestaurar());
+            else RestaurarPrincipito();
             Debug.Log("[Quiz] Cancelado por comando.");
         }
     }
@@ -369,6 +382,7 @@ public class QuizSession : MonoBehaviour
         q.hecho = true;
         quizActual = q;
         UltimoId = q.id;
+        MoverPrincipito(q.id);
         if (doubts) doubts.bloqueada = true;
 
         // Espera a que termine una animación o una duda en curso, y a que se cierre la lectura
@@ -441,12 +455,31 @@ public class QuizSession : MonoBehaviour
         HideAll(false);
         Anim(animRest);
         yield return Fade(0f);
+        RestaurarPrincipito();
         if (doubts) doubts.bloqueada = false;
         Debug.Log(FinDelLibro() ? "[Quiz] Terminado: fin del libro." : "[Quiz] Terminado: sigue la lectura.");
         quizActual = null;
         preguntaActual = null;
         IsRunning = false;
     }
+
+    /// Si este quiz tiene una posición propia para el Principito (p. ej. el piso del fondo de esa página), lo mueve ahí.
+    void MoverPrincipito(string id)
+    {
+        if (!principito || posicionesPrincipito == null) return;
+        var e = posicionesPrincipito.Find(x => x != null && x.quiz == id);
+        if (e == null) return;
+        if (posicionOriginal == null) posicionOriginal = principito.PosicionBase;
+        principito.MoverA(e.posicion);
+    }
+
+    void RestaurarPrincipito()
+    {
+        if (principito && posicionOriginal.HasValue) principito.MoverA(posicionOriginal.Value);
+        posicionOriginal = null;
+    }
+
+    IEnumerator FadeYRestaurar() { yield return Fade(0f); RestaurarPrincipito(); }
 
     bool Busy()
     {

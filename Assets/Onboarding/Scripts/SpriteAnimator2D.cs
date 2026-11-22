@@ -29,6 +29,16 @@ public class SpriteAnimator2D : MonoBehaviour
     public float bobSpeed = 1.3f;
 
     public string CurrentClip => current != null ? current.name : null;
+
+    /// Cambia el lugar donde está parado (el balanceo sigue alrededor de la nueva posición).
+    /// Posición en la que está parado (sin el balanceo).
+    public Vector3 PosicionBase => transform.parent ? transform.parent.TransformPoint(basePos) : basePos;
+
+    public void MoverA(Vector3 posicion)
+    {
+        basePos = transform.parent ? transform.parent.InverseTransformPoint(posicion) : posicion;
+        transform.position = posicion;
+    }
     /// Permite decidir en ejecución qué animación sigue a un clip sin loop (clip terminado, siguiente propuesta).
     public System.Func<string, string, string> NextOverride;
 
