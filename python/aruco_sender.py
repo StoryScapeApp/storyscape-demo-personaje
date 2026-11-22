@@ -1,12 +1,18 @@
 """
 Demo OpenCV + ArUco -> Unity (por UDP)
 
-Requisitos:  pip install opencv-contrib-python numpy   (OpenCV >= 4.7)
+Requisitos:  pip install -r requirements.txt   (mismas versiones en todas las computadoras)
 
 Uso:
   python aruco_sender.py --generar 0 1 2      # crea marker_0.png, marker_1.png, marker_2.png
   python aruco_sender.py                      # detecta con la webcam y envía a Unity
   python aruco_sender.py --cam 1 --port 5065  # otra cámara / puerto
+  python aruco_sender.py --listar             # muestra las cámaras disponibles y su resolución
+
+Misma imagen en Windows y en Mac: fija la resolución (si no, cada sistema abre la cámara a su manera)
+  python aruco_sender.py --cam 1 --ancho 1280 --alto 720 --fps 30
+  En Mac, si la cámara no abre: --backend avfoundation. En Windows, si tarda o falla: --backend dshow
+  Si cambias la resolución, vuelve a calibrar la proyección en Unity (K): la calibración depende de la imagen de la cámara.
 """
 import argparse
 import json
@@ -70,12 +76,40 @@ def rot_a_quat(R):
     return x, y, z, w
 
 
-def main(args):
-    cap = cv2.VideoCapture(args.cam)
+BACKENDS = {"auto": cv2.CAP_ANY, "dshow": cv2.CAP_DSHOW, "msmf": cv2.CAP_MSMF, "avfoundation": cv2.CAP_AVFOUNDATION}
+
+
+def abrir_camara(cam, backend="auto", ancho=0, alto=0, fps=0):
+    """Abre la cámara y, si se pide, fija la resolución y los fps. Devuelve (cap, primer cuadro o None)."""
+    cap = cv2.VideoCapture(cam, BACKENDS[backend])
+    if ancho:
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, ancho)
+    if alto:
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, alto)
+    if fps:
+        cap.set(cv2.CAP_PROP_FPS, fps)
     ok, frame = cap.read()
-    if not ok:
-        raise SystemExit("No se pudo abrir la cámara")
+    return cap, (frame if ok else None)
+
+
+def listar_camaras(backend="auto", maximo=5):
+    print("Cámaras disponibles (índice: resolución por defecto):")
+    for i in range(maximo):
+        cap, frame = abrir_camara(i, backend)
+        if frame is not None:
+            print(f"  --cam {i}: {frame.shape[1]}x{frame.shape[0]}, {cap.get(cv2.CAP_PROP_FPS):.0f} fps")
+        cap.release()
+    print("En Mac el índice 0 suele ser la cámara de la laptop o del iPhone (Continuity), no la webcam USB.")
+
+
+def main(args):
+    cap, frame = abrir_camara(args.cam, args.backend, args.ancho, args.alto, args.fps)
+    if frame is None:
+        raise SystemExit(f"No se pudo abrir la cámara {args.cam} (backend {args.backend}). Prueba --listar u otro --backend.")
     h, w = frame.shape[:2]
+    print(f"Cámara {args.cam}: {w}x{h}, {cap.get(cv2.CAP_PROP_FPS):.0f} fps (backend {args.backend})")
+    if (args.ancho and args.ancho != w) or (args.alto and args.alto != h):
+        print(f"  AVISO: se pidió {args.ancho}x{args.alto} pero la cámara entregó {w}x{h}. Usa una resolución que la cámara soporte.")
 
     # Intrínsecos aproximados (suficiente para una demo).
     # Para precisión real, calibra la cámara y reemplaza K y dist.
@@ -142,5 +176,16 @@ if __name__ == "__main__":
     p.add_argument("--cam", type=int, default=0)
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=5065)
+    p.add_argument("--backend", choices=list(BACKENDS), default="auto",
+                   help="cómo se abre la cámara: auto; en Mac avfoundation; en Windows dshow o msmf")
+    p.add_argument("--ancho", type=int, default=0, help="ancho de la imagen de la cámara (0 = el que dé el sistema)")
+    p.add_argument("--alto", type=int, default=0, help="alto de la imagen de la cámara (0 = el que dé el sistema)")
+    p.add_argument("--fps", type=int, default=0, help="cuadros por segundo (0 = los que dé el sistema)")
+    p.add_argument("--listar", action="store_true", help="muestra las cámaras disponibles y termina")
     a = p.parse_args()
-    generar_marcadores(a.generar) if a.generar else main(a)
+    if a.generar:
+        generar_marcadores(a.generar)
+    elif a.listar:
+        listar_camaras(a.backend)
+    else:
+        main(a)

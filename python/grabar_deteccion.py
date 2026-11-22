@@ -48,7 +48,7 @@ def nuevo_detector():
 # ───────────────────────────── Grabar ─────────────────────────────
 
 def abrir_camara(a):
-    api = {"auto": cv2.CAP_ANY, "dshow": cv2.CAP_DSHOW, "msmf": cv2.CAP_MSMF}[a.backend]
+    api = {"auto": cv2.CAP_ANY, "dshow": cv2.CAP_DSHOW, "msmf": cv2.CAP_MSMF, "avfoundation": cv2.CAP_AVFOUNDATION}[a.backend]
     cap = cv2.VideoCapture(a.cam, api)
     if a.ancho:
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, a.ancho)
@@ -351,7 +351,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("grabar")
     g.add_argument("--cam", type=int, default=0)
-    g.add_argument("--backend", choices=["auto", "dshow", "msmf"], default="auto",
+    g.add_argument("--backend", choices=["auto", "dshow", "msmf", "avfoundation"], default="auto",
                    help="auto = igual que aruco_sender.py; prueba dshow si la cámara no abre")
     g.add_argument("--ancho", type=int, default=0, help="déjalo en 0 para usar la resolución por defecto, como el sistema")
     g.add_argument("--alto", type=int, default=0)
