@@ -148,6 +148,7 @@ public class BookPoseFollower : MonoBehaviour
     readonly Vector2[] calibCam = new Vector2[4];
     Vector2 stillAnchor;
     float stillSince = -1f;
+    int calibId = -1;   // ArUco con el que se capturó la cruz 1: las demás cruces solo usan ese
 
     // Calibración inicial (antes del onboarding)
     bool calibracionInicial, onboardingPendiente, esperandoMarcadorInicio;
@@ -432,6 +433,7 @@ public class BookPoseFollower : MonoBehaviour
         calibrating = true;
         calibIndex = 0;
         stillSince = -1f;
+        calibId = -1;
         ResetCamera();
         Say("Calibración: pon el centro del ArUco sobre la cruz 1 y no lo muevas.");
     }
@@ -447,10 +449,11 @@ public class BookPoseFollower : MonoBehaviour
 
     void TryCapture(bool force)
     {
-        if (lastId < 0 || !raw.TryGetValue(lastId, out var r) || Time.unscaledTime - r.t > 0.8f)
+        int id = calibId >= 0 ? calibId : lastId;   // después de la cruz 1 se sigue solo a ese ArUco (otro a la vista no interfiere)
+        if (id < 0 || !raw.TryGetValue(id, out var r) || Time.unscaledTime - r.t > 0.8f)
         {
             stillSince = -1f;
-            if (force) Say("No se ve ningún ArUco: revisa la cámara / el script de Python.");
+            if (force) Say(calibId >= 0 ? $"No se ve el ArUco {calibId} (el de la cruz 1): usa el mismo marcador en todas las cruces." : "No se ve ningún ArUco: revisa la cámara / el script de Python.");
             return;
         }
         // Debe estar lejos de las cruces ya capturadas (si no, sería el mismo punto otra vez)
@@ -459,7 +462,7 @@ public class BookPoseFollower : MonoBehaviour
             if ((r.c - calibCam[i]).magnitude < minSeparation)
             {
                 stillSince = -1f;
-                if (force) Say($"El ArUco sigue donde la cruz {i + 1}: muévelo a la cruz {calibIndex + 1}.");
+                if (force) Say($"El ArUco {id} sigue donde la cruz {i + 1} (para la cámara se movió {(r.c - calibCam[i]).magnitude * 100f:0}% y necesita {minSeparation * 100f:0}%): muévelo a la cruz {calibIndex + 1}.");
                 return;
             }
         }
@@ -475,6 +478,8 @@ public class BookPoseFollower : MonoBehaviour
         }
 
         calibCam[calibIndex] = r.c;
+        if (calibIndex == 0) calibId = id;
+        Debug.Log($"[Libro] Cruz {calibIndex + 1}: ArUco {id} en la cámara ({r.c.x:0.000}, {r.c.y:0.000})");
         calibIndex++;
         stillSince = -1f;
         if (calibIndex < 4)
@@ -597,6 +602,27 @@ public class BookPoseFollower : MonoBehaviour
         return h;
     }
 
+    /// Qué está viendo la cámara durante la calibración (para saber por qué no captura una cruz).
+    string DiagnosticoCalibracion()
+    {
+        float now = Time.unscaledTime;
+        var vistos = new List<string>();
+        foreach (var kv in raw) if (now - kv.Value.t < 1f) vistos.Add(kv.Key.ToString());
+        int id = calibId >= 0 ? calibId : lastId;
+        if (id < 0 || !raw.TryGetValue(id, out var r) || now - r.t > 0.8f)
+            return calibId >= 0 ? $"<size=80%>No se ve el ArUco {calibId}. ArUcos a la vista: {(vistos.Count == 0 ? "ninguno" : string.Join(", ", vistos))}</size>"
+                                : "<size=80%>No llega ningún ArUco desde Python</size>";
+        string s = $"ArUco {id} · en la cámara ({r.c.x:0.00}, {r.c.y:0.00})";
+        if (calibIndex > 0)
+        {
+            float d = float.MaxValue;
+            for (int i = 0; i < calibIndex; i++) d = Mathf.Min(d, (r.c - calibCam[i]).magnitude);
+            s += $" · se movió {d * 100f:0}% de la cámara (mínimo {minSeparation * 100f:0}%)";
+        }
+        if (vistos.Count > 1) s += $"\n¡Hay {vistos.Count} ArUcos a la vista ({string.Join(", ", vistos)})! Deja solo el de la calibración";
+        return "<size=80%>" + s + "</size>";
+    }
+
     // ───────────── Pantalla ─────────────
     string msg = "";
     float msgUntil;
@@ -605,7 +631,7 @@ public class BookPoseFollower : MonoBehaviour
     GUIStyle style;
     void OnGUI()
     {
-        if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleCenter, wordWrap = true, richText = true };
 
         if (calibrating)
         {
@@ -621,6 +647,7 @@ public class BookPoseFollower : MonoBehaviour
             GUI.color = Color.white;
             GUI.Label(new Rect(0, Screen.height * 0.45f, Screen.width, 80),
                 $"Calibración {calibIndex + 1}/4 · centro del ArUco sobre la cruz y quieto (Enter = capturar · K = cancelar)", style);
+            GUI.Label(new Rect(0, Screen.height * 0.45f + 80, Screen.width, 120), DiagnosticoCalibracion(), style);
         }
 
         if (Time.unscaledTime < msgUntil)
