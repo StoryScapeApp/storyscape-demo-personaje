@@ -34,11 +34,15 @@ public class ScribeRealtimeClient : MonoBehaviour
     [Tooltip("Nombre exacto del micrófono. Vacío o inexistente = predeterminado de Windows")]
     public string microphoneDevice = "";
     [Range(1f, 30f)] public float micGain = 1f;
+    [Tooltip("Segundos de audio que se guardan mientras se conecta (se envían apenas la conexión está lista, así no se pierde lo que se dijo al inicio)")]
+    public float bufferConexion = 8f;
 
     /// (texto, final): final = false es texto parcial.
     public event Action<string, bool> TextReceived;
 
     public bool IsRunning => running;
+    /// En pausa: la conexión sigue lista pero se envía silencio en vez del micrófono (p. ej. mientras suena una grabación del Principito).
+    public bool Pausado { get; set; }
     public bool HasApiKey() => !string.IsNullOrEmpty(LoadApiKey());
 
     const string Endpoint = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
@@ -89,8 +93,8 @@ public class ScribeRealtimeClient : MonoBehaviour
         ws.Options.SetRequestHeader("xi-api-key", apiKey);
         try
         {
+            StartMic();   // graba desde ya: lo que se diga mientras se conecta se guarda y se envía después
             await ws.ConnectAsync(new Uri(BuildUrl()), cts.Token);
-            StartMic();
             await ReceiveLoop();
         }
         catch (OperationCanceledException) { }
@@ -115,6 +119,7 @@ public class ScribeRealtimeClient : MonoBehaviour
             ws = null;
             running = false;
             sessionStarted = false;
+            Pausado = false;
         }
     }
 
@@ -224,7 +229,7 @@ public class ScribeRealtimeClient : MonoBehaviour
         // Texto recibido (se entrega en el hilo principal)
         while (incoming.TryDequeue(out var item)) TextReceived?.Invoke(item.Value, item.Key);
 
-        if (micClip == null || ws == null || ws.State != WebSocketState.Open || !sessionStarted) return;
+        if (micClip == null) return;
         int pos = Microphone.GetPosition(micDevice);
         if (pos < 0 || pos == micReadPos) return;
 
@@ -245,9 +250,14 @@ public class ScribeRealtimeClient : MonoBehaviour
             }
         }
         micReadPos = pos;
+        if (Pausado) Array.Clear(data, 0, data.Length);   // en pausa se envía silencio: mantiene viva la conexión sin transcribir lo que suena
         for (int i = 0; i < data.Length; i++) data[i] = Mathf.Clamp(data[i] * micGain, -1f, 1f);
         micRaw.AddRange(data);
         Resample();
+        // Todavía conectando: se guarda (como máximo bufferConexion s) y se envía cuando la sesión esté lista
+        int max = Mathf.Max(1, (int)(SampleRate * bufferConexion));
+        if (pending.Count > max) pending.RemoveRange(0, pending.Count - max);
+        if (ws == null || ws.State != WebSocketState.Open || !sessionStarted) return;
 
         int chunk = SampleRate * chunkMs / 1000;
         while (pending.Count >= chunk)

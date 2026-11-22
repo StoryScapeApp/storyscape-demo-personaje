@@ -43,11 +43,28 @@ public class OnboardingSequence : MonoBehaviour
     public ScribeRealtimeClient scribe;
     [Tooltip("Segundos que espera a que el niño diga su nombre")]
     public float esperaNombre = 7f;
-    [Tooltip("Agente \"Principito bienvenida\" (agentIdBienvenida): dice \"¡Qué lindo nombre, {{nombre}}!…\" con la voz del Principito. " +
-             "Sin configurar, o si no se entendió el nombre, suena el audio grabado 02_nombre")]
+    [Tooltip("Agente \"Principito bienvenida\" (agentIdBienvenida): dice en vivo, con la voz del Principito, la frase que le manda Unity " +
+             "(bienvenida, \"¡Qué lindo nombre, …!\" y \"¿Estás listo?\"). Sin configurar, suenan los audios grabados")]
     public ElevenLabsAgentClient agenteNombre;
     [Tooltip("Segundos máximos para que el agente empiece a hablar; si no, se usa el audio grabado")]
     public float esperaAgenteNombre = 5f;
+
+    [Header("Voz en vivo (agente de bienvenida)")]
+    [Tooltip("La bienvenida (\"¡Hola! ¡Bienvenido…!\") la dice en vivo el agente de bienvenida. Si no responde, suena el audio grabado")]
+    public bool bienvenidaEnVivo = false;
+    [Tooltip("\"Y cuando aciertes, ¡lo celebramos juntos! ¿Estás listo?\" lo dice en vivo el agente. Si no responde, suena 05_final")]
+    public bool listoEnVivo = true;
+    [Tooltip("Lo que dice el agente después de escuchar el nombre. {nombre} = nombre del niño")]
+    public string respuestaNombre = "¡Qué lindo nombre, {nombre}! Antes de empezar nuestra aventura, te voy a contar tres reglas muy fáciles.";
+    [Tooltip("Después de \"¿Estás listo?\" el agente se queda escuchando: oye la respuesta del niño, contesta con una frase corta y cierra la conversación (end_call). " +
+             "Desmarcado = Unity solo espera a que suene la voz del niño (Voice Activity Waiter)")]
+    public bool agenteEscuchaListo = true;
+    [Tooltip("Segundos máximos que el agente espera la respuesta a \"¿Estás listo?\" antes de que Unity siga igual")]
+    public float esperaRespuestaListo = 12f;
+    [Tooltip("Variable {{tarea}} del agente en las frases que solo dice (bienvenida, nombre)")]
+    [TextArea(2, 4)] public string tareaSoloDecir = "Nada más. Si el niño dice algo, responde con UNA frase corta y amable (por ejemplo: \"¡Escucha bien!\") y termina la conversación con end_call.";
+    [Tooltip("Variable {{tarea}} del agente después de \"¿Estás listo?\"")]
+    [TextArea(3, 6)] public string tareaListo = "Acabas de preguntarle al niño si está listo. Escucha su respuesta y contesta con UNA frase corta y alegre, sin hacer preguntas (por ejemplo: \"¡Genial! ¡Vamos!\"). Si dice que no o que tiene miedo, anímalo con cariño en una frase corta. No hables del quiz ni del cuento. Luego termina la conversación con end_call. Si no responde, di \"¡Vamos!\" y termina la conversación con end_call.";
 
     [Header("Personaje y voz")]
     public SpriteAnimator2D principito;
@@ -221,6 +238,7 @@ public class OnboardingSequence : MonoBehaviour
         CancelInvoke();
         if (voice) voice.Stop();
         if (agenteNombre && agenteNombre.IsRunning) agenteNombre.EndConversation();
+        if (scribeNombre && scribe) { scribe.StopStreaming(); scribeNombre = false; }
         speaking = false;
         IsRunning = false;
         HideAll(true);
@@ -248,16 +266,19 @@ public class OnboardingSequence : MonoBehaviour
         SesionLector.Reiniciar();   // nuevo niño: se olvida el nombre anterior
         if (pedirNombre)
         {
-            yield return Say(saludoNombre);   // "…¿Cómo te llamas?"
+            // Scribe se conecta mientras suena el saludo (en pausa), para escuchar apenas termina la pregunta.
+            // Si la bienvenida la dice el agente en vivo, no: ambos usarían el micrófono a la vez.
+            if (!(bienvenidaEnVivo && AgenteEnVivo)) PrepararScribe();
+            yield return Decir(saludoNombre, bienvenidaEnVivo);   // "…¿Cómo te llamas?"
             Anim(animRest);
             yield return EscucharNombre();
             Anim(animGreet);
             bool dichoEnVivo = false;
-            if (SesionLector.TieneNombre && agenteNombre && !agenteNombre.simulate && agenteNombre.HasAgentId())
-                yield return NombreEnVivo(ok => dichoEnVivo = ok);   // "¡Qué lindo nombre, Camila!…"
+            if (SesionLector.TieneNombre && AgenteEnVivo)
+                yield return EnVivo(respuestaNombre.Replace("{nombre}", SesionLector.Nombre), ok => dichoEnVivo = ok);   // "¡Qué lindo nombre, Camila!…"
             if (!dichoEnVivo) yield return Say(nameReply);           // "¡Qué lindo nombre!…" (grabado)
         }
-        else yield return Say(intro);
+        else yield return Decir(intro, bienvenidaEnVivo);
         Anim(animRest);
 
         // 2. Tarjeta 1: no tapar el ArUco
@@ -318,16 +339,30 @@ public class OnboardingSequence : MonoBehaviour
         // 5. Correcta y cierre: brilla → "¡lo celebramos juntos!" crece + estrellas → "¿Estás listo?"
         Anim(animThink);
         Glow(rightOption, true);
-        StartCoroutine(At(finalLine, celebrateTime, () =>
+        Action celebrar = () =>
         {
             Glow(rightOption, false);
             Grow(rightOption);
             for (int i = 0; i < options.Length; i++) if (i != rightOption) Dim(i);
             if (stars && Valid(rightOption)) stars.Burst(options[rightOption].transform.position);
             Anim(animRight);
-        }));
-        yield return Say(finalLine);
-        if (esperarRespuestaFinal && listener)
+        };
+        bool finalEnVivo = false;
+        bool agenteEscucha = listoEnVivo && agenteEscuchaListo;
+        if (listoEnVivo && AgenteEnVivo)   // en vivo: se celebra a los celebrateTime s de que empieza a hablar
+            yield return EnVivo(finalLine.text, ok => finalEnVivo = ok, () => StartCoroutine(Despues(celebrateTime, celebrar)), agenteEscucha);
+        if (!finalEnVivo)
+        {
+            StartCoroutine(At(finalLine, celebrateTime, celebrar));
+            yield return Say(finalLine);
+        }
+        if (finalEnVivo && agenteEscucha)
+        {
+            // El agente ya escuchó la respuesta y contestó
+            Anim(animRest);
+            if (!HayQuizFinal) yield return Say(readyLine);
+        }
+        else if (esperarRespuestaFinal && listener)
         {
             // Espera el "¡Sí, estoy listo!" (o cualquier respuesta; si no responde, continúa igual)
             Anim(animRest);
@@ -368,9 +403,10 @@ public class OnboardingSequence : MonoBehaviour
             if (string.IsNullOrWhiteSpace(texto)) return;
             if (esFinal) final = final == null ? texto : final + " " + texto; else parcial = texto;
         };
-        bool yaCorria = scribe.IsRunning;
+        bool yaCorria = scribe.IsRunning && !scribeNombre;   // ya lo usaba otro (la lectura): no se cierra al final
         scribe.TextReceived += alTexto;
-        if (!yaCorria) scribe.StartStreaming();
+        if (!scribe.IsRunning) scribe.StartStreaming();
+        scribe.Pausado = false;   // terminó la pregunta: desde aquí sí escucha
         bool reintento = false;
         for (float t = 0f; t < esperaNombre && final == null; t += Time.deltaTime)
         {
@@ -387,11 +423,24 @@ public class OnboardingSequence : MonoBehaviour
         if (final == null && parcial != null) for (float t = 0f; t < 1.5f && final == null; t += Time.deltaTime) yield return null;
         scribe.TextReceived -= alTexto;
         if (!yaCorria) scribe.StopStreaming();
+        scribeNombre = false;
 
         string escuchado = final ?? parcial ?? "";
         string nombre = SesionLector.ExtraerNombre(escuchado);
         Debug.Log($"[Onboarding] Respuesta al nombre: \"{escuchado}\" → {(nombre.Length > 0 ? nombre : "(no se reconoció un nombre)")}");
         if (nombre.Length > 0) SesionLector.SetNombre(nombre);
+    }
+
+    bool scribeNombre;   // Scribe lo abrió el onboarding para escuchar el nombre
+
+    /// Conecta Scribe en pausa mientras suena "¿Cómo te llamas?" (la conexión tarda 1–2 s).
+    void PrepararScribe()
+    {
+        if (!scribe) scribe = FindFirstObjectByType<ScribeRealtimeClient>();
+        if (!scribe || !scribe.isActiveAndEnabled || !scribe.HasApiKey() || scribe.IsRunning) return;
+        scribe.Pausado = true;
+        scribe.StartStreaming();
+        scribeNombre = true;
     }
 
     bool HayQuizFinal => hacerQuizFinal && quizFinal && quizFinal.isActiveAndEnabled && !string.IsNullOrEmpty(quizFinalId);
@@ -417,22 +466,42 @@ public class OnboardingSequence : MonoBehaviour
         }
     }
 
-    /// El agente de bienvenida dice la respuesta con el nombre (su first message usa {{nombre}}).
+    bool AgenteEnVivo => agenteNombre && !agenteNombre.simulate && agenteNombre.HasAgentId();
+
+    /// Dice una línea en vivo con el agente de bienvenida (si está activo y responde) o con su audio grabado.
+    IEnumerator Decir(Line line, bool enVivo)
+    {
+        bool ok = false;
+        if (enVivo && AgenteEnVivo && line != null) yield return EnVivo(line.text, r => ok = r);
+        if (!ok) yield return Say(line);
+    }
+
+    IEnumerator Despues(float segundos, Action accion) { yield return new WaitForSeconds(segundos); accion?.Invoke(); }
+
+    /// El agente de bienvenida dice en vivo la frase que le manda Unity (su first message es {{frase}}).
     /// Unity cuelga en cuanto termina de hablar, para que no se quede escuchando ni responda otra cosa.
-    IEnumerator NombreEnVivo(Action<bool> listo)
+    /// alEmpezar se llama cuando su voz empieza a sonar (para sincronizar animaciones).
+    /// escuchar = después de la frase no cuelga: el agente escucha al niño, responde y cierra con end_call (máx. esperaRespuestaListo s).
+    IEnumerator EnVivo(string frase, Action<bool> listo, Action alEmpezar = null, bool escuchar = false)
     {
         var a = agenteNombre;
-        a.StartConversation(new System.Collections.Generic.Dictionary<string, string> { { "nombre", SesionLector.Nombre } });
+        a.StartConversation(new System.Collections.Generic.Dictionary<string, string>
+        {
+            { "frase", frase ?? "" },
+            { "nombre", SesionLector.TieneNombre ? SesionLector.Nombre : "" },
+            { "tarea", (escuchar ? tareaListo : tareaSoloDecir) ?? "" },
+        });
         float t = 0f;
         while (a.IsRunning && !a.AgentSpeaking && t < esperaAgenteNombre) { t += Time.deltaTime; yield return null; }
         if (!a.AgentSpeaking)
         {
             if (a.IsRunning) a.EndConversation();
             while (a.IsRunning) yield return null;
-            Debug.LogWarning("[Onboarding] El agente de bienvenida no respondió a tiempo: se usa el audio grabado 02_nombre.");
+            Debug.LogWarning("[Onboarding] El agente de bienvenida no respondió a tiempo: se usa el audio grabado.");
             listo(false);
             yield break;
         }
+        alEmpezar?.Invoke();
         speaking = true;
         float silencio = 0f;
         for (float total = 0f; a.IsRunning && total < 20f; total += Time.deltaTime)
@@ -443,6 +512,24 @@ public class OnboardingSequence : MonoBehaviour
         }
         speaking = false;
         StopTalking();
+        if (escuchar && a.IsRunning)
+        {
+            // Escucha la respuesta: el agente contesta y cierra con end_call (Unity espera a que termine de sonar su voz)
+            string respuesta = null;
+            Action<string> oir = s => { if (!string.IsNullOrWhiteSpace(s) && s.Trim() != "...") respuesta = s; };
+            a.UserTranscript += oir;
+            Anim(animRest);
+            for (float te = 0f; a.IsRunning && te < esperaRespuestaListo; te += Time.deltaTime)
+            {
+                if (a.AgentSpeaking) { speaking = true; TalkIfResting(); }
+                else if (speaking) { speaking = false; StopTalking(); }
+                yield return null;
+            }
+            a.UserTranscript -= oir;
+            speaking = false;
+            StopTalking();
+            Debug.Log(respuesta != null ? $"[Onboarding] Respuesta a \"¿Estás listo?\": \"{respuesta}\"" : "[Onboarding] Sin respuesta a \"¿Estás listo?\": se continúa.");
+        }
         if (a.IsRunning) a.EndConversation();
         while (a.IsRunning) yield return null;
         yield return new WaitForSeconds(pauseBetweenLines);

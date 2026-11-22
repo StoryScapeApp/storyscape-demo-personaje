@@ -6868,9 +6868,9 @@ MonoBehaviour:
   micGain: 8
   muteMicWhileAgentSpeaks: 1
   colaSilencioMic: 0.7
-  umbralVoz: 0
+  umbralVoz: 0.05
   retencionVoz: 0.4
-  factorRuido: 0
+  factorRuido: 3
   showMicLevel: 0
   muteOutput: 0
   showSubtitles: 0
@@ -8232,6 +8232,21 @@ MonoBehaviour:
   esperaNombre: 7
   agenteNombre: {fileID: 1272311293}
   esperaAgenteNombre: 5
+  bienvenidaEnVivo: 0
+  listoEnVivo: 1
+  respuestaNombre: "\xA1Qu\xE9 lindo nombre, {nombre}! Antes de empezar nuestra aventura,
+    te voy a contar tres reglas muy f\xE1ciles."
+  agenteEscuchaListo: 1
+  esperaRespuestaListo: 12
+  tareaSoloDecir: "Nada m\xE1s. Si el ni\xF1o dice algo, responde con UNA frase corta
+    y amable (por ejemplo: \"\xA1Escucha bien!\") y termina la conversaci\xF3n con
+    end_call."
+  tareaListo: "Acabas de preguntarle al ni\xF1o si est\xE1 listo. Escucha su respuesta
+    y contesta con UNA frase corta y alegre, sin hacer preguntas (por ejemplo: \"\xA1Genial!
+    \xA1Vamos!\"). Si dice que no o que tiene miedo, an\xEDmalo con cari\xF1o en
+    una frase corta. No hables del quiz ni del cuento. Luego termina la conversaci\xF3n
+    con end_call. Si no responde, di \"\xA1Vamos!\" y termina la conversaci\xF3n
+    con end_call."
   principito: {fileID: 755959075}
   voice: {fileID: 1879742628}
   listener: {fileID: 1879742627}
