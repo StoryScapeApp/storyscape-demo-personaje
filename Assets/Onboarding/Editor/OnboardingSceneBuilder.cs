@@ -135,7 +135,7 @@ public static class OnboardingSceneBuilder
         var cardRead = CreateCard("Tarjeta_2_VozAlta", cards, new Vector3(CardsX[1], CardsY, 0f), CardSize, Violeta,
             "<b>2. Lee en voz alta</b>\n<size=75%>Mientras lees, la historia cobra vida a tu alrededor</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
         var cardQuiz = CreateCard("Tarjeta_3_Quiz", cards, new Vector3(CardsX[2], CardsY, 0f), CardSize, Violeta,
-            "<b>3. Responde el mini quiz</b>\n<size=75%>Al final, elige una respuesta y descubre cuánto recuerdas</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+            "<b>3. Responde el quiz</b>\n<size=75%>Al final, elige una respuesta y descubre cuánto recuerdas</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
 
         // ── 2. Bordes del área del marcador
         var frameGo = new GameObject("MarcoMarcador");
@@ -196,7 +196,7 @@ public static class OnboardingSceneBuilder
             fillSprite, borderSprite, TextAlignmentOptions.MidlineLeft);
         definition.fillAlpha = 0.18f;
 
-        // ── 3. Mini quiz (solo mirar): círculos A y B junto a la tarjeta 3
+        // ── 3. Quiz (solo mirar): círculos A y B junto a la tarjeta 3
         var quiz = new GameObject("Quiz").transform;
         var circleFill = SaveSprite(DrawCircle(false), 64, "circulo_fondo", Vector4.zero);
         var circleRing = SaveSprite(DrawCircle(true), 64, "circulo_borde", Vector4.zero);
@@ -373,7 +373,7 @@ public static class OnboardingSceneBuilder
         return card;
     }
 
-    /// Opción circular del mini quiz (A, B) con relleno, borde y letra.
+    /// Opción circular del quiz (A, B) con relleno, borde y letra.
     static ProjectedCard CreateCircle(string name, Transform parent, Vector3 pos, float diameter, Color color, string letter,
                                       Sprite fillSprite, Sprite ringSprite)
     {

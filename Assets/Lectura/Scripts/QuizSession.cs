@@ -5,8 +5,8 @@ using System.IO;
 using UnityEngine;
 
 /// <summary>
-/// Mini quiz: el de los capítulos lo activa ReadingSession al detectar el final de la página; el quiz "pagina_1"
-/// lo inicia el onboarding al terminar las reglas (con las imágenes onboarding_quiz_1 y _2).
+/// Quiz: el de los capítulos lo activa ReadingSession al detectar el final de la página; el quiz "pagina_1"
+/// lo inicia el onboarding al terminar las reglas (mismo panel de texto que los quizzes de capítulo).
 /// - Pregunta con imagen: se proyecta la imagen (pregunta y alternativas ya dibujadas) en vez del panel de texto,
 ///   las alternativas no se mezclan y la elegida se ilumina encima de su píldora.
 /// - Muestra las preguntas una por una en un panel a la derecha del libro, con alternativas A, B y C.
@@ -40,7 +40,7 @@ public class QuizSession : MonoBehaviour
     {
         public string id = "pagina_1";
         [Tooltip("Lo que dice el Principito antes de la primera pregunta")]
-        [TextArea(1, 3)] public string intro = "¡Muy bien! Terminaste esta página. Ahora, un mini quiz.";
+        [TextArea(1, 3)] public string intro = "¡Muy bien! Terminaste esta página. Ahora, un quiz.";
         public List<Pregunta> preguntas = new List<Pregunta>();
         [Tooltip("Márcalo en el quiz del último capítulo: al terminar, el Principito felicita por acabar el libro en vez de invitar a pasar la página")]
         public bool finDelLibro;
@@ -75,8 +75,8 @@ public class QuizSession : MonoBehaviour
     [Header("Nombre del niño (lo pregunta el onboarding)")]
     [Tooltip("Si el onboarding guardó el nombre, el quiz empieza diciéndolo")]
     public bool usarNombre = true;
-    [Tooltip("Inicio del quiz con nombre. {nombre} = nombre del niño; {intro} = intro del banco sin \"¡Muy bien!\" ni \"Ahora, un mini quiz.\"")]
-    public string introConNombre = "¡Muy bien, {nombre}! {intro} Ahora responde estas preguntas del mini quiz.";
+    [Tooltip("Inicio del quiz con nombre. {nombre} = nombre del niño; {intro} = intro del banco sin \"¡Muy bien!\" ni \"Ahora, un quiz.\"")]
+    public string introConNombre = "¡Muy bien, {nombre}! {intro} Ahora responde estas preguntas del quiz.";
     readonly HashSet<string> bancosHechos = new HashSet<string>();
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
@@ -109,6 +109,20 @@ public class QuizSession : MonoBehaviour
     public ProjectedCard imagenPregunta;
     [Tooltip("Centro de la imagen de la pregunta (a la derecha del libro)")]
     public Vector2 posImagen = new Vector2(5.0f, 0.1f);
+    [Header("Diseño del panel")]
+    [Tooltip("Estrella con rayitos sobre el borde superior del panel")]
+    public ProjectedCard estrella;
+    [Tooltip("Línea curva debajo de la pregunta")]
+    public ProjectedCard subrayado;
+    [Tooltip("Fuente de la pregunta (título)")]
+    public TMPro.TMP_FontAsset fuenteTitulo;
+    [Tooltip("Fuente de las alternativas y del contador de preguntas")]
+    public TMPro.TMP_FontAsset fuenteOpciones;
+    public float tamPregunta = 2.5f;
+    [Tooltip("Mismo tamaño de letra para todas las alternativas; si el texto no cabe, pasa a dos renglones y la píldora crece")]
+    public float tamOpciones = 1.9f;
+    public float altoMinOpcion = 0.55f;
+    public float separacionOpciones = 0.13f;
     [Tooltip("Animaciones que deben terminar antes de empezar el quiz (p. ej. el Principito volando)")]
     public PrincipitoVolando[] esperarAnimaciones;
 
@@ -155,13 +169,38 @@ public class QuizSession : MonoBehaviour
     bool modoImagen;
     struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; public bool rellenoPropio; }
     Original[] originales;
+    float panelTop, panelBottom, panelX;   // borde superior/inferior del panel en la escena (crece hacia abajo si hace falta)
+    Vector2 panelSize;
 
     void Awake()
     {
         if (principito) principitoSr = principito.GetComponent<SpriteRenderer>();
-        foreach (var c in Cards()) if (c && c.label) { c.label.enableAutoSizing = true; c.label.fontSizeMin = c.label.fontSize * 0.55f; c.label.fontSizeMax = c.label.fontSize; }
-        // Alternativas en una sola línea: se achica la letra si el texto es largo
-        if (opciones != null) foreach (var c in opciones) if (c && c.label) c.label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        // Contador "Quiz · Pregunta 1 de 2": pequeño, una línea
+        if (titulo && titulo.label)
+        {
+            if (fuenteOpciones) titulo.label.font = fuenteOpciones;
+            titulo.label.enableAutoSizing = false; titulo.label.fontSize = 1.45f; titulo.label.fontStyle = TMPro.FontStyles.Normal;
+            titulo.label.color = new Color(0.35f, 0.38f, 0.56f);
+        }
+        // Pregunta = título en Bold (hasta 2–3 renglones)
+        if (pregunta && pregunta.label)
+        {
+            if (fuenteTitulo) pregunta.label.font = fuenteTitulo;
+            pregunta.label.enableAutoSizing = false; pregunta.label.fontSize = tamPregunta;
+            pregunta.label.textWrappingMode = TMPro.TextWrappingModes.Normal; pregunta.label.lineSpacing = -8f;
+        }
+        // Alternativas: mismo tamaño para todas; si no cabe, dos renglones
+        if (opciones != null) foreach (var c in opciones) if (c && c.label)
+        {
+            if (fuenteOpciones) c.label.font = fuenteOpciones;
+            c.label.enableAutoSizing = false; c.label.fontSize = tamOpciones;
+            c.label.textWrappingMode = TMPro.TextWrappingModes.Normal; c.label.lineSpacing = -10f;
+        }
+        if (panel && panel.fill)
+        {
+            panelSize = panel.fill.size; panelX = panel.transform.position.x;
+            panelTop = panel.transform.position.y + panelSize.y * 0.5f; panelBottom = panel.transform.position.y - panelSize.y * 0.5f;
+        }
         // Cómo están las alternativas en el panel de texto, para volver a él después de una pregunta con imagen
         originales = new Original[opciones.Length];
         for (int i = 0; i < opciones.Length; i++)
@@ -343,7 +382,7 @@ public class QuizSession : MonoBehaviour
         StartCoroutine(Fade(1f));
         Anim(animQuiz);
         bool todasConImagen = imagenPregunta && q.preguntas.TrueForAll(x => x.imagen);
-        if (!todasConImagen) { Show(panel); Show(titulo); }
+        if (!todasConImagen) { Show(panel); Show(titulo); Show(estrella); }
 
         for (int i = 0; i < q.preguntas.Count; i++)
         {
@@ -352,7 +391,8 @@ public class QuizSession : MonoBehaviour
             numeroPregunta = i + 1;
             if (!repite) PrepararPregunta(q.preguntas[i]);
             if (i > 0 || repite) Anim(animQuiz);   // nueva pregunta: vuelve al cartel "?"
-            if (titulo && titulo.label) titulo.label.text = $"<b>Mini quiz</b>\n<size=70%>Pregunta {numeroPregunta} de {q.preguntas.Count}</size>";
+            if (titulo && titulo.label) titulo.label.text = $"Quiz · Pregunta {numeroPregunta} de {q.preguntas.Count}";
+            if (!modoImagen) Maquetar();
             yield return new WaitForSeconds(0.6f);
 
             // El agente lee la pregunta y escucha la respuesta
@@ -431,7 +471,7 @@ public class QuizSession : MonoBehaviour
 
         if (modoImagen) { PrepararImagen(p); Debug.Log($"[Quiz] Pregunta {numeroPregunta} (imagen): correcta en la posición {Letras[posCorrecta]}."); return; }
 
-        if (pregunta && pregunta.label) pregunta.label.text = $"<b>{p.texto}</b>";
+        if (pregunta && pregunta.label) pregunta.label.text = p.texto;   // la fuente del título ya es Bold
         pregunta?.ResetState();
         Show(pregunta);
         for (int i = 0; i < opciones.Length; i++)
@@ -440,10 +480,49 @@ public class QuizSession : MonoBehaviour
             if (!c) continue;
             RestaurarTarjeta(i);
             c.ResetState();
-            if (c.label) c.label.text = $"<b>{Letras[i]}</b>   {p.opciones[orden[i]]}";
+            if (c.label) c.label.text = $"<b>{Letras[i]}</b><indent=13%>{p.opciones[orden[i]]}</indent>";   // el 2.º renglón queda alineado con el texto
             c.Show();
         }
+        subrayado?.ResetState();
+        Show(subrayado);
         Debug.Log($"[Quiz] Pregunta {numeroPregunta}: correcta en la posición {Letras[posCorrecta]}.");
+    }
+
+    /// Acomoda el panel de arriba hacia abajo según el largo de los textos: contador, pregunta (1–3 renglones),
+    /// línea curva y alternativas (cada píldora crece si su texto ocupa dos renglones). El panel crece hacia abajo si hace falta.
+    void Maquetar()
+    {
+        if (!panel || !panel.fill || panelSize == Vector2.zero) return;
+        float x = panelX, y = panelTop - 0.40f;   // espacio para la estrella
+        if (estrella) estrella.transform.position = new Vector3(x, panelTop + 0.04f, 0f);
+        if (titulo) { titulo.transform.position = new Vector3(x, y - 0.16f, 0f); y -= 0.36f; }
+        if (pregunta && pregunta.label)
+        {
+            var pl = pregunta.label; float w = pl.rectTransform.sizeDelta.x;
+            float h = Mathf.Max(0.35f, pl.GetPreferredValues(pl.text, w, 0f).y);
+            pl.rectTransform.sizeDelta = new Vector2(w, h);
+            pregunta.transform.position = new Vector3(x, y - h * 0.5f, 0f);
+            y -= h;
+        }
+        if (subrayado) { subrayado.transform.position = new Vector3(x, y - 0.09f, 0f); y -= 0.28f; } else y -= 0.15f;
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            var c = opciones[i]; if (!c || !c.label) continue;
+            float w = c.label.rectTransform.sizeDelta.x;
+            float h = Mathf.Max(altoMinOpcion, c.label.GetPreferredValues(c.label.text, w, 0f).y + 0.2f);
+            float ancho = originales != null && i < originales.Length && originales[i].fill != Vector2.zero ? originales[i].fill.x : (c.fill ? c.fill.size.x : 2.6f);
+            if (c.fill) c.fill.size = new Vector2(ancho, h);
+            if (c.border) c.border.size = new Vector2(ancho, h);
+            c.label.rectTransform.sizeDelta = new Vector2(w, h);
+            c.transform.position = new Vector3(x, y - h * 0.5f, 0f);
+            y -= h + separacionOpciones;
+        }
+        y += separacionOpciones;
+        float bottom = Mathf.Min(panelBottom, y - 0.22f);
+        float alto = panelTop - bottom;
+        panel.fill.size = new Vector2(panelSize.x, alto);
+        if (panel.border) panel.border.size = new Vector2(panelSize.x, alto);
+        panel.transform.position = new Vector3(panelX, panelTop - alto * 0.5f, panel.transform.position.z);
     }
 
     /// Proyecta la imagen de la pregunta y coloca las tarjetas de las alternativas sobre sus píldoras (ocultas hasta que se elige una).
@@ -604,15 +683,16 @@ public class QuizSession : MonoBehaviour
     bool Ultima() => quizActual != null && numeroPregunta >= quizActual.preguntas.Count;
 
     /// Intro de la primera pregunta: con el nombre del niño si el onboarding lo guardó.
-    /// "¡Muy bien! Terminaste el capítulo uno. Ahora, un mini quiz." →
-    /// "¡Muy bien, Camila! Terminaste el capítulo uno. Ahora responde estas preguntas del mini quiz."
+    /// "¡Muy bien! Terminaste el capítulo uno. Ahora, un quiz." →
+    /// "¡Muy bien, Camila! Terminaste el capítulo uno. Ahora responde estas preguntas del quiz."
     string IntroInicial(string intro)
     {
         intro = intro ?? "";
         if (!usarNombre || !SesionLector.TieneNombre || string.IsNullOrWhiteSpace(introConNombre)) return intro;
         string medio = intro.Trim();
         if (medio.StartsWith("¡Muy bien!")) medio = medio.Substring("¡Muy bien!".Length).Trim();
-        if (medio.EndsWith("Ahora, un mini quiz.")) medio = medio.Substring(0, medio.Length - "Ahora, un mini quiz.".Length).Trim();
+        foreach (var fin in new[] { "Ahora, un quiz.", "Ahora, un mini quiz." })
+            if (medio.EndsWith(fin)) medio = medio.Substring(0, medio.Length - fin.Length).Trim();
         string r = introConNombre.Replace("{nombre}", SesionLector.Nombre).Replace("{intro}", medio);
         while (r.Contains("  ")) r = r.Replace("  ", " ");
         return r.Trim();
@@ -626,8 +706,8 @@ public class QuizSession : MonoBehaviour
     string CierreFinal() => quizActual != null && !string.IsNullOrWhiteSpace(quizActual.cierre)
         ? quizActual.cierre.Trim() + " Luego termina la conversación con end_call."
         : FinDelLibro()
-        ? "Con este quiz TERMINÓ EL LIBRO: NO lo invites a pasar la página ni a seguir leyendo. Dile que terminó el mini quiz y también todo el libro, y felicítalo con mucho cariño por haber leído toda la historia. Luego termina la conversación con end_call."
-        : "Dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call.";
+        ? "Con este quiz TERMINÓ EL LIBRO: NO lo invites a pasar la página ni a seguir leyendo. Dile que terminó el quiz y también todo el libro, y felicítalo con mucho cariño por haber leído toda la historia. Luego termina la conversación con end_call."
+        : "Dile que terminó el quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call.";
 
     IEnumerator MostrarCorrecta(int pos)
     {
@@ -716,6 +796,7 @@ public class QuizSession : MonoBehaviour
     IEnumerator HidePregunta()
     {
         Hide(pregunta);
+        Hide(subrayado);
         Hide(imagenPregunta);
         foreach (var c in opciones) Hide(c);
         yield return new WaitForSeconds(0.8f);
@@ -732,6 +813,8 @@ public class QuizSession : MonoBehaviour
     {
         yield return panel;
         yield return titulo;
+        yield return estrella;
+        yield return subrayado;
         yield return pregunta;
         yield return imagenPregunta;
         if (opciones != null) foreach (var c in opciones) yield return c;

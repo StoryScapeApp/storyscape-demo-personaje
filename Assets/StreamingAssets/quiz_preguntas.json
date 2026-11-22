@@ -2,7 +2,7 @@
   "quizzes": [
     {
       "id": "capitulo_1",
-      "intro": "¡Muy bien! Terminaste el capítulo uno. Ahora, un mini quiz.",
+      "intro": "¡Muy bien! Terminaste el capítulo uno. Ahora, un quiz.",
       "literales": [
         { "texto": "¿Qué representaba realmente el dibujo número 1 del narrador?",
           "opciones": ["Un sombrero", "Una boa digiriendo un elefante", "Una montaña"], "correcta": 1 },
@@ -27,7 +27,7 @@
     {
       "id": "capitulo_2",
       "finDelLibro": true,
-      "intro": "¡Muy bien! Terminaste el capítulo dos. Ahora, un mini quiz.",
+      "intro": "¡Muy bien! Terminaste el capítulo dos. Ahora, un quiz.",
       "literales": [
         { "texto": "¿Dónde se averió el avión del narrador?",
           "opciones": ["En la selva virgen", "En medio del océano", "En el desierto del Sahara"], "correcta": 2 },
