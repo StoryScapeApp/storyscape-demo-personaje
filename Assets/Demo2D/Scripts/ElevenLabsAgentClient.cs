@@ -44,6 +44,28 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Tooltip("Envía silencio mientras habla el personaje, para que no se escuche a sí mismo por los parlantes. " +
              "Desactívalo si usas audífonos y quieres probar las interrupciones.")]
     public bool muteMicWhileAgentSpeaks = true;
+    [Tooltip("Segundos que el micrófono sigue en silencio DESPUÉS de que habla el personaje: el final de su voz todavía sale por los " +
+             "parlantes y rebota en la sala (si no, el agente escucha su propio \"…o C?\" como si fuera el niño)")]
+    [Range(0f, 2f)] public float colaSilencioMic = 0.7f;
+    [Tooltip("Puerta de ruido: lo que suena más bajo que este nivel se envía como silencio (ruido de fondo, conversaciones lejanas). " +
+             "0 = desactivada. Ajústalo en el lugar de la prueba: la línea blanca del medidor debe quedar por encima del ruido " +
+             "y por debajo de la voz del niño hablando cerca del micrófono.")]
+    [Range(0f, 0.12f)] public float umbralVoz = 0f;
+    [Tooltip("Segundos que la puerta sigue abierta después de la voz (para no cortar el final de las palabras)")]
+    public float retencionVoz = 0.4f;
+    [Tooltip("Puerta automática: mide el ruido del ambiente y solo deja pasar lo que suene este número de veces más fuerte " +
+             "(Umbral Voz queda como mínimo). 0 = desactivada. Recomendado 3; súbelo si el ruido se sigue colando, bájalo si corta al niño")]
+    [Range(0f, 8f)] public float factorRuido = 0f;
+    /// Nivel de ruido del ambiente que mide la puerta automática (RMS).
+    public float PisoRuido => Mathf.Max(0f, pisoRuido);
+    /// Nivel que tiene que superar la voz para pasar la puerta (RMS).
+    public float UmbralEfectivo => factorRuido <= 0f ? umbralVoz
+        : pisoRuido > 0f ? Mathf.Max(umbralVoz, pisoRuido * factorRuido)
+        : Mathf.Max(umbralVoz * 4f, 0.06f);   // mientras aún no se midió el ruido, exigente
+    /// ¿Está activa alguna puerta de ruido?
+    public bool PuertaActiva => umbralVoz > 0f || factorRuido > 0f;
+    /// Fragmentos de 100 ms con voz real (sobre el umbral) en el último turno del niño; 0 = la transcripción no vino de una voz.
+    public int VozUltimoTurno { get; private set; }
     [Tooltip("Muestra un medidor del micrófono en pantalla durante la conversación")]
     public bool showMicLevel = true;
     [Tooltip("No reproduce la voz del agente (agente que solo escucha, p. ej. durante la lectura)")]
@@ -105,6 +127,16 @@ public class ElevenLabsAgentClient : MonoBehaviour
     volatile float outputLevel;
     float micLevel;
     bool micMuted;
+    bool puertaAbierta;      // la puerta de ruido deja pasar la voz
+    float puertaHasta;       // tiempo (realtimeSinceStartup) hasta el que sigue abierta
+    byte[] chunkPrevio;      // se envía con un fragmento de retraso, para no cortar el inicio de la palabra
+    bool previoAbierto;
+    float pisoRuido = -1f;   // ruido del ambiente medido (RMS); -1 = aún sin medir (se conserva entre conversaciones)
+    readonly float[] ruidoReciente = new float[40];   // últimos 4 s de niveles sin el personaje hablando
+    int ruidoCount, ruidoIdx;
+    float finVozAgente = -10f;   // cuándo dejó de sonar la voz del personaje (realtimeSinceStartup)
+    int vozTurno;            // fragmentos con voz desde la última transcripción
+    float picoTurno;         // nivel máximo desde la última transcripción
 
     AudioSource source;
     AudioClip micClip;
@@ -313,7 +345,10 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 if (m.user_transcription_event != null)
                 {
                     subtitleUser = m.user_transcription_event.user_transcript;
-                    Debug.Log("[ElevenLabs] Niño: " + subtitleUser);
+                    VozUltimoTurno = vozTurno;
+                    Debug.Log("[ElevenLabs] Niño: " + subtitleUser + (PuertaActiva
+                        ? $"  (voz {vozTurno * 0.1f:0.0} s · pico {picoTurno:0.000} · umbral {UmbralEfectivo:0.000} · ruido {PisoRuido:0.000})" : ""));
+                    vozTurno = 0; picoTurno = 0f;
                     UserTranscript?.Invoke(subtitleUser);
                 }
                 break;
@@ -393,6 +428,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
         resamplePos = 0;
         micRaw.Clear();
         micPending.Clear();
+        chunkPrevio = null; puertaAbierta = false; puertaHasta = 0f;
+        vozTurno = 0; picoTurno = 0f; VozUltimoTurno = 0;
         Debug.Log($"[ElevenLabs] Grabando con \"{(micDevice ?? "micrófono predeterminado")}\" a {micRate} Hz → envío a {sampleRate} Hz (ganancia x{micGain:0.#})");
     }
 
@@ -446,12 +483,40 @@ public class ElevenLabsAgentClient : MonoBehaviour
         micLevel = Mathf.Lerp(micLevel, Mathf.Sqrt(sum / Mathf.Max(1, data.Length)), 0.5f);
 
         // Solo se silencia si la voz del personaje realmente se está reproduciendo.
-        micMuted = muteMicWhileAgentSpeaks && AgentSpeaking && source.isPlaying;
+        bool suena = AgentSpeaking && source.isPlaying;
+        if (suena) finVozAgente = Time.realtimeSinceStartup;
+        micMuted = muteMicWhileAgentSpeaks && (suena || Time.realtimeSinceStartup - finVozAgente < colaSilencioMic);
         micRaw.AddRange(data);
         Resample();
 
         while (micPending.Count >= ChunkSamples)
         {
+            // Puerta de ruido: ¿este fragmento de 100 ms tiene voz (más fuerte que el umbral)?
+            bool abierto = true;
+            if (PuertaActiva)
+            {
+                float acc = 0f;
+                for (int i = 0; i < ChunkSamples; i++) acc += micPending[i] * micPending[i];
+                float rms = Mathf.Sqrt(acc / ChunkSamples);
+                float umbral = UmbralEfectivo;
+                bool voz = rms >= umbral && !micMuted;
+                // Ruido del ambiente = percentil 30 de los últimos 4 s (la voz del niño es intermitente y no lo sube).
+                // No se mide mientras habla el personaje (su voz sale por los parlantes) ni con silencio digital (micrófono aún abriendo).
+                if (!micMuted && rms > 0.0005f)
+                {
+                    ruidoReciente[ruidoIdx] = rms; ruidoIdx = (ruidoIdx + 1) % ruidoReciente.Length;
+                    if (ruidoCount < ruidoReciente.Length) ruidoCount++;
+                    if (ruidoCount >= 8)
+                    {
+                        var orden = new float[ruidoCount]; Array.Copy(ruidoReciente, orden, ruidoCount); Array.Sort(orden);
+                        pisoRuido = orden[(int)(ruidoCount * 0.3f)];
+                    }
+                }
+                if (voz) { puertaHasta = Time.realtimeSinceStartup + retencionVoz; vozTurno++; }
+                if (!micMuted) picoTurno = Mathf.Max(picoTurno, rms);
+                abierto = Time.realtimeSinceStartup <= puertaHasta;
+            }
+            puertaAbierta = abierto;
             var bytes = new byte[ChunkSamples * 2];
             for (int i = 0; i < ChunkSamples; i++)
             {
@@ -461,7 +526,14 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 bytes[i * 2 + 1] = (byte)((s >> 8) & 0xff);
             }
             micPending.RemoveRange(0, ChunkSamples);
-            _ = SendText("{\"user_audio_chunk\":\"" + Convert.ToBase64String(bytes) + "\"}");
+            if (!PuertaActiva) { _ = SendText("{\"user_audio_chunk\":\"" + Convert.ToBase64String(bytes) + "\"}"); continue; }
+            // Se envía el fragmento anterior: pasa si él o este tienen voz (así no se pierde el comienzo de la palabra)
+            if (chunkPrevio != null)
+            {
+                if (!(previoAbierto || abierto)) Array.Clear(chunkPrevio, 0, chunkPrevio.Length);
+                _ = SendText("{\"user_audio_chunk\":\"" + Convert.ToBase64String(chunkPrevio) + "\"}");
+            }
+            chunkPrevio = bytes; previoAbierto = abierto;
         }
     }
 
@@ -620,13 +692,16 @@ public class ElevenLabsAgentClient : MonoBehaviour
         if (showMicLevel && running && !simulate && micClip != null)
         {
             float lvl = Mathf.Clamp01(micLevel * 8f);
-            string label = micMuted ? "Mic: en pausa (habla el personaje)" : $"Mic: escuchando  (ganancia x{micGain:0.#})";
+            string label = micMuted ? "Mic: en pausa (habla el personaje)"
+                : PuertaActiva && !puertaAbierta ? $"Mic: solo ruido, no se envía  (ganancia x{micGain:0.#})"
+                : $"Mic: escuchando  (ganancia x{micGain:0.#})";
             GUI.Label(new Rect(16, 10, 360, 20), label, meterStyle);
             GUI.color = new Color(1f, 1f, 1f, 0.25f);
             GUI.DrawTexture(new Rect(16, 32, 160, 8), whiteTex);
             GUI.color = micMuted ? new Color(1f, 0.6f, 0.2f) : (lvl > 0.95f ? new Color(1f, 0.3f, 0.3f) : new Color(0.3f, 1f, 0.4f));
             GUI.DrawTexture(new Rect(16, 32, 160 * lvl, 8), whiteTex);
             GUI.color = Color.white;
+            if (PuertaActiva) GUI.DrawTexture(new Rect(16 + 160 * Mathf.Clamp01(UmbralEfectivo * 8f) - 1, 28, 2, 16), whiteTex);   // umbral de la puerta
         }
 
         if (!showSubtitles || (string.IsNullOrEmpty(subtitleAgent) && string.IsNullOrEmpty(subtitleUser))) return;

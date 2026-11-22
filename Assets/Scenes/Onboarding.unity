@@ -155,9 +155,13 @@ MonoBehaviour:
   simulatedWord: excusa
   simulatedMeaning: "Raz\xF3n que das para explicar por qu\xE9 hiciste algo."
   sampleRate: 16000
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: "Micr\xF3fono (USB 2.0 Camera)"
   micGain: 8
   muteMicWhileAgentSpeaks: 1
+  colaSilencioMic: 0.7
+  umbralVoz: 0
+  retencionVoz: 0.4
+  factorRuido: 0
   showMicLevel: 1
   muteOutput: 0
   showSubtitles: 0
@@ -496,9 +500,13 @@ MonoBehaviour:
   simulatedWord: excusa
   simulatedMeaning: "Raz\xF3n que das para explicar por qu\xE9 hiciste algo."
   sampleRate: 16000
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: "Micr\xF3fono (USB 2.0 Camera)"
   micGain: 8
   muteMicWhileAgentSpeaks: 0
+  colaSilencioMic: 0.7
+  umbralVoz: 0
+  retencionVoz: 0.4
+  factorRuido: 0
   showMicLevel: 0
   muteOutput: 1
   showSubtitles: 0
@@ -2656,6 +2664,8 @@ MonoBehaviour:
     del mini quiz."
   mezclarOpciones: 1
   maxIntentos: 2
+  validarRespuesta: 1
+  maxPalabrasLetraSuelta: 3
   agent: {fileID: 1375734805}
   toolName: elegir_opcion
   doubtAgent: {fileID: 8342220}
@@ -3979,7 +3989,7 @@ MonoBehaviour:
   markerSwitchDelay: 0.6
   quietSamples: 4
   maxAngle: 60
-  calibrarAntesDelOnboarding: 1
+  calibrarAntesDelOnboarding: 0
   omitirSiYaHayCalibracion: 0
   onboarding: {fileID: 1615534944}
   markerInicio: 0
@@ -5678,7 +5688,7 @@ MonoBehaviour:
   vadSilenceSecs: 0.8
   keyterms: []
   chunkMs: 250
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: "Micr\xF3fono (USB 2.0 Camera)"
   micGain: 8
 --- !u!4 &1118174272
 Transform:
@@ -6732,9 +6742,13 @@ MonoBehaviour:
   simulatedWord: excusa
   simulatedMeaning: "Raz\xF3n que das para explicar por qu\xE9 hiciste algo."
   sampleRate: 16000
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: "Micr\xF3fono (USB 2.0 Camera)"
   micGain: 8
   muteMicWhileAgentSpeaks: 1
+  colaSilencioMic: 0.7
+  umbralVoz: 0
+  retencionVoz: 0.4
+  factorRuido: 0
   showMicLevel: 0
   muteOutput: 0
   showSubtitles: 0
@@ -7609,9 +7623,13 @@ MonoBehaviour:
   simulatedWord: excusa
   simulatedMeaning: "Raz\xF3n que das para explicar por qu\xE9 hiciste algo."
   sampleRate: 16000
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: "Micr\xF3fono (USB 2.0 Camera)"
   micGain: 8
   muteMicWhileAgentSpeaks: 1
+  colaSilencioMic: 0.7
+  umbralVoz: 0.05
+  retencionVoz: 0.4
+  factorRuido: 3
   showMicLevel: 0
   muteOutput: 0
   showSubtitles: 0
@@ -8994,7 +9012,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3738d2e4cf27aa0459243eb43b77b102, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoiceActivityWaiter
-  microphoneDevice: "Micr\xF3fono (USB Audio Device)"
+  microphoneDevice: "Micr\xF3fono (USB 2.0 Camera)"
   micGain: 8
   minSpeechThreshold: 0.012
   noiseMultiplier: 2.5

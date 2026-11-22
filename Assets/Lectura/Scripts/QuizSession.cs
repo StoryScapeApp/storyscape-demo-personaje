@@ -81,6 +81,11 @@ public class QuizSession : MonoBehaviour
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
     public int maxIntentos = 2;
+    [Tooltip("Solo acepta la letra si lo que se transcribió del niño la contiene (\"la A\", \"B\", \"la tercera\") o nombra esa alternativa. " +
+             "Evita que el ruido de fondo o una conversación cercana cuenten como respuesta")]
+    public bool validarRespuesta = true;
+    [Tooltip("Una letra suelta solo cuenta si la frase tiene como mucho estas palabras (\"a\", \"se\" o \"ve\" aparecen en cualquier frase de fondo)")]
+    public int maxPalabrasLetraSuelta = 3;
 
     [Header("Agente")]
     [Tooltip("Agente \"Principito quiz\" (configKey = agentIdQuiz)")]
@@ -145,6 +150,7 @@ public class QuizSession : MonoBehaviour
     bool resuelta;
     bool acierto;
     readonly HashSet<int> descartadas = new HashSet<int>();
+    string ultimoTranscript;   // lo último que el agente transcribió del niño en esta pregunta
     SpriteRenderer principitoSr;
     bool modoImagen;
     struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; public bool rellenoPropio; }
@@ -166,8 +172,9 @@ public class QuizSession : MonoBehaviour
         }
     }
 
-    void OnEnable() { if (agent) agent.RegisterTool(toolName, OnElegir); }
-    void OnDisable() { if (agent) agent.RegisterTool(toolName, null); }
+    void OnEnable() { if (agent) { agent.RegisterTool(toolName, OnElegir); agent.UserTranscript += OnTranscript; } }
+    void OnDisable() { if (agent) { agent.RegisterTool(toolName, null); agent.UserTranscript -= OnTranscript; } }
+    void OnTranscript(string s) { if (IsRunning) ultimoTranscript = s; }
 
     void Start() { HideAll(true); }
 
@@ -415,6 +422,7 @@ public class QuizSession : MonoBehaviour
         resuelta = false;
         acierto = false;
         descartadas.Clear();
+        ultimoTranscript = null;
         orden = new[] { 0, 1, 2 };
         modoImagen = p.imagen && imagenPregunta;
         if (mezclarOpciones && !modoImagen)   // con imagen, las letras ya están dibujadas
@@ -483,7 +491,9 @@ public class QuizSession : MonoBehaviour
     }
 
     // ───────────── Herramienta del agente: elegir_opcion(letra) ─────────────
-    string OnElegir(ElevenLabsAgentClient.ToolArgs args)
+    string OnElegir(ElevenLabsAgentClient.ToolArgs args) => Elegir(args, validarRespuesta);
+
+    string Elegir(ElevenLabsAgentClient.ToolArgs args, bool validar)
     {
         if (preguntaActual == null) return "No hay ninguna pregunta activa.";
         if (resuelta) return "Esta pregunta ya terminó. Despídete con una frase corta y termina la conversación con end_call.";
@@ -491,6 +501,27 @@ public class QuizSession : MonoBehaviour
         string l = (args.letra ?? "").Trim().ToUpperInvariant();
         int pos = l.Length > 0 ? Array.IndexOf(Letras, l.Substring(0, 1)) : -1;
         if (pos < 0) return "Letra no válida. Pídele con cariño que responda diciendo A, B o C.";
+        if (validar)
+        {
+            string oido = ultimoTranscript;
+            ultimoTranscript = null;   // cada respuesta se usa una sola vez
+            int dijo = LetraDicha(oido);
+            // Con la puerta de ruido activa: si no pasó ninguna voz real, el texto lo inventó el reconocedor a partir del ruido
+            if (agent && agent.PuertaActiva && agent.VozUltimoTurno < 2) dijo = -1;   // menos de 0,2 s de voz real
+            if (dijo < 0)
+            {
+                Debug.Log($"[Quiz] Se ignoró la letra {l}: no se escuchó una respuesta clara (\"{oido}\"). Puede ser ruido de fondo.");
+                return "NO se registró ninguna respuesta: lo que se escuchó no fue una respuesta clara (probablemente ruido o alguien hablando cerca). " +
+                       "No digas si está bien o mal. Pídele con cariño, en una frase corta, que diga su respuesta un poco más fuerte: la A, la B o la C.";
+            }
+            if (dijo != pos)
+            {
+                Debug.Log($"[Quiz] Se ignoró la letra {l}: lo que se escuchó (\"{oido}\") apunta a la {Letras[dijo]}.");
+                return $"NO se registró ninguna respuesta: lo que se escuchó (\"{oido}\") no coincide con la {l}. " +
+                       "No digas si está bien o mal. Pregúntale con cariño cuál eligió: la A, la B o la C.";
+            }
+            Debug.Log($"[Quiz] Respuesta {l} (se escuchó \"{oido}\").");
+        }
         if (descartadas.Contains(pos)) return $"La opción {Letras[pos]} ya la intentó y no era. Pídele que elija otra.";
 
         intentos++;
@@ -518,6 +549,56 @@ public class QuizSession : MonoBehaviour
         StartCoroutine(MostrarIncorrecta(pos, false));
         return "incorrecta. Dile con cariño que no es esa y que lo intente otra vez. No des pistas. " +
                "Puedes repetir las alternativas que quedan.";
+    }
+
+    // ───────────── ¿Qué alternativa dijo el niño? ─────────────
+    static readonly string[][] TokensLetra = { new[] { "a" }, new[] { "b", "be", "ve", "be." }, new[] { "c", "ce", "se" } };
+    static readonly string[][] Ordinales = { new[] { "primera", "primero", "uno", "1" }, new[] { "segunda", "segundo", "dos", "2" }, new[] { "tercera", "tercero", "tres", "3" } };
+    static readonly HashSet<string> Marcadores = new HashSet<string> { "la", "letra", "opcion", "alternativa", "es", "elijo", "respuesta" };
+    static readonly HashSet<string> Vacias = new HashSet<string> { "para", "porque", "como", "cuando", "donde", "pero", "esta", "este", "esto", "eso", "esos", "esas", "unos", "unas", "todo", "todos", "muy", "tiene", "tenia", "habia", "estaba", "sobre", "desde", "hasta", "entre" };
+
+    /// Índice de la alternativa (0 = A) que se escucha en la transcripción, o -1 si no hay una respuesta clara.
+    int LetraDicha(string s)
+    {
+        var w = Palabras(s);
+        if (w.Count == 0) return -1;
+        var votos = new int[3];
+        for (int i = 0; i < w.Count; i++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                bool letra = Array.IndexOf(TokensLetra[k], w[i]) >= 0;
+                // Una letra cuenta si la frase es corta (\"la B\") o viene después de \"la / letra / opción / es\"
+                if (letra && (w.Count <= maxPalabrasLetraSuelta || (i > 0 && Marcadores.Contains(w[i - 1])))) votos[k] += 3;
+                if (Array.IndexOf(Ordinales[k], w[i]) >= 0 && (w.Count <= maxPalabrasLetraSuelta || (i > 0 && Marcadores.Contains(w[i - 1])))) votos[k] += 3;
+            }
+        }
+        // También vale nombrar la alternativa (\"una boa que se come un elefante\")
+        if (preguntaActual != null && preguntaActual.opciones != null)
+            for (int k = 0; k < 3 && k < orden.Length; k++)
+            {
+                var op = Palabras(preguntaActual.opciones[orden[k]]);
+                foreach (var x in op) if (x.Length >= 4 && !Vacias.Contains(x) && w.Contains(x)) votos[k] += 1;
+            }
+        int mejor = -1, max = 0; bool empate = false;
+        for (int k = 0; k < 3; k++) { if (votos[k] > max) { max = votos[k]; mejor = k; empate = false; } else if (votos[k] == max && max > 0) empate = true; }
+        return empate ? -1 : mejor;
+    }
+
+    static List<string> Palabras(string s)
+    {
+        var r = new List<string>();
+        if (string.IsNullOrWhiteSpace(s)) return r;
+        var sb = new System.Text.StringBuilder();
+        foreach (char ch in s.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD))
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat == System.Globalization.UnicodeCategory.NonSpacingMark) continue;   // quita tildes
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        }
+        foreach (var x in sb.ToString().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+            if (x != "ah" && x != "eh" && x != "mm" && x != "mmm" && x != "um" && x != "oh" && x != "aa") r.Add(x);   // muletillas / ruido
+        return r;
     }
 
     bool Ultima() => quizActual != null && numeroPregunta >= quizActual.preguntas.Count;
@@ -602,9 +683,9 @@ public class QuizSession : MonoBehaviour
         if (k.digit2Key.wasPressedThisFrame) ProbarCapitulo2();
         if (IsRunning && (agent == null || !agent.IsRunning))
         {
-            if (k.aKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba A → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }));
-            if (k.bKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba B → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }));
-            if (k.cKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba C → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }));
+            if (k.aKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba A → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }, false));
+            if (k.bKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba B → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }, false));
+            if (k.cKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba C → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }, false));
         }
 #else
         if (Input.GetKeyDown(KeyCode.Q)) IniciarPrimero();
@@ -612,9 +693,9 @@ public class QuizSession : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha2)) ProbarCapitulo2();
         if (IsRunning && (agent == null || !agent.IsRunning))
         {
-            if (Input.GetKeyDown(KeyCode.A)) Debug.Log("[Quiz] Prueba A → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }));
-            if (Input.GetKeyDown(KeyCode.B)) Debug.Log("[Quiz] Prueba B → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }));
-            if (Input.GetKeyDown(KeyCode.C)) Debug.Log("[Quiz] Prueba C → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }));
+            if (Input.GetKeyDown(KeyCode.A)) Debug.Log("[Quiz] Prueba A → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }, false));
+            if (Input.GetKeyDown(KeyCode.B)) Debug.Log("[Quiz] Prueba B → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }, false));
+            if (Input.GetKeyDown(KeyCode.C)) Debug.Log("[Quiz] Prueba C → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }, false));
         }
 #endif
     }
