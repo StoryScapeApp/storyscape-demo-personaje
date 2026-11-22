@@ -110,8 +110,8 @@ Cada animación se muestra una sola vez por sesión.
 | 1 (marker_0) | animaciones inspiradas en escenas del libro "El Principito" | `principito_volando` ✅ |
 | 1 (marker_0) | final de la página: "…estimula su imaginación, creatividad y conexión con el relato" o "Desarrollado por los alumnos…" | `quiz_pagina_1` ✅ (abre el quiz) |
 | 2 (marker_1) | Cuando tenía seis años vi, una vez, una imagen | `piloto_nino` ✅ (fondo de biblioteca en esta página; el piloto se transforma en niño a la izquierda del libro) |
-| 2 (marker_1) | En el libro se decía: "Las serpientes boas | pendiente |
-| 2 (marker_1) | Representaba una serpiente boa que digería un elefante. | pendiente |
+| 2 (marker_1) | En el libro se decía: "Las serpientes boas | `serpiente_boa` ✅ (la boa repta alrededor del libro y queda a la derecha) |
+| 2 (marker_1) | Representaba una serpiente boa que digería un elefante. | `boa_elefante` ✅ (se ve el elefante dentro de la boa y sale) |
 | 3 (marker_2) | aprendí a pilotar aviones. He volado un poco por todo el mundo. | pendiente |
 | 4 (marker_3) | hasta que tuve una avería en el desierto del Sahara, | pendiente |
 | 4 (marker_3) | La primera noche me dormí sobre la arena, a mil millas de cualquier tierra habitada. | pendiente |
