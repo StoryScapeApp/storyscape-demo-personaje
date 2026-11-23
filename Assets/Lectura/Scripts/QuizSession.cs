@@ -163,6 +163,10 @@ public class QuizSession : MonoBehaviour
     bool repetirPregunta, esRepeticion;
     /// ¿El agente habló en el último quiz? (si no, se respondió con el teclado de prueba)
     public bool UsoAgente { get; private set; }
+    /// Pruebas (PruebasRunner): alternativa aceptada (letra, ¿correcta?), ya validada con lo que se escuchó.
+    public event Action<string, bool> OpcionElegida;
+    /// Pruebas: cada vez que el agente llama a elegir_opcion, aunque Unity la rechace (letra pedida).
+    public event Action<string> OpcionIntentada;
 
     static readonly string[] Letras = { "A", "B", "C" };
 
@@ -315,6 +319,29 @@ public class QuizSession : MonoBehaviour
     }
 
     public void Reanudar() { Pausado = false; }
+
+    /// Pruebas: busca una pregunta. quizId = un quiz de la escena (pagina_1, clave 1, 2…) o un banco
+    /// (capitulo_1, capitulo_2; clave L1, L2… literales, I1, I2… inferenciales).
+    public Pregunta BuscarPregunta(string quizId, string clave)
+    {
+        clave = (clave ?? "").Trim().ToUpperInvariant();
+        var b = CargarBanco()?.quizzes?.Find(x => x.id == quizId);
+        if (b != null && clave.Length > 1 && int.TryParse(clave.Substring(1), out int n))
+        {
+            var lista = clave[0] == 'I' ? b.inferenciales : b.literales;
+            return lista != null && n >= 1 && n <= lista.Count ? lista[n - 1] : null;
+        }
+        var q = quizzes.Find(x => x.id == quizId);
+        return q != null && int.TryParse(clave, out int i) && i >= 1 && i <= q.preguntas.Count ? q.preguntas[i - 1] : null;
+    }
+
+    /// Pruebas: hace una sola pregunta (una conversación con el agente).
+    public bool IniciarPreguntaUnica(Pregunta p, string intro = "Pregunta de prueba.")
+    {
+        if (IsRunning || p == null) return false;
+        StartCoroutine(Run(new Quiz { id = "prueba", intro = intro, preguntas = new List<Pregunta> { p } }));
+        return true;
+    }
 
     [ContextMenu("Iniciar quiz de la página 1")]
     void IniciarPrimero() { if (quizzes.Count > 0) { quizzes[0].hecho = false; IniciarQuiz(quizzes[0].id); } }
@@ -611,6 +638,7 @@ public class QuizSession : MonoBehaviour
         if (resuelta) return "Esta pregunta ya terminó. Despídete con una frase corta y termina la conversación con end_call.";
 
         string l = (args.letra ?? "").Trim().ToUpperInvariant();
+        OpcionIntentada?.Invoke(l.Length > 0 ? l.Substring(0, 1) : "?");
         int pos = l.Length > 0 ? Array.IndexOf(Letras, l.Substring(0, 1)) : -1;
         if (pos < 0) return "Letra no válida. Pídele con cariño que responda diciendo A, B o C.";
         if (validar)
@@ -636,6 +664,7 @@ public class QuizSession : MonoBehaviour
         }
         if (descartadas.Contains(pos)) return $"La opción {Letras[pos]} ya la intentó y no era. Pídele que elija otra.";
 
+        OpcionElegida?.Invoke(Letras[pos], pos == posCorrecta);
         intentos++;
         if (pos == posCorrecta)
         {

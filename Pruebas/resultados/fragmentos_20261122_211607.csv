@@ -1,0 +1,2 @@
+﻿ensayo;id;estado;entrada;tipo;pagina;version;voz;esperado;activadas;aciertos;omitidas;falsas;duracion_lectura_s;latencia_aparicion_ms;latencia_transcripcion_ms;transcripcion
+1;FR001;ok;simulado;fragmento;7;pausas;v1;quiz_capitulo_2;quiz_capitulo_2;1;0;;11.8;quiz_capitulo_2:-454;quiz_capitulo_2:-458;Ese es demasiado viejo. Quiero un cordero que viva mucho tiempo. Y fue así como conocí al principito.

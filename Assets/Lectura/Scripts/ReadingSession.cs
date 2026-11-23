@@ -93,6 +93,12 @@ public class ReadingSession : MonoBehaviour
     public bool Pausada { get; set; }
     /// Todo lo que Scribe/Vosk oye, aunque la lectura esté en pausa (lo usa VoiceCommands).
     public event Action<string, bool> TextoEnVivo;
+    /// Pruebas (PruebasRunner): se avisa cada vez que se activa una animación (id, origen).
+    public event Action<string, string> AnimacionActivada;
+    /// Pruebas: las frases de los quizzes se registran, pero no abren el quiz.
+    [NonSerialized] public bool modoPrueba;
+    /// Pruebas sin voz: procesa un texto como si lo hubiera transcrito Scribe.
+    public void InyectarTexto(string texto, bool final) => OnLive(texto, final, "Simulado");
 
     readonly List<KeyValuePair<float, string>> heard = new List<KeyValuePair<float, string>>();     // agente
     readonly List<KeyValuePair<float, string>> dictated = new List<KeyValuePair<float, string>>();  // dictado (frases completas)
@@ -540,6 +546,8 @@ public class ReadingSession : MonoBehaviour
         if (!force && a.soloUnaVez && a.activada) return;
         a.activada = true;
         Debug.Log($"[Lectura] Animación \"{a.id}\" activada por {origen}.");
+        AnimacionActivada?.Invoke(a.id, origen);
+        if (modoPrueba && a.id != null && a.id.StartsWith("quiz")) return;   // en las pruebas no se abre el quiz
         a.alActivar?.Invoke();
     }
 

@@ -102,6 +102,17 @@ public class ElevenLabsAgentClient : MonoBehaviour
 
     /// <summary>Texto que el agente transcribió de lo que dijo el niño (cada turno).</summary>
     public event Action<string> UserTranscript;
+    /// <summary>Texto de cada respuesta del personaje (lo usa PruebasRunner).</summary>
+    public event Action<string> AgentResponse;
+    /// Pruebas: no envía el audio del micrófono (conversaciones solo por texto).
+    [NonSerialized] public bool silenciarMic;
+
+    /// Pruebas: envía un mensaje de texto como si el niño lo hubiera dicho.
+    public void SendUserMessage(string text)
+    {
+        if (ws == null || ws.State != WebSocketState.Open) return;
+        _ = SendText("{\"type\":\"user_message\",\"text\":" + Json(text) + "}");
+    }
 
     readonly Dictionary<string, Func<ToolArgs, string>> tools = new Dictionary<string, Func<ToolArgs, string>>();
     /// Registra una herramienta de cliente por nombre (tiene prioridad sobre ClientToolHandler).
@@ -167,7 +178,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
     [Serializable] class UserTranscriptEvt { public string user_transcript; }
     [Serializable] class AgentResponseEvt { public string agent_response; }
     [Serializable] class InitMetaEvt { public string conversation_id; public string agent_output_audio_format; public string user_input_audio_format; }
-    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; public string agentIdLectura; public string agentIdQuiz; }
+    [Serializable] class LocalConfig { public string agentId; public string agentIdBienvenida; public string agentIdLectura; public string agentIdQuiz; public string agentIdQuizPrueba; }
     [Serializable] class ClientToolCallEvt { public string tool_name; public string tool_call_id; public ToolArgs parameters; }
     /// Parámetros de las herramientas de cliente del agente (los que una herramienta no usa llegan vacíos).
     [Serializable] public class ToolArgs { public string palabra; public string significado; public string animacion; public string letra; }
@@ -338,6 +349,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
                 {
                     subtitleAgent = StripTags(m.agent_response_event.agent_response);
                     Debug.Log("[ElevenLabs] Personaje: " + subtitleAgent);
+                    AgentResponse?.Invoke(subtitleAgent);
                 }
                 break;
 
@@ -485,7 +497,7 @@ public class ElevenLabsAgentClient : MonoBehaviour
         // Solo se silencia si la voz del personaje realmente se está reproduciendo.
         bool suena = AgentSpeaking && source.isPlaying;
         if (suena) finVozAgente = Time.realtimeSinceStartup;
-        micMuted = muteMicWhileAgentSpeaks && (suena || Time.realtimeSinceStartup - finVozAgente < colaSilencioMic);
+        micMuted = silenciarMic || (muteMicWhileAgentSpeaks && (suena || Time.realtimeSinceStartup - finVozAgente < colaSilencioMic));
         micRaw.AddRange(data);
         Resample();
 
@@ -660,7 +672,8 @@ public class ElevenLabsAgentClient : MonoBehaviour
             var cfg = JsonUtility.FromJson<LocalConfig>(File.ReadAllText(path));
             agentId = (configKey == "agentIdBienvenida" ? cfg?.agentIdBienvenida
                      : configKey == "agentIdLectura" ? cfg?.agentIdLectura
-                     : configKey == "agentIdQuiz" ? cfg?.agentIdQuiz : cfg?.agentId)?.Trim();
+                     : configKey == "agentIdQuiz" ? cfg?.agentIdQuiz
+                     : configKey == "agentIdQuizPrueba" ? cfg?.agentIdQuizPrueba : cfg?.agentId)?.Trim();
         }
         catch { return false; }
         return !string.IsNullOrEmpty(agentId) && !agentId.StartsWith("PEGA_");

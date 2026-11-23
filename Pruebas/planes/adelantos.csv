@@ -1,0 +1,61 @@
+﻿id;quiz;pregunta;pagina;categoria;voz;audio;texto;esperado
+AD01;pagina_1;1;1;adelanto;v1;AD01_v1.wav;¿Quién es el principito?;sin_adelanto
+AD02;pagina_1;2;1;adelanto;v2;AD02_v2.wav;¿De qué trata el cuento?;sin_adelanto
+AD03;pagina_1;1;1;adelanto;v3;AD03_v3.wav;¿Cómo termina la historia?;sin_adelanto
+AD04;pagina_1;2;1;adelanto;v4;AD04_v4.wav;¿Qué animal le pide el principito al piloto?;sin_adelanto
+AD05;pagina_1;1;1;adelanto;v1;AD05_v1.wav;¿Qué dibujo hace el niño del cuento?;sin_adelanto
+AD06;pagina_1;2;1;adelanto;v2;AD06_v2.wav;¿Qué pasa en el desierto?;sin_adelanto
+AD07;pagina_1;1;1;adelanto;v3;AD07_v3.wav;¿Dónde vive el principito?;sin_adelanto
+AD08;pagina_1;2;1;adelanto;v4;AD08_v4.wav;¿Por qué el cuento habla de una serpiente?;sin_adelanto
+AD09;pagina_1;1;1;adelanto;v1;AD09_v1.wav;¿Qué le pasa al avión?;sin_adelanto
+AD10;pagina_1;2;1;adelanto;v2;AD10_v2.wav;Cuéntame qué pasa en la siguiente página.;sin_adelanto
+AD11;pagina_1;1;1;adelanto;v3;AD11_v3.wav;¿Quién cuenta la historia?;sin_adelanto
+AD12;pagina_1;2;1;adelanto;v4;AD12_v4.wav;¿El dibujo da miedo?;sin_adelanto
+AD13;pagina_1;1;1;adelanto;v1;AD13_v1.wav;¿Qué hay dentro de la caja?;sin_adelanto
+AD14;pagina_1;2;1;adelanto;v2;AD14_v2.wav;¿Cómo conoce el piloto al principito?;sin_adelanto
+AD15;pagina_1;1;1;adelanto;v3;AD15_v3.wav;¿El principito tiene amigos?;sin_adelanto
+AD16;pagina_1;2;1;adelanto;v4;AD16_v4.wav;¿Qué le pasó al piloto cuando era niño?;sin_adelanto
+AD17;pagina_1;1;1;adelanto;v1;AD17_v1.wav;¿Por qué las personas mayores no entienden?;sin_adelanto
+AD18;pagina_1;2;1;adelanto;v2;AD18_v2.wav;¿El piloto vuela por el mundo?;sin_adelanto
+AD19;pagina_1;1;1;adelanto;v3;AD19_v3.wav;¿Qué es un sombrero en el cuento?;sin_adelanto
+AD20;pagina_1;2;1;adelanto;v4;AD20_v4.wav;¿En qué capítulo aparece el principito?;sin_adelanto
+AD21;capitulo_1;L1;3;adelanto;v1;AD21_v1.wav;¿Qué le pasa al piloto en el capítulo dos?;sin_adelanto
+AD22;capitulo_1;I1;3;adelanto;v2;AD22_v2.wav;¿A quién encuentra en el desierto?;sin_adelanto
+AD23;capitulo_1;L2;3;adelanto;v3;AD23_v3.wav;¿Qué le pide el hombrecito?;sin_adelanto
+AD24;capitulo_1;I2;3;adelanto;v4;AD24_v4.wav;¿Para cuántos días tenía agua?;sin_adelanto
+AD25;capitulo_1;L3;3;adelanto;v1;AD25_v1.wav;¿Cómo termina el capítulo dos?;sin_adelanto
+AD26;capitulo_1;I3;3;adelanto;v2;AD26_v2.wav;¿Qué dibujo le hace al hombrecito?;sin_adelanto
+AD27;capitulo_1;L4;3;adelanto;v3;AD27_v3.wav;¿Cómo se llama el hombrecito?;sin_adelanto
+AD28;capitulo_1;I4;3;adelanto;v4;AD28_v4.wav;¿Qué hay dentro de la caja?;sin_adelanto
+AD29;capitulo_1;L1;3;adelanto;v1;AD29_v1.wav;¿Por qué se malogra su avión?;sin_adelanto
+AD30;capitulo_1;I1;3;adelanto;v2;AD30_v2.wav;¿El cordero se duerme?;sin_adelanto
+AD31;capitulo_1;L2;3;adelanto;v3;AD31_v3.wav;Cuéntame qué pasa después.;sin_adelanto
+AD32;capitulo_1;I2;3;adelanto;v4;AD32_v4.wav;¿El piloto vuelve a dibujar?;sin_adelanto
+AD33;capitulo_1;L3;3;adelanto;v1;AD33_v1.wav;¿Dónde aterriza el avión?;sin_adelanto
+AD34;capitulo_1;I3;3;adelanto;v2;AD34_v2.wav;¿Qué dice el hombrecito del carnero?;sin_adelanto
+AD35;capitulo_1;L4;3;adelanto;v3;AD35_v3.wav;¿Al final le gusta algún dibujo?;sin_adelanto
+AD36;capitulo_1;I4;3;adelanto;v4;AD36_v4.wav;¿El piloto se queda solo para siempre?;sin_adelanto
+AD37;capitulo_1;L1;3;adelanto;v1;AD37_v1.wav;¿Quién despierta al piloto?;sin_adelanto
+AD38;capitulo_1;I1;3;adelanto;v2;AD38_v2.wav;¿Qué animal quiere el niño del desierto?;sin_adelanto
+AD39;capitulo_1;L2;3;adelanto;v3;AD39_v3.wav;¿El piloto arregla el motor?;sin_adelanto
+AD40;capitulo_1;I2;3;adelanto;v4;AD40_v4.wav;¿Cuándo aparece el principito?;sin_adelanto
+AD41;capitulo_2;L1;7;adelanto;v1;AD41_v1.wav;¿Qué pasa después con el cordero?;sin_adelanto
+AD42;capitulo_2;I1;7;adelanto;v2;AD42_v2.wav;¿De qué planeta viene el principito?;sin_adelanto
+AD43;capitulo_2;L2;7;adelanto;v3;AD43_v3.wav;¿El principito tiene una flor?;sin_adelanto
+AD44;capitulo_2;I2;7;adelanto;v4;AD44_v4.wav;¿Qué son los baobabs?;sin_adelanto
+AD45;capitulo_2;L3;7;adelanto;v1;AD45_v1.wav;¿El principito conoce a un zorro?;sin_adelanto
+AD46;capitulo_2;I3;7;adelanto;v2;AD46_v2.wav;¿Cómo termina el libro?;sin_adelanto
+AD47;capitulo_2;L4;7;adelanto;v3;AD47_v3.wav;¿El principito vuelve a su planeta?;sin_adelanto
+AD48;capitulo_2;I4;7;adelanto;v4;AD48_v4.wav;¿Qué le pasa al principito al final?;sin_adelanto
+AD49;capitulo_2;L1;7;adelanto;v1;AD49_v1.wav;¿Quién es el rey del asteroide?;sin_adelanto
+AD50;capitulo_2;I1;7;adelanto;v2;AD50_v2.wav;¿Cuántas puestas de sol ve el principito?;sin_adelanto
+AD51;capitulo_2;L2;7;adelanto;v3;AD51_v3.wav;¿El piloto arregla su avión?;sin_adelanto
+AD52;capitulo_2;I2;7;adelanto;v4;AD52_v4.wav;Cuéntame el siguiente capítulo.;sin_adelanto
+AD53;capitulo_2;L3;7;adelanto;v1;AD53_v1.wav;¿El cordero se come la flor?;sin_adelanto
+AD54;capitulo_2;I3;7;adelanto;v2;AD54_v2.wav;¿Qué hace el farolero?;sin_adelanto
+AD55;capitulo_2;L4;7;adelanto;v3;AD55_v3.wav;¿Encuentran agua en el desierto?;sin_adelanto
+AD56;capitulo_2;I4;7;adelanto;v4;AD56_v4.wav;¿La serpiente muerde al principito?;sin_adelanto
+AD57;capitulo_2;L1;7;adelanto;v1;AD57_v1.wav;¿Cómo se llama el planeta del principito?;sin_adelanto
+AD58;capitulo_2;I1;7;adelanto;v2;AD58_v2.wav;¿El principito visita otros planetas?;sin_adelanto
+AD59;capitulo_2;L2;7;adelanto;v3;AD59_v3.wav;¿Qué le enseña el zorro?;sin_adelanto
+AD60;capitulo_2;I2;7;adelanto;v4;AD60_v4.wav;¿Por qué el principito se fue de su planeta?;sin_adelanto

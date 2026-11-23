@@ -1,0 +1,73 @@
+﻿id;quiz;pregunta;pagina;forma;voz;audio;texto;esperado
+AL01;capitulo_2;L1;7;letra;v1;AL01_v1.wav;A.;A
+AL02;capitulo_2;L1;7;letra;v2;AL02_v2.wav;C.;C
+AL03;pagina_1;2;1;letra;v3;AL03_v3.wav;A.;A
+AL04;pagina_1;2;1;contenido;v4;AL04_v4.wav;Para no tener que leer.;C
+AL05;capitulo_2;L1;7;contenido;v1;AL05_v1.wav;En la selva virgen.;A
+AL06;pagina_1;1;1;ambigua;v2;AL06_v2.wav;Mmm… no estoy seguro.;ninguna
+AL07;capitulo_2;L1;7;frase;v3;AL07_v3.wav;Creo que es la C.;C
+AL08;capitulo_2;L1;7;contenido;v4;AL08_v4.wav;En medio del océano.;B
+AL09;capitulo_1;L1;3;letra;v1;AL09_v1.wav;C.;C
+AL10;pagina_1;1;1;la_letra;v2;AL10_v2.wav;La C.;C
+AL11;capitulo_2;L1;7;frase;v3;AL11_v3.wav;Creo que es la B.;B
+AL12;pagina_1;2;1;frase;v4;AL12_v4.wav;Creo que es la B.;B
+AL13;capitulo_1;L1;3;la_letra;v1;AL13_v1.wav;La B.;B
+AL14;capitulo_1;L1;3;letra;v2;AL14_v2.wav;A.;A
+AL15;pagina_1;2;1;contenido;v3;AL15_v3.wav;Para leer más rápido.;B
+AL16;pagina_1;2;1;ambigua;v4;AL16_v4.wav;Todas me gustan.;ninguna
+AL17;pagina_1;1;1;opcion;v1;AL17_v1.wav;Opción B.;B
+AL18;capitulo_1;L1;3;contenido;v2;AL18_v2.wav;Una boa digiriendo un elefante.;B
+AL19;pagina_1;2;1;contenido;v3;AL19_v3.wav;Para entender mejor la historia.;A
+AL20;capitulo_2;L1;7;opcion;v4;AL20_v4.wav;Opción A.;A
+AL21;pagina_1;1;1;ambigua;v1;AL21_v1.wav;¿Me repites la pregunta?;ninguna
+AL22;pagina_1;1;1;frase;v2;AL22_v2.wav;Creo que es la C.;C
+AL23;pagina_1;1;1;frase;v3;AL23_v3.wav;Creo que es la B.;B
+AL24;pagina_1;2;1;opcion;v4;AL24_v4.wav;Opción C.;C
+AL25;pagina_1;2;1;frase;v1;AL25_v1.wav;Creo que es la C.;C
+AL26;capitulo_2;L1;7;la_letra;v2;AL26_v2.wav;La A.;A
+AL27;pagina_1;2;1;frase;v3;AL27_v3.wav;Creo que es la A.;A
+AL28;capitulo_1;L1;3;opcion;v4;AL28_v4.wav;Opción B.;B
+AL29;capitulo_1;L1;3;la_letra;v1;AL29_v1.wav;La A.;A
+AL30;capitulo_2;L1;7;ambigua;v2;AL30_v2.wav;Eh…;ninguna
+AL31;capitulo_2;L1;7;ambigua;v3;AL31_v3.wav;La A o la B, no sé.;ninguna
+AL32;pagina_1;1;1;contenido;v4;AL32_v4.wav;Cantando.;C
+AL33;capitulo_1;L1;3;ambigua;v1;AL33_v1.wav;Mmm… no estoy seguro.;ninguna
+AL34;capitulo_1;L1;3;contenido;v2;AL34_v2.wav;Una montaña.;C
+AL35;pagina_1;2;1;opcion;v3;AL35_v3.wav;Opción A.;A
+AL36;pagina_1;2;1;la_letra;v4;AL36_v4.wav;La C.;C
+AL37;pagina_1;1;1;la_letra;v1;AL37_v1.wav;La A.;A
+AL38;pagina_1;1;1;ambigua;v2;AL38_v2.wav;No sé.;ninguna
+AL39;pagina_1;1;1;opcion;v3;AL39_v3.wav;Opción C.;C
+AL40;capitulo_1;L1;3;ambigua;v4;AL40_v4.wav;¿Me repites la pregunta?;ninguna
+AL41;pagina_1;1;1;frase;v1;AL41_v1.wav;Creo que es la A.;A
+AL42;pagina_1;1;1;contenido;v2;AL42_v2.wav;En silencio.;A
+AL43;pagina_1;2;1;ambigua;v3;AL43_v3.wav;La A o la B, no sé.;ninguna
+AL44;pagina_1;1;1;letra;v4;AL44_v4.wav;A.;A
+AL45;capitulo_1;L1;3;opcion;v1;AL45_v1.wav;Opción C.;C
+AL46;pagina_1;1;1;letra;v2;AL46_v2.wav;C.;C
+AL47;capitulo_1;L1;3;frase;v3;AL47_v3.wav;Creo que es la C.;C
+AL48;capitulo_1;L1;3;frase;v4;AL48_v4.wav;Creo que es la A.;A
+AL49;capitulo_1;L1;3;la_letra;v1;AL49_v1.wav;La C.;C
+AL50;capitulo_1;L1;3;letra;v2;AL50_v2.wav;B.;B
+AL51;capitulo_2;L1;7;opcion;v3;AL51_v3.wav;Opción B.;B
+AL52;pagina_1;2;1;opcion;v4;AL52_v4.wav;Opción B.;B
+AL53;capitulo_1;L1;3;opcion;v1;AL53_v1.wav;Opción A.;A
+AL54;pagina_1;1;1;opcion;v2;AL54_v2.wav;Opción A.;A
+AL55;capitulo_1;L1;3;contenido;v3;AL55_v3.wav;Un sombrero.;A
+AL56;capitulo_1;L1;3;frase;v4;AL56_v4.wav;Creo que es la B.;B
+AL57;capitulo_1;L1;3;ambigua;v1;AL57_v1.wav;No sé.;ninguna
+AL58;pagina_1;2;1;ambigua;v2;AL58_v2.wav;Eh…;ninguna
+AL59;pagina_1;1;1;letra;v3;AL59_v3.wav;B.;B
+AL60;pagina_1;1;1;contenido;v4;AL60_v4.wav;En voz alta.;B
+AL61;pagina_1;2;1;la_letra;v1;AL61_v1.wav;La A.;A
+AL62;pagina_1;2;1;letra;v2;AL62_v2.wav;C.;C
+AL63;pagina_1;1;1;la_letra;v3;AL63_v3.wav;La B.;B
+AL64;capitulo_2;L1;7;opcion;v4;AL64_v4.wav;Opción C.;C
+AL65;capitulo_2;L1;7;la_letra;v1;AL65_v1.wav;La B.;B
+AL66;capitulo_2;L1;7;contenido;v2;AL66_v2.wav;En el desierto del Sahara.;C
+AL67;pagina_1;2;1;letra;v3;AL67_v3.wav;B.;B
+AL68;pagina_1;2;1;la_letra;v4;AL68_v4.wav;La B.;B
+AL69;capitulo_2;L1;7;la_letra;v1;AL69_v1.wav;La C.;C
+AL70;capitulo_2;L1;7;ambigua;v2;AL70_v2.wav;Todas me gustan.;ninguna
+AL71;capitulo_2;L1;7;letra;v3;AL71_v3.wav;B.;B
+AL72;capitulo_2;L1;7;frase;v4;AL72_v4.wav;Creo que es la A.;A
