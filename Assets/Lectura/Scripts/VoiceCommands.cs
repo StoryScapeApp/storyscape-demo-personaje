@@ -277,6 +277,7 @@ public class VoiceCommands : MonoBehaviour
         if (lectura) { lectura.Detener(); lectura.RearmarPaginas(0, 0); }
         if (tracker) tracker.ReiniciarPagina();
         if (receptor) receptor.ResetActions();   // el ArUco de la página 1 vuelve a iniciar el onboarding
+        PortalClient.NuevoAlumno();   // cierra la sesión del portal del alumno anterior
         SesionLector.Reiniciar();
         Debug.Log("[Comandos] Nuevo alumno: todo reiniciado. Muestra el ArUco de la página 1 para empezar.");
         Decir("nuevo_alumno");

@@ -33,7 +33,24 @@ public class QuizSession : MonoBehaviour
         public Sprite imagen;
         [Tooltip("Zonas de las píldoras A, B y C dentro de la imagen (0–1, origen arriba a la izquierda: x, y, ancho, alto)")]
         public Rect[] zonas = new Rect[3];
+        /// "literal" o "inferencial" (lo pone el sorteo del banco; el portal lo agrupa así)
+        [NonSerialized] public string tipo;
     }
+
+    /// Resultado de una pregunta, para el portal del docente (lo envía PortalClient).
+    public class ResultadoPregunta
+    {
+        public string quizId;
+        public int numero;
+        public string tipo, texto, letraCorrecta;
+        public string[] opciones;                 // en el orden en que se mostraron (A, B, C)
+        public List<string> intentos;             // letras elegidas, en orden
+    }
+
+    /// Se dispara al terminar cada pregunta (con o sin respuesta).
+    public static event Action<ResultadoPregunta> PreguntaTerminada;
+    /// Se dispara al terminar un quiz completo (finDelLibro = era el del último capítulo).
+    public static event Action<string, bool> QuizTerminado;
 
     [Serializable]
     public class Quiz
@@ -145,6 +162,7 @@ public class QuizSession : MonoBehaviour
     bool resuelta;
     bool acierto;
     readonly HashSet<int> descartadas = new HashSet<int>();
+    readonly List<string> intentosLetras = new List<string>();   // letras elegidas en la pregunta actual
     SpriteRenderer principitoSr;
     bool modoImagen;
     struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; public bool rellenoPropio; }
@@ -297,6 +315,8 @@ public class QuizSession : MonoBehaviour
         var b = CargarBanco()?.quizzes?.Find(x => x.id == id);
         if (b == null) return null;
 
+        foreach (var x in b.literales) x.tipo = "literal";
+        foreach (var x in b.inferenciales) x.tipo = "inferencial";
         var lit = Sortear(b.literales);
         var inf = Sortear(b.inferenciales);
         var elegidas = new List<Pregunta>();
@@ -388,6 +408,7 @@ public class QuizSession : MonoBehaviour
             }
 
             Guardar(q, preguntaActual);
+            Notificar(q, preguntaActual);
             yield return HidePregunta();
         }
 
@@ -396,6 +417,7 @@ public class QuizSession : MonoBehaviour
         yield return Fade(0f);
         if (doubts) doubts.bloqueada = false;
         Debug.Log(FinDelLibro() ? "[Quiz] Terminado: fin del libro." : "[Quiz] Terminado: sigue la lectura.");
+        QuizTerminado?.Invoke(q.id, FinDelLibro());
         quizActual = null;
         preguntaActual = null;
         IsRunning = false;
@@ -415,6 +437,7 @@ public class QuizSession : MonoBehaviour
         resuelta = false;
         acierto = false;
         descartadas.Clear();
+        intentosLetras.Clear();
         orden = new[] { 0, 1, 2 };
         modoImagen = p.imagen && imagenPregunta;
         if (mezclarOpciones && !modoImagen)   // con imagen, las letras ya están dibujadas
@@ -494,6 +517,7 @@ public class QuizSession : MonoBehaviour
         if (descartadas.Contains(pos)) return $"La opción {Letras[pos]} ya la intentó y no era. Pídele que elija otra.";
 
         intentos++;
+        intentosLetras.Add(Letras[pos]);
         if (pos == posCorrecta)
         {
             resuelta = true;
@@ -660,6 +684,19 @@ public class QuizSession : MonoBehaviour
     void Anim(string clip) { if (principito && !string.IsNullOrEmpty(clip)) principito.Play(clip); }
     static void Show(ProjectedCard c) { if (c) c.Show(); }
     static void Hide(ProjectedCard c) { if (c) c.Hide(); }
+
+    /// Avisa al portal (PortalClient) del resultado de la pregunta.
+    void Notificar(Quiz q, Pregunta p)
+    {
+        if (p == null || PreguntaTerminada == null) return;
+        var ops = new string[3];
+        for (int i = 0; i < 3; i++) ops[i] = p.opciones[orden[i]];
+        PreguntaTerminada(new ResultadoPregunta
+        {
+            quizId = q.id, numero = numeroPregunta, tipo = string.IsNullOrEmpty(p.tipo) ? "literal" : p.tipo,
+            texto = p.texto, opciones = ops, letraCorrecta = Letras[posCorrecta], intentos = new List<string>(intentosLetras),
+        });
+    }
 
     void Guardar(Quiz q, Pregunta p)
     {

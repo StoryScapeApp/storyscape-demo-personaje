@@ -58,3 +58,7 @@ desktop.ini
 # Configuración local de ElevenLabs (no subir)
 /[Aa]ssets/[Ss]treaming[Aa]ssets/elevenlabs.local.json
 /[Aa]ssets/[Ss]treaming[Aa]ssets/elevenlabs.local.json.meta
+
+# Configuración local del portal docente (contiene la clave de ingesta)
+/[Aa]ssets/[Ss]treaming[Aa]ssets/portal.local.json
+/[Aa]ssets/[Ss]treaming[Aa]ssets/portal.local.json.meta
