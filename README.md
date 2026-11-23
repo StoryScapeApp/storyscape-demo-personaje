@@ -130,6 +130,24 @@ Otros datos: tras un comando se ignora lo que se oiga durante 3,5 s (*Enfriamien
 
 **Audios de confirmación (pendientes de generar):** se crean una sola vez con ElevenLabs Text to Speech, con la voz del Principito (`ihKwLOjVUMG4lgUI6meZ`), modelo `eleven_multilingual_v2`, y se guardan como `Assets/Resources/Comandos/<clave>.mp3` con las claves: `pausa`, `continua`, `repite_pagina`, `repite_capitulo`, `repite_quiz`, `repite_pregunta`, `ayuda`, `nuevo_alumno_pide`, `nuevo_alumno`, `no_entendi`, `no_hay_quiz`. Por ahora **no hay audios**: los comandos funcionan igual y la confirmación sale solo escrita en pantalla. Para generarlos: por la API hace falta una key con el permiso *Text to Speech*, créditos y un **plan de pago** (las voces de la biblioteca no se pueden usar por API en el plan gratuito); sin plan de pago, se generan en la web de ElevenLabs (*Text to Speech*, con esa voz) y se guardan con esos nombres. La carpeta `Assets/Resources/Comandos/` se crea al agregarlos.
 
+### 6. Portal del docente: resultados de los quizzes
+
+Al terminar cada pregunta del quiz, el juego envía el resultado (nombre del niño, código ALUMNO, respuestas e intentos) al portal del docente del repo `storyscape-platform`, donde se ve en **Progreso** y en el **Panel**. No se envían audios ni imágenes. Si el portal no está configurado o no responde, el juego funciona igual (los envíos fallidos se reintentan cada pocos segundos).
+
+Configuración (una vez por laptop):
+
+1. Levanta el backend y el portal siguiendo el README de `storyscape-platform` (sección "Unity results").
+2. Copia `Assets/StreamingAssets/portal.example.json` como `Assets/StreamingAssets/portal.local.json` (está en `.gitignore`, no se sube) y completa:
+   ```json
+   {
+     "baseUrl": "http://localhost:3000",
+     "apiKey": "el mismo valor de UNITY_INGEST_KEY del .env del backend"
+   }
+   ```
+   `baseUrl` debe ser el puerto donde corre el backend (`PORT` de su `.env`).
+3. Si generas un build (`StoryScape > Build macOS` o el método `BuildMac.Build`), `portal.local.json` se incluye en `StreamingAssets`: vuelve a generar el build después de cambiarlo.
+4. Prueba: haz un quiz completo y abre `http://localhost:5173/progress`; el alumno aparece con su código. El comando de voz o la tecla de "nuevo alumno" cierra la sesión actual en el portal.
+
 ## Requisitos
 
 - **Unity 6000.3.23f1** (Unity 6.3 LTS), 2D URP

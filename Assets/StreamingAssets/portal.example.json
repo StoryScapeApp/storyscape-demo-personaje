@@ -1,4 +1,4 @@
 {
-  "baseUrl": "http://localhost:3001",
+  "baseUrl": "http://localhost:3000",
   "apiKey": "PEGA_AQUI_UNITY_INGEST_KEY_DEL_BACKEND"
 }
