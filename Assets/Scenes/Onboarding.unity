@@ -3307,6 +3307,7 @@ MonoBehaviour:
     del quiz."
   mezclarOpciones: 1
   maxIntentos: 2
+  ocultarIncorrecta: 1
   validarRespuesta: 1
   maxPalabrasLetraSuelta: 3
   agent: {fileID: 1375734805}
@@ -3332,6 +3333,12 @@ MonoBehaviour:
   tamPregunta: 2.5
   tamOpciones: 1.65
   altoMinOpcion: 0.55
+  circuloLetra: {fileID: 21300000, guid: fd3bb6dc6919e494893279b960e1e0a6, type: 3}
+  colorCirculoLetra: {r: 0.18, g: 0.55, b: 0.25, a: 1}
+  colorLetra: {r: 1, g: 1, b: 1, a: 1}
+  diametroLetra: 0.38
+  tamLetra: 1.75
+  margenLetra: 0.1
   separacionOpciones: 0.13
   esperarAnimaciones:
   - {fileID: 1867592304}
@@ -4961,7 +4968,7 @@ MonoBehaviour:
   markerSwitchDelay: 0.6
   quietSamples: 4
   maxAngle: 60
-  calibrarAntesDelOnboarding: 0
+  calibrarAntesDelOnboarding: 1
   omitirSiYaHayCalibracion: 0
   onboarding: {fileID: 1615534944}
   markerInicio: 0

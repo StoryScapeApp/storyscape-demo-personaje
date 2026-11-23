@@ -81,6 +81,8 @@ public class QuizSession : MonoBehaviour
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
     public int maxIntentos = 2;
+    [Tooltip("La alternativa incorrecta que eligió el niño desaparece (desmarcado = se oscurece)")]
+    public bool ocultarIncorrecta = true;
     [Tooltip("Solo acepta la letra si lo que se transcribió del niño la contiene (\"la A\", \"B\", \"la tercera\") o nombra esa alternativa. " +
              "Evita que el ruido de fondo o una conversación cercana cuenten como respuesta")]
     public bool validarRespuesta = true;
@@ -122,6 +124,14 @@ public class QuizSession : MonoBehaviour
     [Tooltip("Mismo tamaño de letra para todas las alternativas; si el texto no cabe, pasa a dos renglones y la píldora crece")]
     public float tamOpciones = 1.9f;
     public float altoMinOpcion = 0.55f;
+    [Tooltip("Círculo detrás de la letra (A, B, C) de cada alternativa")]
+    public Sprite circuloLetra;
+    public Color colorCirculoLetra = new Color(0.18f, 0.55f, 0.25f);
+    public Color colorLetra = Color.white;
+    public float diametroLetra = 0.38f;
+    public float tamLetra = 1.75f;
+    [Tooltip("Espacio entre el borde izquierdo de la píldora y el círculo de la letra")]
+    public float margenLetra = 0.1f;
     public float separacionOpciones = 0.13f;
     [Tooltip("Animaciones que deben terminar antes de empezar el quiz (p. ej. el Principito volando)")]
     public PrincipitoVolando[] esperarAnimaciones;
@@ -183,6 +193,9 @@ public class QuizSession : MonoBehaviour
     Original[] originales;
     float panelTop, panelBottom, panelX;   // borde superior/inferior del panel en la escena (crece hacia abajo si hace falta)
     Vector2 panelSize;
+    struct Letra { public SpriteRenderer circulo; public TMPro.TextMeshPro texto; }
+    Letra[] letras;
+    float MargenTexto => margenLetra + diametroLetra + 0.14f;   // donde empieza el texto, desde el borde de la píldora
 
     void Awake()
     {
@@ -208,6 +221,7 @@ public class QuizSession : MonoBehaviour
             c.label.enableAutoSizing = false; c.label.fontSize = tamOpciones;
             c.label.textWrappingMode = TMPro.TextWrappingModes.Normal; c.label.lineSpacing = -10f;
         }
+        CrearLetras();
         if (panel && panel.fill)
         {
             panelSize = panel.fill.size; panelX = panel.transform.position.x;
@@ -513,7 +527,7 @@ public class QuizSession : MonoBehaviour
             if (!c) continue;
             RestaurarTarjeta(i);
             c.ResetState();
-            if (c.label) c.label.text = $"<b>{Letras[i]}</b><indent=13%>{p.opciones[orden[i]]}</indent>";   // el 2.º renglón queda alineado con el texto
+            if (c.label) c.label.text = p.opciones[orden[i]];   // la letra va aparte, en su círculo
             c.Show();
         }
         subrayado?.ResetState();
@@ -541,9 +555,14 @@ public class QuizSession : MonoBehaviour
         for (int i = 0; i < opciones.Length; i++)
         {
             var c = opciones[i]; if (!c || !c.label) continue;
-            float w = c.label.rectTransform.sizeDelta.x;
-            float h = Mathf.Max(altoMinOpcion, c.label.GetPreferredValues(c.label.text, w, 0f).y + 0.2f);
             float ancho = originales != null && i < originales.Length && originales[i].fill != Vector2.zero ? originales[i].fill.x : (c.fill ? c.fill.size.x : 2.6f);
+            // El texto empieza a la derecha del círculo de la letra
+            float w = ancho - MargenTexto - 0.12f;
+            c.label.margin = Vector4.zero;
+            float h = Mathf.Max(altoMinOpcion, c.label.GetPreferredValues(c.label.text, w, 0f).y + 0.2f);
+            c.label.rectTransform.localPosition = new Vector3((MargenTexto - 0.12f) * 0.5f, 0f, 0f);
+            if (letras != null && i < letras.Length && letras[i].circulo)
+                letras[i].circulo.transform.localPosition = new Vector3(-ancho * 0.5f + margenLetra + diametroLetra * 0.5f, 0f, 0f);
             if (c.fill) c.fill.size = new Vector2(ancho, h);
             if (c.border) c.border.size = new Vector2(ancho, h);
             c.label.rectTransform.sizeDelta = new Vector2(w, h);
@@ -556,6 +575,52 @@ public class QuizSession : MonoBehaviour
         panel.fill.size = new Vector2(panelSize.x, alto);
         if (panel.border) panel.border.size = new Vector2(panelSize.x, alto);
         panel.transform.position = new Vector3(panelX, panelTop - alto * 0.5f, panel.transform.position.z);
+    }
+
+    /// Círculo con la letra (A, B, C) a la izquierda de cada alternativa, centrado en la píldora.
+    void CrearLetras()
+    {
+        if (opciones == null) return;
+        letras = new Letra[opciones.Length];
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            var c = opciones[i]; if (!c) continue;
+            var go = new GameObject("Letra");
+            go.transform.SetParent(c.transform, false);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = circuloLetra;
+            sr.color = colorCirculoLetra;
+            int orden = c.label ? c.label.GetComponent<Renderer>().sortingOrder : 7;
+            sr.sortingOrder = orden - 1;
+            if (circuloLetra) { float s = diametroLetra / Mathf.Max(0.01f, circuloLetra.bounds.size.x); go.transform.localScale = new Vector3(s, s, 1f); }
+            var tgo = new GameObject("Texto");
+            tgo.transform.SetParent(c.transform, false);
+            var tx = tgo.AddComponent<TMPro.TextMeshPro>();
+            tx.text = Letras[Mathf.Min(i, Letras.Length - 1)];
+            if (fuenteTitulo) tx.font = fuenteTitulo;
+            tx.fontSize = tamLetra;
+            tx.alignment = TMPro.TextAlignmentOptions.Center;
+            tx.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+            tx.rectTransform.sizeDelta = new Vector2(diametroLetra, diametroLetra);
+            tx.color = colorLetra;
+            tx.sortingOrder = orden;
+            letras[i] = new Letra { circulo = sr, texto = tx };
+        }
+    }
+
+    /// La letra aparece, se atenúa y se va junto con su alternativa (y no se muestra sobre las preguntas con imagen).
+    void LateUpdate()
+    {
+        if (letras == null) return;
+        for (int i = 0; i < letras.Length; i++)
+        {
+            var l = letras[i]; var c = i < opciones.Length ? opciones[i] : null;
+            if (!l.circulo || !c) continue;
+            float a = modoImagen || !c.label ? 0f : c.label.color.a;
+            var cc = colorCirculoLetra; cc.a *= a; l.circulo.color = cc;
+            l.texto.transform.localPosition = l.circulo.transform.localPosition;
+            var ct = colorLetra; ct.a *= a; l.texto.color = ct;
+        }
     }
 
     /// Proyecta la imagen de la pregunta y coloca las tarjetas de las alternativas sobre sus píldoras (ocultas hasta que se elige una).
@@ -594,10 +659,19 @@ public class QuizSession : MonoBehaviour
         if (c.border) c.border.size = o.border;
     }
 
+    /// La alternativa incorrecta que eligió el niño: desaparece (en el panel de texto) o se apaga.
+    void Descartar(int i)
+    {
+        var c = (i >= 0 && i < opciones.Length) ? opciones[i] : null; if (!c) return;
+        if (ocultarIncorrecta && !modoImagen) { c.SetGlow(false); c.Hide(); return; }
+        Apagar(i);
+    }
+
     /// Alternativa descartada: en el panel de texto se atenúa; sobre la imagen se oscurece su píldora.
     void Apagar(int i)
     {
         var c = (i >= 0 && i < opciones.Length) ? opciones[i] : null; if (!c) return;
+        if (ocultarIncorrecta && !modoImagen && descartadas.Contains(i)) return;   // ya desapareció: no vuelve atenuada
         if (!modoImagen) { c.Dim(); return; }
         c.SetGlow(false); c.color = Color.black; c.fillAlpha = 0.55f; c.Show();
     }
@@ -766,12 +840,12 @@ public class QuizSession : MonoBehaviour
         Glow(pos, true);
         yield return new WaitForSeconds(0.8f);
         Glow(pos, false);
-        Apagar(pos);
+        Descartar(pos);
         if (revelar)
         {
             Show(opciones[posCorrecta]);
             opciones[posCorrecta].SetGlow(true);
-            for (int i = 0; i < opciones.Length; i++) if (i != posCorrecta && opciones[i]) Apagar(i);
+            for (int i = 0; i < opciones.Length; i++) if (i != posCorrecta && i != pos && opciones[i]) Apagar(i);
         }
         Anim(animTalk);
     }
