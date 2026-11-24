@@ -5,8 +5,8 @@ using System.IO;
 using UnityEngine;
 
 /// <summary>
-/// Mini quiz: el de los capítulos lo activa ReadingSession al detectar el final de la página; el quiz "pagina_1"
-/// lo inicia el onboarding al terminar las reglas (con las imágenes onboarding_quiz_1 y _2).
+/// Quiz: el de los capítulos lo activa ReadingSession al detectar el final de la página; el quiz "pagina_1"
+/// lo inicia el onboarding al terminar las reglas (mismo panel de texto que los quizzes de capítulo).
 /// - Pregunta con imagen: se proyecta la imagen (pregunta y alternativas ya dibujadas) en vez del panel de texto,
 ///   las alternativas no se mezclan y la elegida se ilumina encima de su píldora.
 /// - Muestra las preguntas una por una en un panel a la derecha del libro, con alternativas A, B y C.
@@ -57,7 +57,7 @@ public class QuizSession : MonoBehaviour
     {
         public string id = "pagina_1";
         [Tooltip("Lo que dice el Principito antes de la primera pregunta")]
-        [TextArea(1, 3)] public string intro = "¡Muy bien! Terminaste esta página. Ahora, un mini quiz.";
+        [TextArea(1, 3)] public string intro = "¡Muy bien! Terminaste esta página. Ahora, un quiz.";
         public List<Pregunta> preguntas = new List<Pregunta>();
         [Tooltip("Márcalo en el quiz del último capítulo: al terminar, el Principito felicita por acabar el libro en vez de invitar a pasar la página")]
         public bool finDelLibro;
@@ -92,12 +92,19 @@ public class QuizSession : MonoBehaviour
     [Header("Nombre del niño (lo pregunta el onboarding)")]
     [Tooltip("Si el onboarding guardó el nombre, el quiz empieza diciéndolo")]
     public bool usarNombre = true;
-    [Tooltip("Inicio del quiz con nombre. {nombre} = nombre del niño; {intro} = intro del banco sin \"¡Muy bien!\" ni \"Ahora, un mini quiz.\"")]
-    public string introConNombre = "¡Muy bien, {nombre}! {intro} Ahora responde estas preguntas del mini quiz.";
+    [Tooltip("Inicio del quiz con nombre. {nombre} = nombre del niño; {intro} = intro del banco sin \"¡Muy bien!\" ni \"Ahora, un quiz.\"")]
+    public string introConNombre = "¡Muy bien, {nombre}! {intro} Ahora responde estas preguntas del quiz.";
     readonly HashSet<string> bancosHechos = new HashSet<string>();
     public bool mezclarOpciones = true;
     [Tooltip("Intentos por pregunta; al agotarlos, el Principito dice cuál era la correcta")]
     public int maxIntentos = 2;
+    [Tooltip("La alternativa incorrecta que eligió el niño desaparece (desmarcado = se oscurece)")]
+    public bool ocultarIncorrecta = true;
+    [Tooltip("Solo acepta la letra si lo que se transcribió del niño la contiene (\"la A\", \"B\", \"la tercera\") o nombra esa alternativa. " +
+             "Evita que el ruido de fondo o una conversación cercana cuenten como respuesta")]
+    public bool validarRespuesta = true;
+    [Tooltip("Una letra suelta solo cuenta si la frase tiene como mucho estas palabras (\"a\", \"se\" o \"ve\" aparecen en cualquier frase de fondo)")]
+    public int maxPalabrasLetraSuelta = 3;
 
     [Header("Agente")]
     [Tooltip("Agente \"Principito quiz\" (configKey = agentIdQuiz)")]
@@ -121,8 +128,42 @@ public class QuizSession : MonoBehaviour
     public ProjectedCard imagenPregunta;
     [Tooltip("Centro de la imagen de la pregunta (a la derecha del libro)")]
     public Vector2 posImagen = new Vector2(5.0f, 0.1f);
+    [Header("Diseño del panel")]
+    [Tooltip("Estrella con rayitos sobre el borde superior del panel")]
+    public ProjectedCard estrella;
+    [Tooltip("Línea curva debajo de la pregunta")]
+    public ProjectedCard subrayado;
+    [Tooltip("Fuente de la pregunta (título)")]
+    public TMPro.TMP_FontAsset fuenteTitulo;
+    [Tooltip("Fuente de las alternativas y del contador de preguntas")]
+    public TMPro.TMP_FontAsset fuenteOpciones;
+    public float tamPregunta = 2.5f;
+    [Tooltip("Mismo tamaño de letra para todas las alternativas; si el texto no cabe, pasa a dos renglones y la píldora crece")]
+    public float tamOpciones = 1.9f;
+    public float altoMinOpcion = 0.55f;
+    [Tooltip("Círculo detrás de la letra (A, B, C) de cada alternativa")]
+    public Sprite circuloLetra;
+    public Color colorCirculoLetra = new Color(0.18f, 0.55f, 0.25f);
+    public Color colorLetra = Color.white;
+    public float diametroLetra = 0.38f;
+    public float tamLetra = 1.75f;
+    [Tooltip("Espacio entre el borde izquierdo de la píldora y el círculo de la letra")]
+    public float margenLetra = 0.1f;
+    public float separacionOpciones = 0.13f;
     [Tooltip("Animaciones que deben terminar antes de empezar el quiz (p. ej. el Principito volando)")]
     public PrincipitoVolando[] esperarAnimaciones;
+
+    [Serializable]
+    public class PosicionPrincipito
+    {
+        [Tooltip("Id del quiz (p. ej. capitulo_1)")]
+        public string quiz = "capitulo_1";
+        [Tooltip("Dónde se para el Principito (sus pies) durante ese quiz, p. ej. sobre el piso del fondo de esa página")]
+        public Vector3 posicion = new Vector3(-4.6f, -3.7f, 0f);
+    }
+    [Tooltip("Quizzes en los que el Principito se para en otro lugar (al terminar vuelve al de siempre)")]
+    public List<PosicionPrincipito> posicionesPrincipito = new List<PosicionPrincipito>();
+    Vector3? posicionOriginal;
 
     [Header("Animaciones del Principito")]
     public string animQuiz = "Quiz";
@@ -163,17 +204,47 @@ public class QuizSession : MonoBehaviour
     bool acierto;
     readonly HashSet<int> descartadas = new HashSet<int>();
     readonly List<string> intentosLetras = new List<string>();   // letras elegidas en la pregunta actual
+    string ultimoTranscript;   // lo último que el agente transcribió del niño en esta pregunta
     SpriteRenderer principitoSr;
     bool modoImagen;
     struct Original { public Vector3 pos; public Color color; public float fillAlpha; public Vector2 fill, border; public bool rellenoPropio; }
     Original[] originales;
+    float panelTop, panelBottom, panelX;   // borde superior/inferior del panel en la escena (crece hacia abajo si hace falta)
+    Vector2 panelSize;
+    struct Letra { public SpriteRenderer circulo; public TMPro.TextMeshPro texto; }
+    Letra[] letras;
+    float MargenTexto => margenLetra + diametroLetra + 0.14f;   // donde empieza el texto, desde el borde de la píldora
 
     void Awake()
     {
         if (principito) principitoSr = principito.GetComponent<SpriteRenderer>();
-        foreach (var c in Cards()) if (c && c.label) { c.label.enableAutoSizing = true; c.label.fontSizeMin = c.label.fontSize * 0.55f; c.label.fontSizeMax = c.label.fontSize; }
-        // Alternativas en una sola línea: se achica la letra si el texto es largo
-        if (opciones != null) foreach (var c in opciones) if (c && c.label) c.label.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        // Contador "Quiz · Pregunta 1 de 2": pequeño, una línea
+        if (titulo && titulo.label)
+        {
+            if (fuenteOpciones) titulo.label.font = fuenteOpciones;
+            titulo.label.enableAutoSizing = false; titulo.label.fontSize = 1.45f; titulo.label.fontStyle = TMPro.FontStyles.Normal;
+            titulo.label.color = new Color(0.35f, 0.38f, 0.56f);
+        }
+        // Pregunta = título en Bold (hasta 2–3 renglones)
+        if (pregunta && pregunta.label)
+        {
+            if (fuenteTitulo) pregunta.label.font = fuenteTitulo;
+            pregunta.label.enableAutoSizing = false; pregunta.label.fontSize = tamPregunta;
+            pregunta.label.textWrappingMode = TMPro.TextWrappingModes.Normal; pregunta.label.lineSpacing = -8f;
+        }
+        // Alternativas: mismo tamaño para todas; si no cabe, dos renglones
+        if (opciones != null) foreach (var c in opciones) if (c && c.label)
+        {
+            if (fuenteOpciones) c.label.font = fuenteOpciones;
+            c.label.enableAutoSizing = false; c.label.fontSize = tamOpciones;
+            c.label.textWrappingMode = TMPro.TextWrappingModes.Normal; c.label.lineSpacing = -10f;
+        }
+        CrearLetras();
+        if (panel && panel.fill)
+        {
+            panelSize = panel.fill.size; panelX = panel.transform.position.x;
+            panelTop = panel.transform.position.y + panelSize.y * 0.5f; panelBottom = panel.transform.position.y - panelSize.y * 0.5f;
+        }
         // Cómo están las alternativas en el panel de texto, para volver a él después de una pregunta con imagen
         originales = new Original[opciones.Length];
         for (int i = 0; i < opciones.Length; i++)
@@ -184,8 +255,9 @@ public class QuizSession : MonoBehaviour
         }
     }
 
-    void OnEnable() { if (agent) agent.RegisterTool(toolName, OnElegir); }
-    void OnDisable() { if (agent) agent.RegisterTool(toolName, null); }
+    void OnEnable() { if (agent) { agent.RegisterTool(toolName, OnElegir); agent.UserTranscript += OnTranscript; } }
+    void OnDisable() { if (agent) { agent.RegisterTool(toolName, null); agent.UserTranscript -= OnTranscript; } }
+    void OnTranscript(string s) { if (IsRunning) ultimoTranscript = s; }
 
     void Start() { HideAll(true); }
 
@@ -242,7 +314,8 @@ public class QuizSession : MonoBehaviour
         if (estaba)
         {
             Anim(animRest);
-            if (desvanecer) StartCoroutine(Fade(0f));
+            if (desvanecer) StartCoroutine(FadeYRestaurar());
+            else RestaurarPrincipito();
             Debug.Log("[Quiz] Cancelado por comando.");
         }
     }
@@ -343,6 +416,7 @@ public class QuizSession : MonoBehaviour
         q.hecho = true;
         quizActual = q;
         UltimoId = q.id;
+        MoverPrincipito(q.id);
         if (doubts) doubts.bloqueada = true;
 
         // Espera a que termine una animación o una duda en curso, y a que se cierre la lectura
@@ -356,7 +430,7 @@ public class QuizSession : MonoBehaviour
         StartCoroutine(Fade(1f));
         Anim(animQuiz);
         bool todasConImagen = imagenPregunta && q.preguntas.TrueForAll(x => x.imagen);
-        if (!todasConImagen) { Show(panel); Show(titulo); }
+        if (!todasConImagen) { Show(panel); Show(titulo); Show(estrella); }
 
         for (int i = 0; i < q.preguntas.Count; i++)
         {
@@ -365,7 +439,8 @@ public class QuizSession : MonoBehaviour
             numeroPregunta = i + 1;
             if (!repite) PrepararPregunta(q.preguntas[i]);
             if (i > 0 || repite) Anim(animQuiz);   // nueva pregunta: vuelve al cartel "?"
-            if (titulo && titulo.label) titulo.label.text = $"<b>Mini quiz</b>\n<size=70%>Pregunta {numeroPregunta} de {q.preguntas.Count}</size>";
+            if (titulo && titulo.label) titulo.label.text = $"Quiz · Pregunta {numeroPregunta} de {q.preguntas.Count}";
+            if (!modoImagen) Maquetar();
             yield return new WaitForSeconds(0.6f);
 
             // El agente lee la pregunta y escucha la respuesta
@@ -415,6 +490,7 @@ public class QuizSession : MonoBehaviour
         HideAll(false);
         Anim(animRest);
         yield return Fade(0f);
+        RestaurarPrincipito();
         if (doubts) doubts.bloqueada = false;
         Debug.Log(FinDelLibro() ? "[Quiz] Terminado: fin del libro." : "[Quiz] Terminado: sigue la lectura.");
         QuizTerminado?.Invoke(q.id, FinDelLibro());
@@ -422,6 +498,24 @@ public class QuizSession : MonoBehaviour
         preguntaActual = null;
         IsRunning = false;
     }
+
+    /// Si este quiz tiene una posición propia para el Principito (p. ej. el piso del fondo de esa página), lo mueve ahí.
+    void MoverPrincipito(string id)
+    {
+        if (!principito || posicionesPrincipito == null) return;
+        var e = posicionesPrincipito.Find(x => x != null && x.quiz == id);
+        if (e == null) return;
+        if (posicionOriginal == null) posicionOriginal = principito.PosicionBase;
+        principito.MoverA(e.posicion);
+    }
+
+    void RestaurarPrincipito()
+    {
+        if (principito && posicionOriginal.HasValue) principito.MoverA(posicionOriginal.Value);
+        posicionOriginal = null;
+    }
+
+    IEnumerator FadeYRestaurar() { yield return Fade(0f); RestaurarPrincipito(); }
 
     bool Busy()
     {
@@ -438,6 +532,7 @@ public class QuizSession : MonoBehaviour
         acierto = false;
         descartadas.Clear();
         intentosLetras.Clear();
+        ultimoTranscript = null;
         orden = new[] { 0, 1, 2 };
         modoImagen = p.imagen && imagenPregunta;
         if (mezclarOpciones && !modoImagen)   // con imagen, las letras ya están dibujadas
@@ -446,7 +541,7 @@ public class QuizSession : MonoBehaviour
 
         if (modoImagen) { PrepararImagen(p); Debug.Log($"[Quiz] Pregunta {numeroPregunta} (imagen): correcta en la posición {Letras[posCorrecta]}."); return; }
 
-        if (pregunta && pregunta.label) pregunta.label.text = $"<b>{p.texto}</b>";
+        if (pregunta && pregunta.label) pregunta.label.text = p.texto;   // la fuente del título ya es Bold
         pregunta?.ResetState();
         Show(pregunta);
         for (int i = 0; i < opciones.Length; i++)
@@ -455,10 +550,100 @@ public class QuizSession : MonoBehaviour
             if (!c) continue;
             RestaurarTarjeta(i);
             c.ResetState();
-            if (c.label) c.label.text = $"<b>{Letras[i]}</b>   {p.opciones[orden[i]]}";
+            if (c.label) c.label.text = p.opciones[orden[i]];   // la letra va aparte, en su círculo
             c.Show();
         }
+        subrayado?.ResetState();
+        Show(subrayado);
         Debug.Log($"[Quiz] Pregunta {numeroPregunta}: correcta en la posición {Letras[posCorrecta]}.");
+    }
+
+    /// Acomoda el panel de arriba hacia abajo según el largo de los textos: contador, pregunta (1–3 renglones),
+    /// línea curva y alternativas (cada píldora crece si su texto ocupa dos renglones). El panel crece hacia abajo si hace falta.
+    void Maquetar()
+    {
+        if (!panel || !panel.fill || panelSize == Vector2.zero) return;
+        float x = panelX, y = panelTop - 0.40f;   // espacio para la estrella
+        if (estrella) estrella.transform.position = new Vector3(x, panelTop + 0.04f, 0f);
+        if (titulo) { titulo.transform.position = new Vector3(x, y - 0.16f, 0f); y -= 0.36f; }
+        if (pregunta && pregunta.label)
+        {
+            var pl = pregunta.label; float w = pl.rectTransform.sizeDelta.x;
+            float h = Mathf.Max(0.35f, pl.GetPreferredValues(pl.text, w, 0f).y);
+            pl.rectTransform.sizeDelta = new Vector2(w, h);
+            pregunta.transform.position = new Vector3(x, y - h * 0.5f, 0f);
+            y -= h;
+        }
+        if (subrayado) { subrayado.transform.position = new Vector3(x, y - 0.09f, 0f); y -= 0.28f; } else y -= 0.15f;
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            var c = opciones[i]; if (!c || !c.label) continue;
+            float ancho = originales != null && i < originales.Length && originales[i].fill != Vector2.zero ? originales[i].fill.x : (c.fill ? c.fill.size.x : 2.6f);
+            // El texto empieza a la derecha del círculo de la letra
+            float w = ancho - MargenTexto - 0.12f;
+            c.label.margin = Vector4.zero;
+            float h = Mathf.Max(altoMinOpcion, c.label.GetPreferredValues(c.label.text, w, 0f).y + 0.2f);
+            c.label.rectTransform.localPosition = new Vector3((MargenTexto - 0.12f) * 0.5f, 0f, 0f);
+            if (letras != null && i < letras.Length && letras[i].circulo)
+                letras[i].circulo.transform.localPosition = new Vector3(-ancho * 0.5f + margenLetra + diametroLetra * 0.5f, 0f, 0f);
+            if (c.fill) c.fill.size = new Vector2(ancho, h);
+            if (c.border) c.border.size = new Vector2(ancho, h);
+            c.label.rectTransform.sizeDelta = new Vector2(w, h);
+            c.transform.position = new Vector3(x, y - h * 0.5f, 0f);
+            y -= h + separacionOpciones;
+        }
+        y += separacionOpciones;
+        float bottom = Mathf.Min(panelBottom, y - 0.22f);
+        float alto = panelTop - bottom;
+        panel.fill.size = new Vector2(panelSize.x, alto);
+        if (panel.border) panel.border.size = new Vector2(panelSize.x, alto);
+        panel.transform.position = new Vector3(panelX, panelTop - alto * 0.5f, panel.transform.position.z);
+    }
+
+    /// Círculo con la letra (A, B, C) a la izquierda de cada alternativa, centrado en la píldora.
+    void CrearLetras()
+    {
+        if (opciones == null) return;
+        letras = new Letra[opciones.Length];
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            var c = opciones[i]; if (!c) continue;
+            var go = new GameObject("Letra");
+            go.transform.SetParent(c.transform, false);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = circuloLetra;
+            sr.color = colorCirculoLetra;
+            int orden = c.label ? c.label.GetComponent<Renderer>().sortingOrder : 7;
+            sr.sortingOrder = orden - 1;
+            if (circuloLetra) { float s = diametroLetra / Mathf.Max(0.01f, circuloLetra.bounds.size.x); go.transform.localScale = new Vector3(s, s, 1f); }
+            var tgo = new GameObject("Texto");
+            tgo.transform.SetParent(c.transform, false);
+            var tx = tgo.AddComponent<TMPro.TextMeshPro>();
+            tx.text = Letras[Mathf.Min(i, Letras.Length - 1)];
+            if (fuenteTitulo) tx.font = fuenteTitulo;
+            tx.fontSize = tamLetra;
+            tx.alignment = TMPro.TextAlignmentOptions.Center;
+            tx.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+            tx.rectTransform.sizeDelta = new Vector2(diametroLetra, diametroLetra);
+            tx.color = colorLetra;
+            tx.sortingOrder = orden;
+            letras[i] = new Letra { circulo = sr, texto = tx };
+        }
+    }
+
+    /// La letra aparece, se atenúa y se va junto con su alternativa (y no se muestra sobre las preguntas con imagen).
+    void LateUpdate()
+    {
+        if (letras == null) return;
+        for (int i = 0; i < letras.Length; i++)
+        {
+            var l = letras[i]; var c = i < opciones.Length ? opciones[i] : null;
+            if (!l.circulo || !c) continue;
+            float a = modoImagen || !c.label ? 0f : c.label.color.a;
+            var cc = colorCirculoLetra; cc.a *= a; l.circulo.color = cc;
+            l.texto.transform.localPosition = l.circulo.transform.localPosition;
+            var ct = colorLetra; ct.a *= a; l.texto.color = ct;
+        }
     }
 
     /// Proyecta la imagen de la pregunta y coloca las tarjetas de las alternativas sobre sus píldoras (ocultas hasta que se elige una).
@@ -497,16 +682,27 @@ public class QuizSession : MonoBehaviour
         if (c.border) c.border.size = o.border;
     }
 
+    /// La alternativa incorrecta que eligió el niño: desaparece (en el panel de texto) o se apaga.
+    void Descartar(int i)
+    {
+        var c = (i >= 0 && i < opciones.Length) ? opciones[i] : null; if (!c) return;
+        if (ocultarIncorrecta && !modoImagen) { c.SetGlow(false); c.Hide(); return; }
+        Apagar(i);
+    }
+
     /// Alternativa descartada: en el panel de texto se atenúa; sobre la imagen se oscurece su píldora.
     void Apagar(int i)
     {
         var c = (i >= 0 && i < opciones.Length) ? opciones[i] : null; if (!c) return;
+        if (ocultarIncorrecta && !modoImagen && descartadas.Contains(i)) return;   // ya desapareció: no vuelve atenuada
         if (!modoImagen) { c.Dim(); return; }
         c.SetGlow(false); c.color = Color.black; c.fillAlpha = 0.55f; c.Show();
     }
 
     // ───────────── Herramienta del agente: elegir_opcion(letra) ─────────────
-    string OnElegir(ElevenLabsAgentClient.ToolArgs args)
+    string OnElegir(ElevenLabsAgentClient.ToolArgs args) => Elegir(args, validarRespuesta);
+
+    string Elegir(ElevenLabsAgentClient.ToolArgs args, bool validar)
     {
         if (preguntaActual == null) return "No hay ninguna pregunta activa.";
         if (resuelta) return "Esta pregunta ya terminó. Despídete con una frase corta y termina la conversación con end_call.";
@@ -514,6 +710,27 @@ public class QuizSession : MonoBehaviour
         string l = (args.letra ?? "").Trim().ToUpperInvariant();
         int pos = l.Length > 0 ? Array.IndexOf(Letras, l.Substring(0, 1)) : -1;
         if (pos < 0) return "Letra no válida. Pídele con cariño que responda diciendo A, B o C.";
+        if (validar)
+        {
+            string oido = ultimoTranscript;
+            ultimoTranscript = null;   // cada respuesta se usa una sola vez
+            int dijo = LetraDicha(oido);
+            // Con la puerta de ruido activa: si no pasó ninguna voz real, el texto lo inventó el reconocedor a partir del ruido
+            if (agent && agent.PuertaActiva && agent.VozUltimoTurno < 2) dijo = -1;   // menos de 0,2 s de voz real
+            if (dijo < 0)
+            {
+                Debug.Log($"[Quiz] Se ignoró la letra {l}: no se escuchó una respuesta clara (\"{oido}\"). Puede ser ruido de fondo.");
+                return "NO se registró ninguna respuesta: lo que se escuchó no fue una respuesta clara (probablemente ruido o alguien hablando cerca). " +
+                       "No digas si está bien o mal. Pídele con cariño, en una frase corta, que diga su respuesta un poco más fuerte: la A, la B o la C.";
+            }
+            if (dijo != pos)
+            {
+                Debug.Log($"[Quiz] Se ignoró la letra {l}: lo que se escuchó (\"{oido}\") apunta a la {Letras[dijo]}.");
+                return $"NO se registró ninguna respuesta: lo que se escuchó (\"{oido}\") no coincide con la {l}. " +
+                       "No digas si está bien o mal. Pregúntale con cariño cuál eligió: la A, la B o la C.";
+            }
+            Debug.Log($"[Quiz] Respuesta {l} (se escuchó \"{oido}\").");
+        }
         if (descartadas.Contains(pos)) return $"La opción {Letras[pos]} ya la intentó y no era. Pídele que elija otra.";
 
         intentos++;
@@ -544,18 +761,69 @@ public class QuizSession : MonoBehaviour
                "Puedes repetir las alternativas que quedan.";
     }
 
+    // ───────────── ¿Qué alternativa dijo el niño? ─────────────
+    static readonly string[][] TokensLetra = { new[] { "a" }, new[] { "b", "be", "ve", "be." }, new[] { "c", "ce", "se" } };
+    static readonly string[][] Ordinales = { new[] { "primera", "primero", "uno", "1" }, new[] { "segunda", "segundo", "dos", "2" }, new[] { "tercera", "tercero", "tres", "3" } };
+    static readonly HashSet<string> Marcadores = new HashSet<string> { "la", "letra", "opcion", "alternativa", "es", "elijo", "respuesta" };
+    static readonly HashSet<string> Vacias = new HashSet<string> { "para", "porque", "como", "cuando", "donde", "pero", "esta", "este", "esto", "eso", "esos", "esas", "unos", "unas", "todo", "todos", "muy", "tiene", "tenia", "habia", "estaba", "sobre", "desde", "hasta", "entre" };
+
+    /// Índice de la alternativa (0 = A) que se escucha en la transcripción, o -1 si no hay una respuesta clara.
+    int LetraDicha(string s)
+    {
+        var w = Palabras(s);
+        if (w.Count == 0) return -1;
+        var votos = new int[3];
+        for (int i = 0; i < w.Count; i++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                bool letra = Array.IndexOf(TokensLetra[k], w[i]) >= 0;
+                // Una letra cuenta si la frase es corta (\"la B\") o viene después de \"la / letra / opción / es\"
+                if (letra && (w.Count <= maxPalabrasLetraSuelta || (i > 0 && Marcadores.Contains(w[i - 1])))) votos[k] += 3;
+                if (Array.IndexOf(Ordinales[k], w[i]) >= 0 && (w.Count <= maxPalabrasLetraSuelta || (i > 0 && Marcadores.Contains(w[i - 1])))) votos[k] += 3;
+            }
+        }
+        // También vale nombrar la alternativa (\"una boa que se come un elefante\")
+        if (preguntaActual != null && preguntaActual.opciones != null)
+            for (int k = 0; k < 3 && k < orden.Length; k++)
+            {
+                var op = Palabras(preguntaActual.opciones[orden[k]]);
+                foreach (var x in op) if (x.Length >= 4 && !Vacias.Contains(x) && w.Contains(x)) votos[k] += 1;
+            }
+        int mejor = -1, max = 0; bool empate = false;
+        for (int k = 0; k < 3; k++) { if (votos[k] > max) { max = votos[k]; mejor = k; empate = false; } else if (votos[k] == max && max > 0) empate = true; }
+        return empate ? -1 : mejor;
+    }
+
+    static List<string> Palabras(string s)
+    {
+        var r = new List<string>();
+        if (string.IsNullOrWhiteSpace(s)) return r;
+        var sb = new System.Text.StringBuilder();
+        foreach (char ch in s.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD))
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat == System.Globalization.UnicodeCategory.NonSpacingMark) continue;   // quita tildes
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        }
+        foreach (var x in sb.ToString().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+            if (x != "ah" && x != "eh" && x != "mm" && x != "mmm" && x != "um" && x != "oh" && x != "aa") r.Add(x);   // muletillas / ruido
+        return r;
+    }
+
     bool Ultima() => quizActual != null && numeroPregunta >= quizActual.preguntas.Count;
 
     /// Intro de la primera pregunta: con el nombre del niño si el onboarding lo guardó.
-    /// "¡Muy bien! Terminaste el capítulo uno. Ahora, un mini quiz." →
-    /// "¡Muy bien, Camila! Terminaste el capítulo uno. Ahora responde estas preguntas del mini quiz."
+    /// "¡Muy bien! Terminaste el capítulo uno. Ahora, un quiz." →
+    /// "¡Muy bien, Camila! Terminaste el capítulo uno. Ahora responde estas preguntas del quiz."
     string IntroInicial(string intro)
     {
         intro = intro ?? "";
         if (!usarNombre || !SesionLector.TieneNombre || string.IsNullOrWhiteSpace(introConNombre)) return intro;
         string medio = intro.Trim();
         if (medio.StartsWith("¡Muy bien!")) medio = medio.Substring("¡Muy bien!".Length).Trim();
-        if (medio.EndsWith("Ahora, un mini quiz.")) medio = medio.Substring(0, medio.Length - "Ahora, un mini quiz.".Length).Trim();
+        foreach (var fin in new[] { "Ahora, un quiz.", "Ahora, un mini quiz." })
+            if (medio.EndsWith(fin)) medio = medio.Substring(0, medio.Length - fin.Length).Trim();
         string r = introConNombre.Replace("{nombre}", SesionLector.Nombre).Replace("{intro}", medio);
         while (r.Contains("  ")) r = r.Replace("  ", " ");
         return r.Trim();
@@ -569,8 +837,8 @@ public class QuizSession : MonoBehaviour
     string CierreFinal() => quizActual != null && !string.IsNullOrWhiteSpace(quizActual.cierre)
         ? quizActual.cierre.Trim() + " Luego termina la conversación con end_call."
         : FinDelLibro()
-        ? "Con este quiz TERMINÓ EL LIBRO: NO lo invites a pasar la página ni a seguir leyendo. Dile que terminó el mini quiz y también todo el libro, y felicítalo con mucho cariño por haber leído toda la historia. Luego termina la conversación con end_call."
-        : "Dile que terminó el mini quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call.";
+        ? "Con este quiz TERMINÓ EL LIBRO: NO lo invites a pasar la página ni a seguir leyendo. Dile que terminó el quiz y también todo el libro, y felicítalo con mucho cariño por haber leído toda la historia. Luego termina la conversación con end_call."
+        : "Dile que terminó el quiz e invítalo a pasar la página para seguir leyendo la historia. Luego termina la conversación con end_call.";
 
     IEnumerator MostrarCorrecta(int pos)
     {
@@ -596,12 +864,12 @@ public class QuizSession : MonoBehaviour
         Glow(pos, true);
         yield return new WaitForSeconds(0.8f);
         Glow(pos, false);
-        Apagar(pos);
+        Descartar(pos);
         if (revelar)
         {
             Show(opciones[posCorrecta]);
             opciones[posCorrecta].SetGlow(true);
-            for (int i = 0; i < opciones.Length; i++) if (i != posCorrecta && opciones[i]) Apagar(i);
+            for (int i = 0; i < opciones.Length; i++) if (i != posCorrecta && i != pos && opciones[i]) Apagar(i);
         }
         Anim(animTalk);
     }
@@ -626,9 +894,9 @@ public class QuizSession : MonoBehaviour
         if (k.digit2Key.wasPressedThisFrame) ProbarCapitulo2();
         if (IsRunning && (agent == null || !agent.IsRunning))
         {
-            if (k.aKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba A → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }));
-            if (k.bKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba B → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }));
-            if (k.cKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba C → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }));
+            if (k.aKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba A → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }, false));
+            if (k.bKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba B → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }, false));
+            if (k.cKey.wasPressedThisFrame) Debug.Log("[Quiz] Prueba C → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }, false));
         }
 #else
         if (Input.GetKeyDown(KeyCode.Q)) IniciarPrimero();
@@ -636,9 +904,9 @@ public class QuizSession : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha2)) ProbarCapitulo2();
         if (IsRunning && (agent == null || !agent.IsRunning))
         {
-            if (Input.GetKeyDown(KeyCode.A)) Debug.Log("[Quiz] Prueba A → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }));
-            if (Input.GetKeyDown(KeyCode.B)) Debug.Log("[Quiz] Prueba B → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }));
-            if (Input.GetKeyDown(KeyCode.C)) Debug.Log("[Quiz] Prueba C → " + OnElegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }));
+            if (Input.GetKeyDown(KeyCode.A)) Debug.Log("[Quiz] Prueba A → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "A" }, false));
+            if (Input.GetKeyDown(KeyCode.B)) Debug.Log("[Quiz] Prueba B → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "B" }, false));
+            if (Input.GetKeyDown(KeyCode.C)) Debug.Log("[Quiz] Prueba C → " + Elegir(new ElevenLabsAgentClient.ToolArgs { letra = "C" }, false));
         }
 #endif
     }
@@ -659,6 +927,7 @@ public class QuizSession : MonoBehaviour
     IEnumerator HidePregunta()
     {
         Hide(pregunta);
+        Hide(subrayado);
         Hide(imagenPregunta);
         foreach (var c in opciones) Hide(c);
         yield return new WaitForSeconds(0.8f);
@@ -675,6 +944,8 @@ public class QuizSession : MonoBehaviour
     {
         yield return panel;
         yield return titulo;
+        yield return estrella;
+        yield return subrayado;
         yield return pregunta;
         yield return imagenPregunta;
         if (opciones != null) foreach (var c in opciones) yield return c;

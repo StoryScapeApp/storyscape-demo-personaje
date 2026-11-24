@@ -9,7 +9,7 @@ using UnityEngine;
 /// <summary>
 /// Genera la escena Assets/Scenes/Onboarding.unity con el flujo de 6 momentos:
 /// Principito a la izquierda del libro, tarjetas 1–3 arriba, ejemplos a la derecha
-/// (meteoro y planeta, significado de "Dedicatoria", panel del quiz) y fondo negro.
+/// (estrella fugaz, significado de "Dedicatoria", panel del quiz) y fondo negro.
 /// El objeto "LibroReferencia" muestra en la vista Scene dónde cae el libro físico (no se proyecta).
 /// Menús:
 ///  - StoryScape > Onboarding > Generar escena
@@ -36,8 +36,6 @@ public static class OnboardingSceneBuilder
     // Área proyectada 1920×1080 px = 80×44.5 cm (1 unidad = 135 px ≈ 5.56 cm). Libro 744×504 px (31×21 cm), centrado.
     static readonly Vector3 BookCenter = Vector3.zero;
     static readonly Vector2 BookSize = new Vector2(5.511f, 3.733f);
-    static readonly Vector3 MarkerCenter = new Vector3(-1.311f, 0.932f, 0f);   // relativo al centro del libro (según el PDF)
-    const float MarkerFrameSize = 1.6f;
     static readonly Vector3 WordCenter = new Vector3(1.314f, 0.657f, 0f);    // "DEDICATORIA", relativo al centro del libro
     static readonly Vector2 WordSize = new Vector2(0.7f, 0.22f);
     const float TitleY = 3.2f, SubtitleY = 2.72f;
@@ -46,7 +44,6 @@ public static class OnboardingSceneBuilder
     static readonly Vector2 CardSize = new Vector2(3.1f, 1.1f);
     const float OptionsX = 6.62f, OptionDiameter = 0.44f; // círculos A y B junto a la tarjeta 3
     static readonly float[] OptionsY = { -2.6f, -3.1f };
-    static readonly Vector3 PlanetPos = new Vector3(4.9f, 0.45f, 0f);
     const float RightX = 4.45f;
 
     // ───────────── Menús ─────────────
@@ -71,8 +68,6 @@ public static class OnboardingSceneBuilder
         var fillSprite = SaveSprite(DrawRounded(false), 64, "card_fondo", new Vector4(24, 24, 24, 24));
         var borderSprite = SaveSprite(DrawRounded(true), 64, "card_borde", new Vector4(24, 24, 24, 24));
         var starSprite = SaveSprite(DrawStar(), 64, "estrella", Vector4.zero);
-        var dashSprite = SaveSprite(DrawDashedFrame(256), 256, "marco_marcador", Vector4.zero);
-        var planetSprite = SaveSprite(DrawPlanet(192), 192, "planeta", Vector4.zero);
 
         // Escena: copia de SampleScene (cámara + Global Light 2D de URP)
         if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) != null) AssetDatabase.DeleteAsset(ScenePath);
@@ -135,35 +130,10 @@ public static class OnboardingSceneBuilder
         var cardRead = CreateCard("Tarjeta_2_VozAlta", cards, new Vector3(CardsX[1], CardsY, 0f), CardSize, Violeta,
             "<b>2. Lee en voz alta</b>\n<size=75%>Mientras lees, la historia cobra vida a tu alrededor</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
         var cardQuiz = CreateCard("Tarjeta_3_Quiz", cards, new Vector3(CardsX[2], CardsY, 0f), CardSize, Violeta,
-            "<b>3. Responde el mini quiz</b>\n<size=75%>Al final, elige una respuesta y descubre cuánto recuerdas</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
+            "<b>3. Responde el quiz</b>\n<size=75%>Al final, elige una respuesta y descubre cuánto recuerdas</size>", 2.05f, fillSprite, borderSprite, TextAlignmentOptions.Center);
 
-        // ── 2. Bordes del área del marcador
-        var frameGo = new GameObject("MarcoMarcador");
-        frameGo.transform.SetParent(bookRef.transform, false);
-        frameGo.transform.localPosition = MarkerCenter;
-        var frameSr = frameGo.AddComponent<SpriteRenderer>();
-        frameSr.sprite = dashSprite;
-        frameSr.sortingOrder = 6;
-        frameGo.transform.localScale = Vector3.one * (MarkerFrameSize / (256f / 100f));
-        var markerFrame = frameGo.AddComponent<ProjectedCard>();
-        markerFrame.border = frameSr;
-        markerFrame.color = Estrella;
-        markerFrame.fadeSpeed = 1.5f;
-
-        // ── 3. Meteoro y planeta
-        var planetGo = new GameObject("Planeta");
-        planetGo.transform.position = PlanetPos;
-        var planetSr = planetGo.AddComponent<SpriteRenderer>();
-        planetSr.sprite = planetSprite;
-        planetSr.sortingOrder = 4;
-        planetGo.transform.localScale = Vector3.one * (1.7f / (192f / 100f));
-        var planet = planetGo.AddComponent<ProjectedCard>();
-        planet.fill = planetSr;
-        planet.color = Color.white;
-        planet.fillAlpha = 1f;
-        planet.fadeSpeed = 1.5f;
-
-        var meteorGo = new GameObject("Meteoro");
+        // ── 3. Estrella fugaz (regla 2)
+        var meteorGo = new GameObject("EstrellaFugaz");
         var meteor = meteorGo.AddComponent<MeteorFlight>();
         var headGo = new GameObject("Cabeza");
         headGo.transform.SetParent(meteorGo.transform, false);
@@ -175,7 +145,7 @@ public static class OnboardingSceneBuilder
         meteor.trailSprite = starSprite;
         Vector3[] path =
         {
-            // entre el subtítulo y el libro, de izquierda a derecha, y baja hacia el planeta
+            // entre el subtítulo y el libro, de izquierda a derecha
             new Vector3(-6.2f, 1.7f, 0f), new Vector3(-3.4f, 2.25f, 0f), new Vector3(-0.4f, 2.3f, 0f),
             new Vector3(2.6f, 2.2f, 0f), new Vector3(4.4f, 1.75f, 0f), new Vector3(4.95f, 1.05f, 0f)
         };
@@ -196,7 +166,7 @@ public static class OnboardingSceneBuilder
             fillSprite, borderSprite, TextAlignmentOptions.MidlineLeft);
         definition.fillAlpha = 0.18f;
 
-        // ── 3. Mini quiz (solo mirar): círculos A y B junto a la tarjeta 3
+        // ── 3. Quiz (solo mirar): círculos A y B junto a la tarjeta 3
         var quiz = new GameObject("Quiz").transform;
         var circleFill = SaveSprite(DrawCircle(false), 64, "circulo_fondo", Vector4.zero);
         var circleRing = SaveSprite(DrawCircle(true), 64, "circulo_borde", Vector4.zero);
@@ -221,10 +191,8 @@ public static class OnboardingSceneBuilder
         seq.voice = voice;
         seq.listener = listener;
         seq.cardBook = cardBook;
-        seq.markerFrame = markerFrame;
         seq.cardRead = cardRead;
-        seq.meteor = meteor;
-        seq.planet = planet;
+        seq.estrellaFugaz = meteor;
         seq.cardQuiz = cardQuiz;
         seq.wordHighlight = word;
         seq.definition = definition;
@@ -373,7 +341,7 @@ public static class OnboardingSceneBuilder
         return card;
     }
 
-    /// Opción circular del mini quiz (A, B) con relleno, borde y letra.
+    /// Opción circular del quiz (A, B) con relleno, borde y letra.
     static ProjectedCard CreateCircle(string name, Transform parent, Vector3 pos, float diameter, Color color, string letter,
                                       Sprite fillSprite, Sprite ringSprite)
     {
@@ -473,76 +441,6 @@ public static class OnboardingSceneBuilder
         float qy = Mathf.Abs(y + 0.5f - n / 2f) - (n / 2f - 1f - r);
         float outside = new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude;
         return outside + Mathf.Min(Mathf.Max(qx, qy), 0f) - r;
-    }
-
-    /// Marco discontinuo de esquinas redondeadas (bordes del área del marcador).
-    static Color32[] DrawDashedFrame(int n)
-    {
-        const float r = 26f, thickness = 7f, dash = 22f;
-        var px = new Color32[n * n];
-        float straight = n - 2f - 2f * r;
-        for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
-            {
-                float d = RoundedDist(x, y, n, r);
-                float a = Mathf.Clamp01(thickness / 2f + 0.5f - Mathf.Abs(d + thickness / 2f));
-                if (a <= 0f) continue;
-                // Posición a lo largo del contorno para alternar trazos
-                float cx = x + 0.5f - n / 2f, cy = y + 0.5f - n / 2f;
-                float s = Mathf.Abs(cx) >= Mathf.Abs(cy) ? cy + (cx > 0 ? 0f : 1000f) : cx + (cy > 0 ? 2000f : 3000f);
-                if (Mathf.Repeat(s + straight / 2f, dash * 2f) > dash) continue;
-                px[y * n + x] = new Color32(255, 255, 255, (byte)(a * 255));
-            }
-        return px;
-    }
-
-    /// Planeta azul con cráteres, anillo y estrellitas (paleta StoryScape).
-    static Color32[] DrawPlanet(int n)
-    {
-        var px = new Color32[n * n];
-        Color body = Planeta, dark = Hex("#2E7FB0"), light = Hex("#A5DBF5"), ring = Hex("#F7C948"), star = Hex("#F7C948");
-        Vector2 c = new Vector2(n * 0.52f, n * 0.5f);
-        float R = n * 0.26f;
-        Vector2[] craters = { new Vector2(-0.35f, 0.25f), new Vector2(0.3f, -0.2f), new Vector2(0.05f, 0.45f), new Vector2(-0.15f, -0.4f) };
-        float[] craterR = { 0.18f, 0.22f, 0.11f, 0.13f };
-        Vector2[] starsPos = { new Vector2(0.15f, 0.85f), new Vector2(0.85f, 0.88f), new Vector2(0.9f, 0.2f), new Vector2(0.1f, 0.15f) };
-
-        for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
-            {
-                Vector2 p = new Vector2(x + 0.5f, y + 0.5f);
-                Vector2 q = (p - c) / R;
-                Color col = Color.clear;
-
-                // Anillo (elipse inclinada) detrás del planeta
-                Vector2 rq = Rotate(q, -20f);
-                float ringV = (rq.x * rq.x) / (1.75f * 1.75f) + (rq.y * rq.y) / (0.42f * 0.42f);
-                bool onRing = ringV < 1f && ringV > 0.72f;
-                bool ringFront = onRing && rq.y < 0f;
-                if (onRing && !ringFront) col = ring;
-
-                // Cuerpo
-                float dd = q.magnitude;
-                if (dd <= 1f)
-                {
-                    col = body;
-                    for (int i = 0; i < craters.Length; i++)
-                        if ((q - craters[i]).magnitude < craterR[i]) col = dark;
-                    if (Vector2.Dot(q, new Vector2(-0.6f, 0.8f)) > 0.55f && dd > 0.6f) col = Color.Lerp(col, light, 0.6f);
-                    if (dd > 0.9f) col = Color.Lerp(col, dark, 0.6f);
-                }
-                if (ringFront) col = ring;
-
-                // Estrellitas
-                foreach (var s in starsPos)
-                {
-                    Vector2 sp = new Vector2(s.x * n, s.y * n);
-                    Vector2 dv = p - sp;
-                    if (Mathf.Abs(dv.x) + Mathf.Abs(dv.y) * 3f < 7f || Mathf.Abs(dv.y) + Mathf.Abs(dv.x) * 3f < 7f) col = star;
-                }
-                px[y * n + x] = col;
-            }
-        return px;
     }
 
     static Vector2 Rotate(Vector2 v, float deg)

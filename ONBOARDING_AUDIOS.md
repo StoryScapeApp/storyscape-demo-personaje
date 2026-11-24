@@ -10,6 +10,8 @@ El nombre del archivo debe ser **exactamente el id**. Luego, con la escena `Onbo
 
 > Si falta algún audio, el onboarding igual funciona: espera un tiempo según la longitud del texto.
 
+> **Voz en vivo:** la bienvenida (`01_saludo_nombre` / `01_intro`), la respuesta al nombre (`02_nombre`) y "¿Estás listo?" (`05_final`) las dice en vivo el agente de bienvenida (ver `docs/prompt_principito_bienvenida.md`). Estos audios grabados solo suenan si el agente no responde.
+
 | id | Estado | Momento | Texto |
 |---|---|---|---|
 | `01_saludo_nombre` | recuperado (versión del 04/11) | 1. Bienvenida, con **Pedir Nombre** activo · luego escucha el nombre (Scribe) | ¡Hola! ¡Bienvenido al libro El Principito! ¿Cómo te llamas? |

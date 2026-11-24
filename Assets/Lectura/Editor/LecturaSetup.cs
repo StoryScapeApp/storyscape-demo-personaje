@@ -88,10 +88,10 @@ public static class LecturaSetup
         const float X = 4.65f;
         var panel = Card("PanelQuiz", quizRoot, new Vector3(X, -0.1f, 0f), new Vector2(2.9f, 3.6f), Hex("#D9D2CF"), "", 1f, fill, border, TextAlignmentOptions.Center);
         panel.fillAlpha = 0.12f;
-        var titulo = Card("Titulo", quizRoot, new Vector3(X, 1.36f, 0f), new Vector2(2.6f, 0.6f), Color.white, "<b>Mini quiz</b>", 2.4f, null, null, TextAlignmentOptions.Center);
+        var titulo = Card("Titulo", quizRoot, new Vector3(X, 1.36f, 0f), new Vector2(2.6f, 0.6f), Color.white, "<b>Quiz</b>", 2.4f, null, null, TextAlignmentOptions.Center);
         var pregunta = Card("Pregunta", quizRoot, new Vector3(X, 0.7f, 0f), new Vector2(2.6f, 0.75f), Color.white, "", 2.1f, null, null, TextAlignmentOptions.Center);
         string[] letras = { "A", "B", "C" };
-        Color[] colores = { Hex("#4FB3E8"), Hex("#F2727F"), Hex("#F7C948") };
+        Color[] colores = { Hex("#3BB54A"), Hex("#3BB54A"), Hex("#3BB54A") };   // todas las alternativas en verde
         var opciones = new ProjectedCard[3];
         for (int i = 0; i < 3; i++)
             opciones[i] = Card("Opcion_" + letras[i], quizRoot, new Vector3(X, -0.02f - i * 0.68f, 0f), new Vector2(2.6f, 0.55f), colores[i],
@@ -118,7 +118,7 @@ public static class LecturaSetup
         quiz.quizzes.Add(new QuizSession.Quiz
         {
             id = "pagina_1",
-            intro = "¡Muy bien! Terminaste la primera página. Ahora, un mini quiz.",
+            intro = "¡Muy bien! Terminaste la primera página. Ahora, un quiz.",
             preguntas = new List<QuizSession.Pregunta>
             {
                 new QuizSession.Pregunta { texto = "¿Cómo vas a leer el cuento?", opciones = new[] { "En silencio", "En voz alta", "Cantando" }, correcta = 1 },
@@ -270,7 +270,7 @@ public static class LecturaSetup
         UnityEventTools.AddPersistentListener(anim.alActivar, fly.Play);
         session.animaciones.Add(anim);
 
-        // Mini quiz (el de pagina_1 lo usa el onboarding; los de capítulo, la lectura)
+        // Quiz (el de pagina_1 lo usa el onboarding; los de capítulo, la lectura)
         var quiz = CreateQuiz(root.transform, doubtAgent, doubts, fly);
         session.quiz = quiz;
         quiz.readingAgent = agent;

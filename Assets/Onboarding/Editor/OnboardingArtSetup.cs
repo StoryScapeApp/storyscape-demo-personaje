@@ -193,9 +193,8 @@ public static class OnboardingArtSetup
         }
         seq.zorroDestino = ZorroDestino;
         // Estrella fugaz (regla 2): del planeta anillado al planeta azul del fondo, pasando entre el título y el libro
-        seq.mostrarMeteoro = true;
-        seq.planet = null;            // el fondo ya trae los planetas
-        SetMeteorPath(seq.meteor);
+        seq.mostrarEstrellaFugaz = true;
+        SetMeteorPath(seq.estrellaFugaz);
         if (seq.stars) seq.stars.radius = 0.7f;
         EditorUtility.SetDirty(seq);
 

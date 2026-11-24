@@ -19,7 +19,7 @@ ArUco 0 (página 1) ──► Onboarding ──► "¿Estás listo?" ──► n
                  animación sobre la mesa           se pausa la lectura → agente de dudas
                (p. ej. Principito volando)         resalta la palabra en el libro + significado
                            │                                   │
-     al terminar la página o el capítulo: mini quiz    al terminar, la lectura se reconecta sola
+     al terminar la página o el capítulo: quiz    al terminar, la lectura se reconecta sola
    (agente "Principito quiz", 2 preguntas al azar)
 ```
 
@@ -31,8 +31,8 @@ Empieza al detectar **marker_0**. Lo controla el componente `OnboardingSequence`
 |---|---|
 | `01_intro` | Título "¡Bienvenido a la mesa de la lectura!". El Principito aparece a la izquierda del libro y saluda. |
 | `02_libro` | Tarjeta **1. No tapes el cuadrado**. El marco brillante del marcador está desactivado por ahora (*Mostrar Marco Marcador*). |
-| `03_voz_alta` | Tarjeta **2. Lee en voz alta**. Un meteoro cruza hacia un planeta. |
-| `04_quiz` | Tarjeta **3. Responde el mini quiz** con los círculos **A** y **B**. La A brilla y se apaga (demo de respuesta incorrecta). |
+| `03_voz_alta` | Tarjeta **2. Lee en voz alta**. Cruza una estrella fugaz. |
+| `04_quiz` | Tarjeta **3. Responde el quiz** con los círculos **A** y **B**. La A brilla y se apaga (demo de respuesta incorrecta). |
 | `05_final` | La B brilla, crece y salen estrellas. "¿Estás listo?" |
 | `06_listo` | Después de que el niño responde (o tras 7 s): "¡Genial!…". Todo se desvanece y empieza la lectura en vivo. |
 
@@ -57,13 +57,13 @@ Alternativas, en el mismo componente:
 | Página | Frase activadora | Animación |
 |---|---|---|
 | 1 (marker_0) | "animaciones inspiradas en escenas del libro El Principito" | `principito_volando`: despega de su asteroide, planea con las aves sobre el libro y sale por la izquierda (~5 s, campo *Velocidad*) |
-| 1 (marker_0) | "carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas" (última línea de la página) | `quiz_pagina_1`: abre el mini quiz de la página 1 |
+| 1 (marker_0) | "carrera de Ingeniería de Software de la Universidad Peruana de Ciencias Aplicadas" (última línea de la página) | `quiz_pagina_1`: abre el quiz de la página 1 |
 | 3 (marker_2) | "…la persona mayor se mostraba muy satisfecha de haber conocido a un hombre tan razonable" (fin del capítulo I) | `quiz_capitulo_1`: abre el quiz del capítulo I |
 | 7 (marker_6) | "Y fue así como conocí al principito" (fin del capítulo II) | `quiz_capitulo_2`: abre el quiz del capítulo II |
 
 En el campo *Frase* se pueden poner alternativas separadas por `|`. Basta con que coincida una. Las frases están en la escena (*Reading Session → Animaciones*) y sus valores iniciales en `Assets/Lectura/Editor/LecturaSetup.cs`.
 
-### 3. Mini quiz al terminar la página o el capítulo
+### 3. Quiz al terminar la página o el capítulo
 
 Componente `QuizSession`, en el objeto **Lectura**:
 
@@ -216,8 +216,8 @@ Configuración (una vez por laptop):
 | **Esc** | Cierra la conversación de dudas. |
 | **T** | Prueba el resaltado y el significado **sin ElevenLabs** con la lista *Test Words* de `DoubtSession`. |
 | **V** | Reproduce la animación de la página actual **sin ElevenLabs**. |
-| **Q** | Inicia el mini quiz de la página 1. Sin el agente del quiz configurado, se responde con **A**, **B** o **C**. |
-| **1** / **2** | Inician el mini quiz del capítulo I / II (con sorteo de preguntas). Mismo comportamiento que **Q**. |
+| **Q** | Inicia el quiz de la página 1. Sin el agente del quiz configurado, se responde con **A**, **B** o **C**. |
+| **1** / **2** | Inician el quiz del capítulo I / II (con sorteo de preguntas). Mismo comportamiento que **Q**. |
 | **P** · **R** · **G** · **U** · **Y** · **H** · **N** | Teclas de respaldo de los comandos de voz (ver *5. Comandos de voz*). |
 
 **Cambiar de página sin cámara:** en `Onboarding` no hay teclas para pasar de página. Se simula un ArUco enviando varios paquetes UDP seguidos a `127.0.0.1:5005` (el receptor pide al menos 2 detecciones en 1,5 s). Por ejemplo, para la página 3 (`marker_2`): `{"tipo": "aruco", "id": 2, "x": 0.5, "y": 0.5}`. Después, lee en voz alta la última frase de esa página para que Scribe dispare el quiz. Para que la lectura en vivo empiece sin esperar el onboarding, usa el menú ⋮ de *Reading Session → Iniciar lectura en vivo* **con el Play activo**.
