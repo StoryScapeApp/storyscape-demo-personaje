@@ -62,3 +62,7 @@ desktop.ini
 # Configuración local del portal docente (contiene la clave de ingesta)
 /[Aa]ssets/[Ss]treaming[Aa]ssets/portal.local.json
 /[Aa]ssets/[Ss]treaming[Aa]ssets/portal.local.json.meta
+
+# Pruebas: audios generados con Azure y corridas descartadas (solo locales)
+/Pruebas/audios/
+/Pruebas/resultados/descartados/
